@@ -1,0 +1,1017 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Application Details - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    /* ============================================
+       APPLICATION DETAIL PAGE - COMPLETE STYLES
+       ============================================ */
+
+    .detail-page-wrapper {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    /* ===== PAGE HEADER ===== */
+    .detail-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 35px 40px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+    .detail-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .detail-header h3 {
+        color: white;
+        margin: 0;
+        font-weight: 700;
+        position: relative;
+        z-index: 1;
+    }
+    .detail-header h3 i {
+        color: var(--secondary-color);
+        margin-right: 12px;
+    }
+    .detail-header .subtitle {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 15px;
+        margin: 5px 0 0;
+        position: relative;
+        z-index: 1;
+    }
+    .detail-header .header-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 1;
+        margin-top: 10px;
+    }
+    .detail-header .btn-white-outline {
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        background: transparent;
+        padding: 8px 22px;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+    .detail-header .btn-white-outline:hover {
+        background: white;
+        color: var(--primary-color);
+        border-color: white;
+    }
+    .detail-header .btn-white {
+        background: white;
+        color: var(--primary-color);
+        padding: 8px 22px;
+        border-radius: 50px;
+        font-weight: 600;
+        border: none;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+    .detail-header .btn-white:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    }
+
+    /* ===== STATUS BADGE ===== */
+    .status-badge-large {
+        padding: 8px 25px;
+        border-radius: 50px;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .status-badge-large.pending {
+        background: #fff3e0;
+        color: #e65100;
+    }
+    .status-badge-large.reviewing {
+        background: #e3f2fd;
+        color: #0d47a1;
+    }
+    .status-badge-large.interview {
+        background: #f3e5f5;
+        color: #6a1b9a;
+    }
+    .status-badge-large.admitted {
+        background: #e8f5e9;
+        color: #1b5e20;
+    }
+    .status-badge-large.rejected {
+        background: #ffebee;
+        color: #b71c1c;
+    }
+    .status-badge-large.waitlisted {
+        background: #eceff1;
+        color: #37474f;
+    }
+
+    /* ===== SECTION CARDS ===== */
+    .detail-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.3s ease;
+    }
+    .detail-section:hover {
+        box-shadow: 0 4px 25px rgba(0,0,0,0.08);
+    }
+    .detail-section .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .detail-section .section-title i {
+        color: var(--secondary-color);
+        font-size: 20px;
+    }
+
+    /* ===== DETAIL GRID ===== */
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px 30px;
+    }
+    .detail-grid .detail-item {
+        display: flex;
+        flex-direction: column;
+        padding: 8px 0;
+        border-bottom: 1px solid #f5f5f5;
+    }
+    .detail-grid .detail-item:last-child {
+        border-bottom: none;
+    }
+    .detail-grid .detail-item .label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .detail-grid .detail-item .value {
+        font-size: 15px;
+        color: var(--text-dark);
+        font-weight: 500;
+        margin-top: 2px;
+        word-break: break-word;
+    }
+    .detail-grid .detail-item .value .highlight {
+        color: var(--secondary-color);
+        font-weight: 600;
+    }
+    .detail-grid .detail-item .value a {
+        color: var(--secondary-color);
+        text-decoration: none;
+    }
+    .detail-grid .detail-item .value a:hover {
+        text-decoration: underline;
+    }
+
+    /* ===== DOCUMENT GALLERY ===== */
+    .document-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 15px;
+        margin-top: 10px;
+    }
+    .document-card {
+        background: #f8f9fc;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        border: 1px solid #e8ecf1;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .document-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        border-color: var(--secondary-color);
+    }
+    .document-card .doc-icon {
+        font-size: 40px;
+        color: var(--secondary-color);
+        margin-bottom: 8px;
+    }
+    .document-card .doc-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-dark);
+        word-break: break-all;
+    }
+    .document-card .doc-size {
+        font-size: 11px;
+        color: var(--text-color);
+    }
+
+    /* ===== IMAGE PREVIEW MODAL ===== */
+    .image-preview-modal .modal-content {
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    .image-preview-modal .modal-body {
+        padding: 0;
+        background: #1a1a2e;
+        text-align: center;
+    }
+    .image-preview-modal .modal-body img {
+        max-width: 100%;
+        max-height: 80vh;
+        display: block;
+        margin: 0 auto;
+    }
+    .image-preview-modal .modal-footer {
+        background: #1a1a2e;
+        border: none;
+        justify-content: center;
+        padding: 15px;
+    }
+    .image-preview-modal .modal-footer .btn {
+        padding: 8px 25px;
+        border-radius: 50px;
+        font-weight: 600;
+    }
+
+    /* ===== PDF VIEWER ===== */
+    .pdf-container {
+        width: 100%;
+        height: 500px;
+        border: none;
+        border-radius: 10px;
+    }
+
+    /* ===== REVIEW SECTION ===== */
+    .review-form .form-control {
+        border-radius: 10px;
+        border: 1px solid #e8ecf1;
+        padding: 10px 15px;
+        transition: all 0.3s ease;
+    }
+    .review-form .form-control:focus {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 3px rgba(225, 36, 84, 0.08);
+    }
+    .review-form .form-label {
+        font-weight: 600;
+        color: var(--text-dark);
+        font-size: 14px;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 992px) {
+        .detail-header {
+            padding: 25px 20px;
+        }
+        .detail-header h3 {
+            font-size: 1.5rem;
+        }
+        .detail-section {
+            padding: 20px;
+        }
+        .detail-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .document-gallery {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .detail-header {
+            text-align: center;
+            padding: 20px;
+        }
+        .detail-header .header-actions {
+            justify-content: center;
+        }
+        .detail-grid {
+            grid-template-columns: 1fr;
+        }
+        .document-gallery {
+            grid-template-columns: 1fr;
+        }
+        .status-badge-large {
+            font-size: 12px;
+            padding: 6px 16px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .detail-section {
+            padding: 15px;
+        }
+        .detail-grid .detail-item .value {
+            font-size: 14px;
+        }
+    }
+
+    /* ===== LOADING ===== */
+    .loading-spinner {
+        text-align: center;
+        padding: 80px 20px;
+    }
+    .loading-spinner .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f0f0f0;
+        border-top-color: var(--secondary-color);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 20px;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn-review-submit {
+        background: var(--primary-color);
+        color: white;
+        padding: 12px 30px;
+        border-radius: 10px;
+        font-weight: 600;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-review-submit:hover {
+        background: var(--secondary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(225, 36, 84, 0.3);
+        color: white;
+    }
+    .btn-review-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+</style>
+
+<div class="detail-page-wrapper">
+    <div class="container">
+
+        <!-- ============================================ -->
+        <!-- PAGE HEADER -->
+        <!-- ============================================ -->
+        <div class="detail-header">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <h3><i class="icofont-forms"></i> Application Details</h3>
+                    <p class="subtitle" id="app-id-display">Loading...</p>
+                    <div class="header-actions">
+                        <a href="/admissions/applications/" class="btn btn-white-outline">
+                            <i class="icofont-arrow-left"></i> Back to Applications
+                        </a>
+                        <button class="btn btn-white" onclick="window.print()">
+                            <i class="icofont-print"></i> Print
+                        </button>
+                    </div>
+                </div>
+                <div class="col-lg-5 text-lg-right mt-3 mt-lg-0">
+                    <div id="status-display">
+                        <span class="status-badge-large pending">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- MAIN CONTENT -->
+        <!-- ============================================ -->
+        <div id="application-container">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Loading application details...</p>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- REVIEW SECTION (Admin Only) -->
+        <!-- ============================================ -->
+        <div id="review-section" class="detail-section" style="display: none;">
+            <div class="section-title">
+                <i class="icofont-check-circled"></i>
+                Review Application
+            </div>
+            <form id="review-form" class="review-form">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Decision <span class="text-danger">*</span></label>
+                            <select id="review-decision" class="form-control" required>
+                                <option value="pending">Pending</option>
+                                <option value="reviewing">Reviewing</option>
+                                <option value="interview">Schedule Interview</option>
+                                <option value="admitted">Admit</option>
+                                <option value="rejected">Reject</option>
+                                <option value="waitlisted">Waitlist</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Interview Date (if applicable)</label>
+                            <input type="datetime-local" id="review-interview-date" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Review Notes</label>
+                    <textarea id="review-notes" class="form-control" rows="3" 
+                              placeholder="Add review notes..."></textarea>
+                </div>
+                <div class="text-right">
+                    <button type="button" class="btn btn-review-submit" onclick="submitReview()">
+                        <i class="icofont-check"></i> Submit Review
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- IMAGE PREVIEW MODAL -->
+<!-- ============================================ -->
+<div class="modal fade image-preview-modal" id="imagePreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-body">
+                <img id="preview-image" src="" alt="Document Preview">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-white" data-dismiss="modal">Close</button>
+                <a id="download-link" href="#" target="_blank" class="btn btn-main-2">
+                    <i class="icofont-download"></i> Download
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SCRIPTS -->
+<!-- ============================================ -->
+<script>
+    let applicationId = null;
+    let applicationData = null;
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    // ============================================
+    // CHECK AUTHENTICATION
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) {
+            window.location.href = '/login/'; // Redirect to login
+            return;
+        }
+
+        // Get application ID from URL
+        const path = window.location.pathname;
+        const parts = path.split('/');
+        applicationId = parts[parts.length - 2];
+
+        if (applicationId) {
+            loadApplication(applicationId);
+        } else {
+            document.getElementById('application-container').innerHTML = `
+                <div class="detail-section text-center py-5">
+                    <h4 class="text-danger"><i class="icofont-warning"></i> Invalid Application ID</h4>
+                    <p class="text-muted">No application ID provided in the URL.</p>
+                    <a href="/admissions/applications/" class="btn btn-main">Back to Applications</a>
+                </div>
+            `;
+        }
+
+        // Check if user is admin
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (['super_admin', 'admin', 'registrar'].includes(user.user_type)) {
+            document.getElementById('review-section').style.display = 'block';
+        }
+    });
+
+    // ============================================
+    // LOAD APPLICATION
+    // ============================================
+    function loadApplication(id) {
+        fetch(`/api/applications/${id}/`, {
+            
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            applicationData = data;
+            renderApplication(data);
+            document.getElementById('app-id-display').textContent = `Application ID: ${data.application_id}`;
+            
+            // Set review form values
+            document.getElementById('review-decision').value = data.status || 'pending';
+            document.getElementById('review-notes').value = data.review_notes || '';
+        })
+        .catch(error => {
+            console.error('Error loading application:', error);
+            document.getElementById('application-container').innerHTML = `
+                <div class="detail-section text-center py-5">
+                    <h4 class="text-danger"><i class="icofont-warning"></i> Error Loading Application</h4>
+                    <p class="text-muted">${error.message}</p>
+                    <a href="/admissions/applications/" class="btn btn-main">Back to Applications</a>
+                </div>
+            `;
+        });
+    }
+
+    // ============================================
+    // RENDER APPLICATION
+    // ============================================
+    function renderApplication(data) {
+        const container = document.getElementById('application-container');
+        
+        // Update status
+        const statusDisplay = document.getElementById('status-display');
+        statusDisplay.innerHTML = `<span class="status-badge-large ${data.status}">
+            <i class="icofont-${data.status === 'admitted' ? 'check-circled' : data.status === 'pending' ? 'clock' : data.status === 'rejected' ? 'close-circled' : 'info'}"></i>
+            ${data.status.toUpperCase()}
+        </span>`;
+
+        // Build HTML
+        container.innerHTML = `
+            <!-- ===== PERSONAL INFORMATION ===== -->
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-user"></i> Personal Information</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Full Name</span>
+                        <span class="value">${data.full_name || data.first_name + ' ' + data.last_name}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Date of Birth</span>
+                        <span class="value">${data.date_of_birth ? new Date(data.date_of_birth).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Gender</span>
+                        <span class="value">${data.gender || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Nationality</span>
+                        <span class="value">${data.nationality || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Marital Status</span>
+                        <span class="value">${data.marital_status || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Religion</span>
+                        <span class="value">${data.religion || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Citizenship</span>
+                        <span class="value">${data.citizenship || 'N/A'}</span>
+                    </div>
+                    ${data.national_id ? `
+                    <div class="detail-item">
+                        <span class="label">National ID</span>
+                        <span class="value">${data.national_id}</span>
+                    </div>` : ''}
+                </div>
+            </div>
+
+            <!-- ===== CONTACT INFORMATION ===== -->
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-phone"></i> Contact Information</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Phone Number</span>
+                        <span class="value">${data.phone || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Alternate Phone</span>
+                        <span class="value">${data.alternate_phone || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Email Address</span>
+                        <span class="value"><a href="mailto:${data.email}">${data.email || 'N/A'}</a></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Alternate Email</span>
+                        <span class="value">${data.alternate_email || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Address</span>
+                        <span class="value">${data.address || data.permanent_address || 'N/A'}</span>
+                    </div>
+                    ${data.home_district ? `
+                    <div class="detail-item">
+                        <span class="label">Home District</span>
+                        <span class="value">${data.home_district}${data.home_parish ? ', ' + data.home_parish : ''}${data.home_village ? ', ' + data.home_village : ''}</span>
+                    </div>` : ''}
+                </div>
+            </div>
+
+            <!-- ===== PROGRAM INFORMATION ===== -->
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-book"></i> Program Information</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Course Type</span>
+                        <span class="value"><span class="highlight">${data.course_type ? data.course_type.toUpperCase() : 'N/A'}</span></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Program Applied</span>
+                        <span class="value">${data.program_applied || data.modular_course || data.diploma_course || 'N/A'}</span>
+                    </div>
+                    ${data.program_level ? `
+                    <div class="detail-item">
+                        <span class="label">Program Level</span>
+                        <span class="value">${data.program_level}</span>
+                    </div>` : ''}
+                    ${data.level_applied ? `
+                    <div class="detail-item">
+                        <span class="label">Level Applied</span>
+                        <span class="value">${data.level_applied}</span>
+                    </div>` : ''}
+                    ${data.second_choice_course ? `
+                    <div class="detail-item">
+                        <span class="label">Second Choice</span>
+                        <span class="value">${data.second_choice_course}</span>
+                    </div>` : ''}
+                </div>
+            </div>
+
+            <!-- ===== ACADEMIC BACKGROUND ===== -->
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-graduate"></i> Academic Background</div>
+                <div class="detail-grid">
+                    <div class="detail-item" style="grid-column: 1 / -1;">
+                        <span class="label">Academic Background</span>
+                        <span class="value">${data.academic_background || 'Not provided'}</span>
+                    </div>
+                    ${data.employment_experience ? `
+                    <div class="detail-item" style="grid-column: 1 / -1;">
+                        <span class="label">Employment Experience</span>
+                        <span class="value">${data.employment_experience}</span>
+                    </div>` : ''}
+                </div>
+            </div>
+
+            <!-- ===== UCE DETAILS ===== -->
+            ${data.uce_index || data.uce_year ? `
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-certificate"></i> UCE Details</div>
+                <div class="detail-grid">
+                    ${data.uce_index ? `
+                    <div class="detail-item">
+                        <span class="label">Index Number</span>
+                        <span class="value">${data.uce_index}</span>
+                    </div>` : ''}
+                    ${data.uce_year ? `
+                    <div class="detail-item">
+                        <span class="label">Year of Examination</span>
+                        <span class="value">${data.uce_year}</span>
+                    </div>` : ''}
+                    ${data.uce_summary ? `
+                    <div class="detail-item">
+                        <span class="label">Summary Grade</span>
+                        <span class="value">${data.uce_summary}</span>
+                    </div>` : ''}
+                </div>
+                ${data.uce_subjects && Object.keys(data.uce_subjects).length > 0 ? `
+                <div style="margin-top: 10px;">
+                    <table class="table table-sm table-bordered" style="font-size: 13px;">
+                        <thead style="background: #f8f9fc;">
+                            <tr><th>Subject</th><th>Grade</th></tr>
+                        </thead>
+                        <tbody>
+                            ${Object.entries(data.uce_subjects).map(([subject, grade]) => `
+                                <tr><td>${subject}</td><td>${grade || 'N/A'}</td></tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>` : ''}
+            </div>` : ''}
+
+            <!-- ===== UACE DETAILS ===== -->
+            ${data.uace_index || data.uace_year ? `
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-certificate"></i> UACE Details</div>
+                <div class="detail-grid">
+                    ${data.uace_index ? `
+                    <div class="detail-item">
+                        <span class="label">Index Number</span>
+                        <span class="value">${data.uace_index}</span>
+                    </div>` : ''}
+                    ${data.uace_year ? `
+                    <div class="detail-item">
+                        <span class="label">Year of Examination</span>
+                        <span class="value">${data.uace_year}</span>
+                    </div>` : ''}
+                    ${data.uace_overall_grade ? `
+                    <div class="detail-item">
+                        <span class="label">Overall Grade</span>
+                        <span class="value"><span class="highlight">${data.uace_overall_grade}</span></span>
+                    </div>` : ''}
+                </div>
+                ${data.uace_subjects && Object.keys(data.uace_subjects).length > 0 ? `
+                <div style="margin-top: 10px;">
+                    <table class="table table-sm table-bordered" style="font-size: 13px;">
+                        <thead style="background: #f8f9fc;">
+                            <tr><th>Subject</th><th>Grade</th></tr>
+                        </thead>
+                        <tbody>
+                            ${Object.entries(data.uace_subjects).map(([subject, grade]) => `
+                                <tr><td>${subject}</td><td>${grade || 'N/A'}</td></tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>` : ''}
+            </div>` : ''}
+
+            <!-- ===== OTHER QUALIFICATIONS ===== -->
+            ${data.other_qual_institution ? `
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-book"></i> Other Qualifications</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Institution</span>
+                        <span class="value">${data.other_qual_institution}</span>
+                    </div>
+                    ${data.other_qual_qualification ? `
+                    <div class="detail-item">
+                        <span class="label">Qualification</span>
+                        <span class="value">${data.other_qual_qualification}</span>
+                    </div>` : ''}
+                    ${data.other_qual_class ? `
+                    <div class="detail-item">
+                        <span class="label">Class of Award</span>
+                        <span class="value">${data.other_qual_class}</span>
+                    </div>` : ''}
+                    ${data.other_qual_from ? `
+                    <div class="detail-item">
+                        <span class="label">Period</span>
+                        <span class="value">${data.other_qual_from} - ${data.other_qual_to || 'Present'}</span>
+                    </div>` : ''}
+                </div>
+            </div>` : ''}
+
+            <!-- ===== EMPLOYMENT ===== -->
+            ${data.job_position ? `
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-briefcase"></i> Employment Record</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Position</span>
+                        <span class="value">${data.job_position}</span>
+                    </div>
+                    ${data.job_employer ? `
+                    <div class="detail-item">
+                        <span class="label">Employer</span>
+                        <span class="value">${data.job_employer}</span>
+                    </div>` : ''}
+                    ${data.job_period ? `
+                    <div class="detail-item">
+                        <span class="label">Period</span>
+                        <span class="value">${data.job_period}</span>
+                    </div>` : ''}
+                </div>
+            </div>` : ''}
+
+            <!-- ===== GUARDIAN ===== -->
+            ${data.guardian_name ? `
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-users"></i> Parent/Guardian Information</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Relationship</span>
+                        <span class="value">${data.guardian_relationship || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Full Name</span>
+                        <span class="value">${data.guardian_name}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Nationality</span>
+                        <span class="value">${data.guardian_nationality || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Phone Number</span>
+                        <span class="value">${data.guardian_phone || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item" style="grid-column: 1 / -1;">
+                        <span class="label">Place of Residence</span>
+                        <span class="value">${data.guardian_residence || 'N/A'}</span>
+                    </div>
+                </div>
+            </div>` : ''}
+
+            <!-- ===== REFEREES ===== -->
+            ${data.referee1_name ? `
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-user"></i> Referees</div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 style="color: var(--primary-color); font-weight: 600;">Referee 1</h6>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="label">Name</span>
+                                <span class="value">${data.referee1_name}</span>
+                            </div>
+                            ${data.referee1_address ? `
+                            <div class="detail-item">
+                                <span class="label">Address</span>
+                                <span class="value">${data.referee1_address}</span>
+                            </div>` : ''}
+                            ${data.referee1_phone ? `
+                            <div class="detail-item">
+                                <span class="label">Phone</span>
+                                <span class="value">${data.referee1_phone}</span>
+                            </div>` : ''}
+                            ${data.referee1_email ? `
+                            <div class="detail-item">
+                                <span class="label">Email</span>
+                                <span class="value"><a href="mailto:${data.referee1_email}">${data.referee1_email}</a></span>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                    ${data.referee2_name ? `
+                    <div class="col-md-6">
+                        <h6 style="color: var(--primary-color); font-weight: 600;">Referee 2</h6>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="label">Name</span>
+                                <span class="value">${data.referee2_name}</span>
+                            </div>
+                            ${data.referee2_address ? `
+                            <div class="detail-item">
+                                <span class="label">Address</span>
+                                <span class="value">${data.referee2_address}</span>
+                            </div>` : ''}
+                            ${data.referee2_phone ? `
+                            <div class="detail-item">
+                                <span class="label">Phone</span>
+                                <span class="value">${data.referee2_phone}</span>
+                            </div>` : ''}
+                            ${data.referee2_email ? `
+                            <div class="detail-item">
+                                <span class="label">Email</span>
+                                <span class="value"><a href="mailto:${data.referee2_email}">${data.referee2_email}</a></span>
+                            </div>` : ''}
+                        </div>
+                    </div>` : ''}
+                </div>
+            </div>` : ''}
+
+            <!-- ===== DECLARATION ===== -->
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-check-circled"></i> Declaration</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Signature</span>
+                        <span class="value">${data.declaration_signature || 'Not signed'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Declaration Date</span>
+                        <span class="value">${data.declaration_date ? new Date(data.declaration_date).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    <div class="detail-item" style="grid-column: 1 / -1;">
+                        <span class="label">Declaration Agreed</span>
+                        <span class="value">${data.declaration_agreed ? '✅ Yes' : '❌ No'}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== DOCUMENTS ===== -->
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-file"></i> Uploaded Documents</div>
+                <div class="document-gallery">
+                    ${renderDocumentCard(data.payment_receipt, 'Payment Receipt', 'icofont-money')}
+                    ${renderDocumentCard(data.uce_certificate, 'UCE Certificate', 'icofont-certificate')}
+                    ${renderDocumentCard(data.uace_certificate, 'UACE Certificate', 'icofont-certificate')}
+                    ${renderDocumentCard(data.other_qual_certificate, 'Other Qualification', 'icofont-book')}
+                </div>
+                ${!data.payment_receipt && !data.uce_certificate && !data.uace_certificate && !data.other_qual_certificate ? `
+                <p class="text-muted text-center py-3" style="font-size: 14px;">No documents uploaded</p>` : ''}
+            </div>
+        `;
+    }
+
+    // ============================================
+    // RENDER DOCUMENT CARD
+    // ============================================
+    function renderDocumentCard(fileUrl, label, icon) {
+        if (!fileUrl) return '';
+        
+        const isImage = fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+        const isPDF = fileUrl.match(/\.pdf$/i);
+        
+        return `
+            <div class="document-card" onclick="previewDocument('${fileUrl}', '${isImage}', '${label}')">
+                <div class="doc-icon"><i class="${icon}"></i></div>
+                <div class="doc-name">${label}</div>
+                <div class="doc-size">${isImage ? '🖼️ Image' : isPDF ? '📄 PDF' : '📎 File'}</div>
+                <small style="color: var(--secondary-color); font-weight: 500;">Click to view</small>
+            </div>
+        `;
+    }
+
+    // ============================================
+    // PREVIEW DOCUMENT
+    // ============================================
+    function previewDocument(fileUrl, isImage, label) {
+        const modal = document.getElementById('imagePreviewModal');
+        const img = document.getElementById('preview-image');
+        const downloadLink = document.getElementById('download-link');
+        
+        downloadLink.href = fileUrl;
+        downloadLink.download = label || 'document';
+        
+        if (isImage) {
+            img.style.display = 'block';
+            img.src = fileUrl;
+            img.alt = label || 'Document';
+            // Update modal title
+            document.querySelector('.image-preview-modal .modal-header h5').textContent = label || 'Document Preview';
+        } else {
+            // For PDFs and other files, open in new tab
+            window.open(fileUrl, '_blank');
+            return;
+        }
+        
+        $('#imagePreviewModal').modal('show');
+    }
+
+    // ============================================
+    // SUBMIT REVIEW
+    // ============================================
+    function submitReview() {
+        const status = document.getElementById('review-decision').value;
+        const notes = document.getElementById('review-notes').value;
+        const interviewDate = document.getElementById('review-interview-date').value;
+        const btn = document.querySelector('.btn-review-submit');
+
+        if (!status) {
+            alert('Please select a decision.');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Submitting...';
+
+        const payload = { status: status, notes: notes };
+        if (interviewDate) payload.interview_date = interviewDate;
+
+        fetch(`/api/applications/${applicationId}/review/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-check"></i> Submit Review';
+            loadApplication(applicationId);
+            alert('Application reviewed successfully!');
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-check"></i> Submit Review';
+            alert('Error submitting review: ' + error.message);
+            console.error(error);
+        });
+    }
+</script>
+{% endblock %}

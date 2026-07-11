@@ -1,0 +1,261 @@
+/* ==================== DASHBOARD SPECIFIC STYLES ==================== */
+
+/* Quick Action Cards */
+.quick-action {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+.quick-action:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+}
+
+.quick-action .icon {
+    font-size: 40px;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.quick-action .icon.red {
+    color: var(--secondary-color);
+}
+
+.quick-action .icon.green {
+    color: var(--success);
+}
+
+.quick-action .icon.orange {
+    color: #fd7e14;
+}
+
+.quick-action h6 {
+    margin-bottom: 5px;
+    color: var(--text-dark);
+}
+
+.quick-action p {
+    font-size: 13px;
+    margin-bottom: 0;
+    color: var(--text-color);
+}
+
+/* Activity Feed */
+.activity-feed {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.activity-feed li {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: start;
+}
+
+.activity-feed li:last-child {
+    border-bottom: none;
+}
+
+.activity-feed .activity-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.activity-feed .activity-icon.primary {
+    background: rgba(34, 58, 102, 0.1);
+    color: var(--primary-color);
+}
+
+.activity-feed .activity-icon.red {
+    background: rgba(225, 36, 84, 0.1);
+    color: var(--secondary-color);
+}
+
+.activity-feed .activity-icon.green {
+    background: rgba(40, 167, 69, 0.1);
+    color: var(--success);
+}
+
+.activity-feed .activity-icon.yellow {
+    background: rgba(255, 193, 7, 0.1);
+    color: var(--warning);
+}
+
+.activity-feed .activity-content .activity-text {
+    font-size: 14px;
+    color: var(--text-dark);
+}
+
+.activity-feed .activity-content .activity-time {
+    font-size: 12px;
+    color: var(--text-color);
+}
+
+/* Calendar Widget */
+.calendar-widget .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.calendar-widget .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.calendar-widget .calendar-grid .day {
+    text-align: center;
+    padding: 8px 0;
+    font-size: 13px;
+    border-radius: 5px;
+}
+
+.calendar-widget .calendar-grid .day.header {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 12px;
+}
+
+.calendar-widget .calendar-grid .day.today {
+    background: var(--primary-color);
+    color: var(--white);
+}
+
+.calendar-widget .calendar-grid .day.has-event {
+    background: var(--secondary-color);
+    color: var(--white);
+}
+
+.calendar-widget .calendar-grid .day.other-month {
+    color: #ccc;
+}
+
+/* Notification Bell */
+.notification-bell {
+    position: relative;
+    cursor: pointer;
+}
+
+.notification-bell .badge-dot {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 10px;
+    height: 10px;
+    background: var(--secondary-color);
+    border-radius: 50%;
+    border: 2px solid var(--white);
+}
+
+/* Dropdown Notifications */
+.notification-dropdown {
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-dropdown .notification-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.notification-dropdown .notification-item:hover {
+    background: var(--light-bg);
+}
+
+.notification-dropdown .notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-dropdown .notification-item .notification-text {
+    font-size: 14px;
+    color: var(--text-dark);
+}
+
+.notification-dropdown .notification-item .notification-time {
+    font-size: 12px;
+    color: var(--text-color);
+}
+
+.notification-dropdown .notification-item.unread {
+    background: rgba(34, 58, 102, 0.05);
+}
+
+/* Chart Containers */
+.chart-container {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+.chart-container .chart-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+
+/* Filter Bar */
+.filter-bar {
+    background: var(--white);
+    padding: 15px 20px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.filter-bar .filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.filter-bar .filter-group .filter-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-right: 5px;
+}
+
+.filter-bar .filter-group .form-control {
+    width: auto;
+    min-width: 150px;
+}
+
+/* Responsive Dashboard */
+@media (max-width: 768px) {
+    .filter-bar .filter-group .form-control {
+        width: 100%;
+        min-width: auto;
+    }
+    .notification-dropdown {
+        width: 280px;
+        right: -70px !important;
+    }
+}
+
+/* Dark Mode Support (Optional) */
+@media (prefers-color-scheme: dark) {
+    /* Add dark mode styles if needed */
+}

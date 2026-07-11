@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Invoices - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .invoices-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white {
+        background: white; color: var(--primary-color); padding: 8px 22px;
+        border-radius: 50px; font-weight: 600; border: none; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+    .page-header-custom .btn-white-outline {
+        border: 2px solid rgba(255,255,255,0.3); color: white; background: transparent;
+        padding: 8px 22px; border-radius: 50px; font-weight: 600; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white-outline:hover { background: white; color: var(--primary-color); }
+
+    .filter-bar {
+        background: white; padding: 15px 20px; border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .filter-bar .filter-label {
+        font-size: 12px; font-weight: 600; color: var(--text-color);
+        text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; display: block;
+    }
+    .filter-bar .form-control,
+    .filter-bar .form-select {
+        height: 38px; border-radius: 8px; border: 1px solid #e8ecf1;
+        font-size: 13px; transition: all 0.3s ease; background: #f8f9fc;
+    }
+    .filter-bar .form-control:focus,
+    .filter-bar .form-select:focus {
+        border-color: var(--secondary-color); box-shadow: 0 0 0 3px rgba(225,36,84,0.08);
+        background: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .stat-card {
+        background: white; border-radius: 12px; padding: 15px 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+    }
+    .stat-card .stat-number { font-size: 22px; font-weight: 700; color: var(--primary-color); }
+    .stat-card .stat-label { font-size: 12px; color: var(--text-color); margin: 0; }
+
+    .invoice-card {
+        background: white; border-radius: 12px; padding: 18px 22px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.3s ease; margin-bottom: 12px;
+    }
+    .invoice-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .invoice-card .invoice-header {
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    }
+    .invoice-card .invoice-header .invoice-number {
+        font-weight: 600; color: var(--primary-color); font-size: 16px;
+    }
+    .invoice-card .invoice-header .invoice-amount {
+        font-size: 20px; font-weight: 700; color: var(--secondary-color);
+    }
+    .invoice-card .invoice-details {
+        display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px;
+        font-size: 13px; color: var(--text-color);
+    }
+    .invoice-card .invoice-details span strong { color: var(--text-dark); }
+    .invoice-card .invoice-actions {
+        display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;
+    }
+
+    .badge-status {
+        padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .badge-status.fully_paid { background: #e8f5e9; color: #1b5e20; }
+    .badge-status.partially_paid { background: #fff3e0; color: #e65100; }
+    .badge-status.pending { background: #ffebee; color: #b71c1c; }
+    .badge-status.overdue { background: #ffebee; color: #b71c1c; }
+    .badge-status.draft { background: #eceff1; color: #37474f; }
+    .badge-status.issued { background: #e3f2fd; color: #0d47a1; }
+
+    .pagination-custom {
+        display: flex; gap: 6px; justify-content: center; margin-top: 25px; flex-wrap: wrap;
+    }
+    .pagination-custom .page-item .page-link {
+        border-radius: 8px; color: var(--text-color); border: 1px solid #e8ecf1;
+        padding: 8px 14px; font-weight: 500; transition: all 0.3s ease; background: white;
+    }
+    .pagination-custom .page-item .page-link:hover { background: var(--light-bg); border-color: var(--secondary-color); color: var(--secondary-color); }
+    .pagination-custom .page-item.active .page-link { background: var(--primary-color); border-color: var(--primary-color); color: white; }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .stats-grid { grid-template-columns: 1fr 1fr; }
+        .filter-bar .row > div { margin-bottom: 10px; }
+        .invoice-card .invoice-header { flex-direction: column; align-items: flex-start; }
+        .invoice-card .invoice-header .invoice-amount { margin-top: 5px; }
+    }
+</style>
+
+<div class="invoices-page">
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-file-text"></i> Invoices</h3>
+                    <p class="subtitle">View and manage all student invoices</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <button class="btn btn-white" onclick="window.location.href='/finance/invoices/generate/'">
+                        <i class="icofont-plus"></i> Generate Invoice
+                    </button>
+                    <button class="btn btn-white-outline ml-2" onclick="window.print()">
+                        <i class="icofont-print"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card"><div class="stat-number" id="total-invoices">0</div><p class="stat-label">Total Invoices</p></div>
+            <div class="stat-card"><div class="stat-number" id="total-amount">UGX 0</div><p class="stat-label">Total Amount</p></div>
+            <div class="stat-card"><div class="stat-number" id="paid-amount">UGX 0</div><p class="stat-label">Amount Paid</p></div>
+            <div class="stat-card"><div class="stat-number" id="outstanding-amount">UGX 0</div><p class="stat-label">Outstanding</p></div>
+        </div>
+
+        <!-- Filter -->
+        <div class="filter-bar">
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label class="filter-label">Search</label>
+                    <input type="text" id="search-input" class="form-control" placeholder="Student or invoice #..." onkeyup="loadInvoices()">
+                </div>
+                <div class="col-md-3">
+                    <label class="filter-label">Status</label>
+                    <select id="status-filter" class="form-select" onchange="loadInvoices()">
+                        <option value="">All Status</option>
+                        <option value="fully_paid">Fully Paid</option>
+                        <option value="partially_paid">Partially Paid</option>
+                        <option value="pending">Pending</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="issued">Issued</option>
+                        <option value="draft">Draft</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="filter-label">Date From</label>
+                    <input type="date" id="date-from" class="form-control" onchange="loadInvoices()">
+                </div>
+                <div class="col-md-3">
+                    <label class="filter-label">Date To</label>
+                    <input type="date" id="date-to" class="form-control" onchange="loadInvoices()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice List -->
+        <div id="invoices-container">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Loading invoices...</p>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <nav id="pagination-container">
+            <ul class="pagination-custom" id="pagination-links"></ul>
+        </nav>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let currentPage = 1;
+    let totalPages = 1;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        loadInvoices();
+        setInterval(loadInvoices, 30000);
+    });
+
+    function loadInvoices(page = 1) {
+        const search = document.getElementById('search-input').value;
+        const status = document.getElementById('status-filter').value;
+        const dateFrom = document.getElementById('date-from').value;
+        const dateTo = document.getElementById('date-to').value;
+
+        let url = `/api/finance/invoices/?page=${page}&ordering=-created_at`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (status) url += `&status=${status}`;
+        if (dateFrom) url += `&issue_date__gte=${dateFrom}`;
+        if (dateTo) url += `&issue_date__lte=${dateTo}`;
+
+        fetch(url, {  })
+        .then(r => r.json())
+        .then(data => {
+            renderInvoices(data);
+        })
+        .catch(() => {
+            document.getElementById('invoices-container').innerHTML = `
+                <div class="text-center py-5"><i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                <p class="mt-2 text-danger">Error loading invoices. Please try again.</p></div>`;
+        });
+    }
+
+    function renderInvoices(data) {
+        const results = data.results || [];
+        const container = document.getElementById('invoices-container');
+
+        // Stats
+        const total = results.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0);
+        const paid = results.reduce((s, inv) => s + parseFloat(inv.amount_paid || 0), 0);
+        const outstanding = results.reduce((s, inv) => s + parseFloat(inv.balance || 0), 0);
+
+        document.getElementById('total-invoices').textContent = data.count || 0;
+        document.getElementById('total-amount').textContent = 'UGX ' + total.toLocaleString();
+        document.getElementById('paid-amount').textContent = 'UGX ' + paid.toLocaleString();
+        document.getElementById('outstanding-amount').textContent = 'UGX ' + outstanding.toLocaleString();
+
+        if (!results.length) {
+            container.innerHTML = `<div class="text-center py-5"><i class="icofont-file-text" style="font-size:40px;opacity:0.3;"></i>
+                <p class="mt-2 text-muted">No invoices found</p></div>`;
+            document.getElementById('pagination-links').innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = results.map(inv => `
+            <div class="invoice-card" onclick="window.location.href='/finance/invoices/${inv.id}/'">
+                <div class="invoice-header">
+                    <div>
+                        <div class="invoice-number"><i class="icofont-file-text"></i> ${inv.invoice_number}</div>
+                        <div style="font-size:13px;color:var(--text-color);">${inv.student_name || 'N/A'}</div>
+                    </div>
+                    <div class="invoice-amount">UGX ${(inv.total_amount || 0).toLocaleString()}</div>
+                </div>
+                <div class="invoice-details">
+                    <span><strong>Semester:</strong> ${inv.semester || 'N/A'}</span>
+                    <span><strong>Paid:</strong> UGX ${(inv.amount_paid || 0).toLocaleString()}</span>
+                    <span><strong>Balance:</strong> UGX ${(inv.balance || 0).toLocaleString()}</span>
+                    <span><strong>Due Date:</strong> ${inv.due_date ? new Date(inv.due_date).toLocaleDateString() : 'N/A'}</span>
+                    <span><strong>Status:</strong> <span class="badge-status ${inv.status}">${inv.status.replace('_', ' ').toUpperCase()}</span></span>
+                </div>
+                <div class="invoice-actions">
+                    <button class="btn btn-sm btn-main" onclick="event.stopPropagation();window.location.href='/finance/invoices/${inv.id}/'">
+                        <i class="icofont-eye"></i> View Details
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="event.stopPropagation();markPaid('${inv.id}')">
+                        <i class="icofont-check"></i> Mark Paid
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        // Pagination
+        totalPages = Math.ceil(data.count / 20) || 1;
+        currentPage = data.current_page || 1;
+        renderPagination();
+    }
+
+    function renderPagination() {
+        const container = document.getElementById('pagination-links');
+        if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+        let html = '';
+        if (currentPage > 1) {
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="loadInvoices(${currentPage - 1})">‹</a></li>`;
+        }
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === currentPage) {
+                html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+            } else if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 2) {
+                html += `<li class="page-item"><a class="page-link" href="#" onclick="loadInvoices(${i})">${i}</a></li>`;
+            }
+        }
+        if (currentPage < totalPages) {
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="loadInvoices(${currentPage + 1})">›</a></li>`;
+        }
+        container.innerHTML = html;
+    }
+
+    function markPaid(id) {
+        if (!confirm('Mark this invoice as fully paid?')) return;
+        fetch(`/api/finance/invoices/${id}/mark_paid/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: 0, payment_method: 'other' })
+        })
+        .then(r => r.json())
+        .then(() => { loadInvoices(currentPage); alert('Invoice marked as paid!'); })
+        .catch(() => alert('Error marking invoice as paid'));
+    }
+</script>
+{% endblock %}

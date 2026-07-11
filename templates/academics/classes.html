@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Classes - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .academics-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white {
+        background: white; color: var(--primary-color); padding: 8px 22px;
+        border-radius: 50px; font-weight: 600; border: none; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+    .page-header-custom .btn-white-outline {
+        border: 2px solid rgba(255,255,255,0.3); color: white; background: transparent;
+        padding: 8px 22px; border-radius: 50px; font-weight: 600; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white-outline:hover { background: white; color: var(--primary-color); }
+
+    .filter-bar {
+        background: white; padding: 15px 20px; border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .filter-bar .filter-label {
+        font-size: 12px; font-weight: 600; color: var(--text-color);
+        text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; display: block;
+    }
+    .filter-bar .form-control,
+    .filter-bar .form-select {
+        height: 38px; border-radius: 8px; border: 1px solid #e8ecf1;
+        font-size: 13px; transition: all 0.3s ease; background: #f8f9fc;
+    }
+    .filter-bar .form-control:focus,
+    .filter-bar .form-select:focus {
+        border-color: var(--secondary-color); box-shadow: 0 0 0 3px rgba(225,36,84,0.08);
+        background: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .stat-card {
+        background: white; border-radius: 12px; padding: 15px 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+    }
+    .stat-card .stat-number { font-size: 22px; font-weight: 700; color: var(--primary-color); }
+    .stat-card .stat-label { font-size: 12px; color: var(--text-color); margin: 0; }
+
+    .class-card {
+        background: white; border-radius: 12px; padding: 18px 22px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.3s ease; margin-bottom: 12px;
+    }
+    .class-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .class-card .class-header {
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    }
+    .class-card .class-header .class-name {
+        font-weight: 600; color: var(--text-dark); font-size: 16px;
+    }
+    .class-card .class-header .class-code {
+        font-size: 13px; color: var(--text-color);
+    }
+    .class-card .class-details {
+        display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px;
+        font-size: 13px; color: var(--text-color);
+    }
+    .class-card .class-details span strong { color: var(--text-dark); }
+    .class-card .class-actions {
+        display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;
+    }
+
+    .badge-status {
+        padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .badge-status.active { background: #e8f5e9; color: #1b5e20; }
+    .badge-status.inactive { background: #ffebee; color: #b71c1c; }
+
+    .progress-custom {
+        height: 6px; border-radius: 3px; background: #f0f0f0; overflow: hidden;
+        margin-top: 5px;
+    }
+    .progress-custom .progress-bar {
+        height: 100%; border-radius: 3px; transition: width 0.6s ease;
+    }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .stats-grid { grid-template-columns: 1fr 1fr; }
+        .filter-bar .row > div { margin-bottom: 10px; }
+        .class-card .class-header { flex-direction: column; align-items: flex-start; }
+    }
+</style>
+
+<div class="academics-page">
+    <div class="container">
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-education"></i> Classes</h3>
+                    <p class="subtitle">Manage all classes and enrollment</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <button class="btn btn-white" onclick="openAddClassModal()">
+                        <i class="icofont-plus"></i> Add Class
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-number" id="total-classes">0</div><p class="stat-label">Total Classes</p></div>
+            <div class="stat-card"><div class="stat-number" id="active-classes" style="color:#28a745;">0</div><p class="stat-label">Active</p></div>
+            <div class="stat-card"><div class="stat-number" id="total-students" style="color:var(--primary-color);">0</div><p class="stat-label">Enrolled Students</p></div>
+            <div class="stat-card"><div class="stat-number" id="avg-capacity" style="color:#fd7e14;">0%</div><p class="stat-label">Avg Capacity</p></div>
+        </div>
+
+        <div class="filter-bar">
+    <div class="row align-items-end">
+        <div class="col-md-3">
+            <label class="filter-label">Search</label>
+            <input type="text" id="search-input" class="form-control" placeholder="Name or code..." onkeyup="debounceClassFilter()">
+        </div>
+        <div class="col-md-3">
+            <label class="filter-label">Course</label>
+            <select id="course-filter" class="form-select" onchange="loadClasses()">
+                <option value="">All Courses</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="filter-label">Status</label>
+            <select id="status-filter" class="form-select" onchange="loadClasses()">
+                <option value="">All Status</option>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-reset w-100" onclick="resetClassFilters()">
+                <i class="icofont-refresh"></i> Reset
+            </button>
+        </div>
+    </div>
+</div>
+
+        <div id="classes-container">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Loading classes...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Class Modal -->
+<div class="modal fade" id="classModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--primary-color); color: white;">
+                <h5 class="modal-title" id="modal-title"><i class="icofont-plus"></i> Add Class</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-class-id">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Class Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="class-name" placeholder="e.g., DIT Year 1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Class Code <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="class-code" placeholder="e.g., DIT-2024-1">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Course <span class="text-danger">*</span></label>
+                            <select class="form-control" id="class-course">
+                                <option value="">Select Course</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Academic Year <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="class-year" placeholder="e.g., 2024/2025">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Semester</label>
+                            <input type="text" class="form-control" id="class-semester" placeholder="e.g., Semester 1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Capacity</label>
+                            <input type="number" class="form-control" id="class-capacity" placeholder="30">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Start Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="class-start">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>End Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="class-end">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="class-active" checked>
+                    <label class="form-check-label" for="class-active">Active</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-main" onclick="saveClass()"><i class="icofont-save"></i> Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        loadCourses();
+        loadClasses();
+        setInterval(loadClasses, 30000);
+    });
+
+    // ============================================
+// CLASSES FILTERS - FIXED
+// ============================================
+
+let classFilterTimeout;
+
+function debounceClassFilter() {
+    clearTimeout(classFilterTimeout);
+    classFilterTimeout = setTimeout(() => {
+        loadClasses();
+    }, 500);
+}
+
+function loadClasses() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!user || !user.id) {
+        window.location.href = '/login/'; // Redirect to login
+        return;
+    }
+
+    const search = document.getElementById('search-input').value.trim();
+    const course = document.getElementById('course-filter').value;
+    const status = document.getElementById('status-filter').value;
+
+    console.log('Filtering classes:', { search, course, status });
+
+    let url = '/api/classes/';
+    let params = [];
+    
+    if (search) {
+        params.push(`search=${encodeURIComponent(search)}`);
+    }
+    if (course && course !== '') {
+        params.push(`course=${course}`);
+    }
+    if (status !== '') {
+        params.push(`is_active=${status}`);
+    }
+    
+    params.push(`ordering=-created_at`);
+    
+    if (params.length > 0) {
+        url += '?' + params.join('&');
+    }
+
+    console.log('Fetching URL:', url);
+
+    fetch(url, {
+        
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Filtered classes:', data);
+        renderClasses(data);
+    })
+    .catch(error => {
+        console.error('Error loading classes:', error);
+        document.getElementById('classes-container').innerHTML = `
+            <div class="text-center py-5">
+                <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                <p class="mt-2 text-danger">Error loading classes: ${error.message}</p>
+                <button class="btn btn-sm btn-main mt-2" onclick="loadClasses()">Retry</button>
+            </div>
+        `;
+    });
+}
+
+function resetClassFilters() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('course-filter').value = '';
+    document.getElementById('status-filter').value = '';
+    loadClasses();
+}
+
+    
+
+    function renderClasses(data) {
+        const results = data.results || [];
+        const container = document.getElementById('classes-container');
+
+        // Stats
+        const total = results.length;
+        const active = results.filter(c => c.is_active).length;
+        const totalStudents = results.reduce((s, c) => s + (c.current_enrollment || 0), 0);
+        const avgCap = total > 0 ? Math.round(results.reduce((s, c) => s + ((c.current_enrollment / c.capacity) * 100), 0) / total) : 0;
+
+        document.getElementById('total-classes').textContent = data.count || 0;
+        document.getElementById('active-classes').textContent = active;
+        document.getElementById('total-students').textContent = totalStudents;
+        document.getElementById('avg-capacity').textContent = avgCap + '%';
+
+        if (!results.length) {
+            container.innerHTML = `<div class="text-center py-5"><i class="icofont-education" style="font-size:40px;opacity:0.3;"></i>
+                <p class="mt-2 text-muted">No classes found</p></div>`;
+            return;
+        }
+
+        container.innerHTML = results.map(cls => `
+            <div class="class-card">
+                <div class="class-header">
+                    <div>
+                        <div class="class-name">${cls.name}</div>
+                        <div class="class-code">${cls.code}</div>
+                    </div>
+                    <span class="badge-status ${cls.is_active ? 'active' : 'inactive'}">${cls.is_active ? 'ACTIVE' : 'INACTIVE'}</span>
+                </div>
+                <div class="class-details">
+                    <span><strong>Course:</strong> ${cls.course_name || 'N/A'}</span>
+                    <span><strong>Year:</strong> ${cls.academic_year || 'N/A'}</span>
+                    <span><strong>Semester:</strong> ${cls.semester || 'N/A'}</span>
+                    <span><strong>Enrolled:</strong> ${cls.current_enrollment || 0}/${cls.capacity || 0}</span>
+                    <span><strong>Period:</strong> ${cls.start_date ? new Date(cls.start_date).toLocaleDateString() : 'N/A'} - ${cls.end_date ? new Date(cls.end_date).toLocaleDateString() : 'N/A'}</span>
+                </div>
+                <div class="progress-custom">
+                    <div class="progress-bar" style="width: ${cls.capacity > 0 ? Math.round((cls.current_enrollment / cls.capacity) * 100) : 0}%; background: ${cls.capacity > 0 && (cls.current_enrollment / cls.capacity) > 0.8 ? '#28a745' : '#ffc107'};"></div>
+                </div>
+                <div class="class-actions">
+                    <button class="btn btn-sm btn-main" onclick="editClass('${cls.id}')"><i class="icofont-edit"></i> Edit</button>
+                    <button class="btn btn-sm ${cls.is_active ? 'btn-warning' : 'btn-success'}" onclick="toggleClass('${cls.id}')">
+                        <i class="icofont-${cls.is_active ? 'pause' : 'play'}"></i> ${cls.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteClass('${cls.id}')"><i class="icofont-trash"></i> Delete</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function openAddClassModal() {
+        document.getElementById('modal-title').innerHTML = '<i class="icofont-plus"></i> Add Class';
+        document.getElementById('edit-class-id').value = '';
+        document.getElementById('class-name').value = '';
+        document.getElementById('class-code').value = '';
+        document.getElementById('class-course').value = '';
+        document.getElementById('class-year').value = '';
+        document.getElementById('class-semester').value = '';
+        document.getElementById('class-capacity').value = '30';
+        document.getElementById('class-start').value = '';
+        document.getElementById('class-end').value = '';
+        document.getElementById('class-active').checked = true;
+        $('#classModal').modal('show');
+    }
+
+    function editClass(id) {
+        fetch(`/api/classes/${id}/`, {  })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('modal-title').innerHTML = '<i class="icofont-edit"></i> Edit Class';
+            document.getElementById('edit-class-id').value = data.id;
+            document.getElementById('class-name').value = data.name || '';
+            document.getElementById('class-code').value = data.code || '';
+            document.getElementById('class-course').value = data.course || '';
+            document.getElementById('class-year').value = data.academic_year || '';
+            document.getElementById('class-semester').value = data.semester || '';
+            document.getElementById('class-capacity').value = data.capacity || 30;
+            document.getElementById('class-start').value = data.start_date || '';
+            document.getElementById('class-end').value = data.end_date || '';
+            document.getElementById('class-active').checked = data.is_active !== false;
+            $('#classModal').modal('show');
+        }).catch(() => alert('Error loading class details'));
+    }
+
+    function saveClass() {
+        const id = document.getElementById('edit-class-id').value;
+        const data = {
+            name: document.getElementById('class-name').value.trim(),
+            code: document.getElementById('class-code').value.trim(),
+            course: document.getElementById('class-course').value,
+            academic_year: document.getElementById('class-year').value.trim(),
+            semester: document.getElementById('class-semester').value.trim(),
+            capacity: parseInt(document.getElementById('class-capacity').value) || 30,
+            start_date: document.getElementById('class-start').value,
+            end_date: document.getElementById('class-end').value,
+            is_active: document.getElementById('class-active').checked
+        };
+
+        if (!data.name || !data.code || !data.course || !data.academic_year || !data.start_date || !data.end_date) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/api/classes/${id}/` : '/api/classes/';
+
+        fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(() => {
+            $('#classModal').modal('hide');
+            loadClasses();
+            alert(id ? 'Class updated successfully!' : 'Class added successfully!');
+        })
+        .catch(() => alert('Error saving class'));
+    }
+
+    function toggleClass(id) {
+        fetch(`/api/classes/${id}/`, {  })
+        .then(r => r.json())
+        .then(data => {
+            data.is_active = !data.is_active;
+            return fetch(`/api/classes/${id}/`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        })
+        .then(() => { loadClasses(); })
+        .catch(() => alert('Error toggling class status'));
+    }
+
+    function deleteClass(id) {
+        if (!confirm('Delete this class?')) return;
+        fetch(`/api/classes/${id}/`, {
+            method: 'DELETE',
+            
+        })
+        .then(() => { loadClasses(); alert('Class deleted!'); })
+        .catch(() => alert('Error deleting class'));
+    }
+
+    function resetFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('course-filter').value = '';
+        document.getElementById('status-filter').value = '';
+        loadClasses();
+    }
+</script>
+{% endblock %}

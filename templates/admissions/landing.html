@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Admissions - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .landing-page {
+        padding: 40px 0 60px;
+        background: #f0f4f8;
+        min-height: 80vh;
+    }
+    .landing-header {
+        margin-bottom: 40px;
+    }
+    .landing-header h2 {
+        color: var(--primary-color);
+        font-weight: 700;
+    }
+    .landing-header .subtitle {
+        color: var(--text-color);
+        font-size: 16px;
+        margin-top: 5px;
+    }
+    .landing-card {
+        background: white;
+        border-radius: 15px;
+        padding: 35px 30px;
+        text-align: center;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+    .landing-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-color);
+        transition: all 0.3s ease;
+    }
+    .landing-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+        border-color: var(--secondary-color);
+    }
+    .landing-card:hover::before {
+        background: var(--secondary-color);
+        height: 6px;
+    }
+    .landing-card .icon {
+        font-size: 56px;
+        margin-bottom: 15px;
+        display: block;
+    }
+    .landing-card .icon.blue { color: var(--primary-color); }
+    .landing-card .icon.green { color: #28a745; }
+    .landing-card .icon.orange { color: #fd7e14; }
+    .landing-card .icon.red { color: var(--secondary-color); }
+    .landing-card .icon.purple { color: #6f42c1; }
+    .landing-card h5 {
+        color: var(--primary-color);
+        font-weight: 700;
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+    .landing-card p {
+        font-size: 14px;
+        color: var(--text-color);
+        margin: 0 0 15px 0;
+        line-height: 1.6;
+    }
+    .landing-card .badge {
+        padding: 5px 18px;
+        border-radius: 50px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-block;
+    }
+    .landing-card .badge.admin { background: rgba(225,36,84,0.1); color: var(--secondary-color); }
+    .landing-card .badge.public { background: rgba(34,58,102,0.1); color: var(--primary-color); }
+    
+    .landing-card .card-footer {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .landing-card .card-footer .btn-sm {
+        padding: 5px 16px;
+        font-size: 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .landing-card .card-footer .btn-sm:hover {
+        transform: translateY(-2px);
+    }
+
+    .stats-mini {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 35px;
+    }
+    .stats-mini .stat-box {
+        background: white;
+        border-radius: 12px;
+        padding: 15px 20px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .stats-mini .stat-box .number {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    .stats-mini .stat-box .number.green { color: #28a745; }
+    .stats-mini .stat-box .number.orange { color: #fd7e14; }
+    .stats-mini .stat-box .number.red { color: var(--secondary-color); }
+    .stats-mini .stat-box .label {
+        font-size: 12px;
+        color: var(--text-color);
+        margin: 0;
+    }
+
+    .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+        margin-top: 15px;
+    }
+    .quick-stats .qs-item {
+        background: var(--light-bg);
+        border-radius: 8px;
+        padding: 10px 12px;
+        text-align: center;
+    }
+    .quick-stats .qs-item .num {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    .quick-stats .qs-item .lbl {
+        font-size: 11px;
+        color: var(--text-color);
+        margin: 0;
+    }
+
+    @media (max-width: 768px) {
+        .landing-header { text-align: center; }
+        .landing-card { padding: 25px 20px; }
+        .landing-card .icon { font-size: 40px; }
+        .stats-mini { grid-template-columns: 1fr 1fr; }
+        .quick-stats { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+        .stats-mini { grid-template-columns: 1fr; }
+        .quick-stats { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="landing-page">
+    <div class="container">
+        <!-- Header -->
+        <div class="landing-header">
+            <h2><i class="icofont-forms text-color-2"></i> Admissions Management</h2>
+            <div class="divider my-3"></div>
+            <p class="subtitle">Manage student applications and registrations</p>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-mini" id="stats-mini">
+            <div class="stat-box">
+                <div class="number" id="total-apps">0</div>
+                <p class="label">Total Applications</p>
+            </div>
+            <div class="stat-box">
+                <div class="number orange" id="pending-apps">0</div>
+                <p class="label">Pending Review</p>
+            </div>
+            <div class="stat-box">
+                <div class="number green" id="admitted-apps">0</div>
+                <p class="label">Admitted</p>
+            </div>
+            <div class="stat-box">
+                <div class="number red" id="rejected-apps">0</div>
+                <p class="label">Rejected</p>
+            </div>
+        </div>
+
+        <!-- Cards -->
+        <div class="row">
+            <!-- View Applications -->
+            <div class="col-md-6 mb-4">
+                <div class="landing-card" onclick="window.location.href='/admissions/applications/'">
+                    <span class="icon blue"><i class="icofont-forms"></i></span>
+                    <h5>View Applications</h5>
+                    <p>Review, manage, and process student applications</p>
+                    <span class="badge admin">Admin Only</span>
+                    
+                    <div class="quick-stats" onclick="event.stopPropagation();">
+                        <div class="qs-item">
+                            <div class="num" id="card-pending">0</div>
+                            <p class="lbl">Pending</p>
+                        </div>
+                        <div class="qs-item">
+                            <div class="num" id="card-reviewing">0</div>
+                            <p class="lbl">Reviewing</p>
+                        </div>
+                        <div class="qs-item">
+                            <div class="num" id="card-interview">0</div>
+                            <p class="lbl">Interview</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <button class="btn btn-sm btn-main" onclick="event.stopPropagation();window.location.href='/admissions/applications/'">
+                            <i class="icofont-eye"></i> View All
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation();window.location.href='/admissions/applications/?status=pending'">
+                            <i class="icofont-clock"></i> Pending
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Register Student -->
+            <div class="col-md-6 mb-4">
+                <div class="landing-card" onclick="window.location.href='/admissions/register/'">
+                    <span class="icon green"><i class="icofont-user"></i></span>
+                    <h5>Register Student</h5>
+                    <p>Register a new student directly into the system</p>
+                    <span class="badge admin">Admin Only</span>
+                    
+                    <div class="quick-stats" onclick="event.stopPropagation();">
+                        <div class="qs-item">
+                            <div class="num" id="total-students">0</div>
+                            <p class="lbl">Total Students</p>
+                        </div>
+                        <div class="qs-item">
+                            <div class="num" id="active-students">0</div>
+                            <p class="lbl">Active</p>
+                        </div>
+                        <div class="qs-item">
+                            <div class="num" id="recent-registrations">0</div>
+                            <p class="lbl">This Month</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <button class="btn btn-sm btn-success" onclick="event.stopPropagation();window.location.href='/admissions/register/'">
+                            <i class="icofont-plus"></i> Register New
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation();window.location.href='/students/'">
+                            <i class="icofont-list"></i> View All Students
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) {
+            // If not logged in, show message but still load public stats if possible
+            console.log('Not authenticated');
+            return;
+        }
+        loadStats();
+    });
+
+    function loadStats() {
+        // Load applications stats
+        fetch('/api/applications/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const results = data.results || [];
+            const total = data.count || 0;
+            const pending = results.filter(a => a.status === 'pending').length;
+            const admitted = results.filter(a => a.status === 'admitted').length;
+            const rejected = results.filter(a => a.status === 'rejected').length;
+            const reviewing = results.filter(a => a.status === 'reviewing').length;
+            const interview = results.filter(a => a.status === 'interview').length;
+
+            document.getElementById('total-apps').textContent = total;
+            document.getElementById('pending-apps').textContent = pending;
+            document.getElementById('admitted-apps').textContent = admitted;
+            document.getElementById('rejected-apps').textContent = rejected;
+            document.getElementById('card-pending').textContent = pending;
+            document.getElementById('card-reviewing').textContent = reviewing;
+            document.getElementById('card-interview').textContent = interview;
+        })
+        .catch(() => {
+            // Set fallback values
+            document.getElementById('total-apps').textContent = '0';
+            document.getElementById('pending-apps').textContent = '0';
+            document.getElementById('admitted-apps').textContent = '0';
+            document.getElementById('rejected-apps').textContent = '0';
+        });
+
+        // Load students stats
+        fetch('/api/students/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const results = data.results || [];
+            const total = data.count || 0;
+            const active = results.filter(s => s.status === 'active').length;
+
+            document.getElementById('total-students').textContent = total;
+            document.getElementById('active-students').textContent = active;
+
+            // Calculate registrations this month
+            const now = new Date();
+            const thisMonth = now.getMonth();
+            const thisYear = now.getFullYear();
+            const recent = results.filter(s => {
+                const date = new Date(s.created_at || s.enrollment_date);
+                return date.getMonth() === thisMonth && date.getFullYear() === thisYear;
+            }).length;
+            document.getElementById('recent-registrations').textContent = recent;
+        })
+        .catch(() => {
+            document.getElementById('total-students').textContent = '0';
+            document.getElementById('active-students').textContent = '0';
+            document.getElementById('recent-registrations').textContent = '0';
+        });
+    }
+
+    // Auto-refresh stats every 60 seconds
+    setInterval(loadStats, 60000);
+</script>
+{% endblock %}

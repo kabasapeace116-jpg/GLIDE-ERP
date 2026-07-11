@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Attendance - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .hr-page { padding: 30px 0 60px; background: #f0f4f8; min-height: 100vh; }
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px; border-radius: 15px; color: white; margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white {
+        background: white; color: var(--primary-color); padding: 8px 22px;
+        border-radius: 50px; font-weight: 600; border: none; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+
+    .filter-bar {
+        background: white; padding: 15px 20px; border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .filter-bar .filter-label {
+        font-size: 12px; font-weight: 600; color: var(--text-color);
+        text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; display: block;
+    }
+    .filter-bar .form-control,
+    .filter-bar .form-select {
+        height: 38px; border-radius: 8px; border: 1px solid #e8ecf1;
+        font-size: 13px; transition: all 0.3s ease; background: #f8f9fc;
+    }
+
+    .attendance-card {
+        background: white; border-radius: 12px; padding: 18px 22px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.3s ease; margin-bottom: 12px;
+    }
+    .attendance-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .attendance-card .attendance-header {
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    }
+    .attendance-card .attendance-header .employee-name {
+        font-weight: 600; color: var(--text-dark); font-size: 16px;
+    }
+    .attendance-card .attendance-details {
+        display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px;
+        font-size: 13px; color: var(--text-color);
+    }
+    .attendance-card .attendance-details span strong { color: var(--text-dark); }
+
+    .badge-status {
+        padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .badge-status.present { background: #e8f5e9; color: #1b5e20; }
+    .badge-status.absent { background: #ffebee; color: #b71c1c; }
+    .badge-status.late { background: #fff3e0; color: #e65100; }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .stat-card {
+        background: white; border-radius: 12px; padding: 15px 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+    }
+    .stat-card .stat-number { font-size: 22px; font-weight: 700; color: var(--primary-color); }
+    .stat-card .stat-label { font-size: 12px; color: var(--text-color); margin: 0; }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .filter-bar .row > div { margin-bottom: 10px; }
+        .stats-grid { grid-template-columns: 1fr 1fr; }
+        .attendance-card .attendance-header { flex-direction: column; align-items: flex-start; }
+    }
+</style>
+
+<div class="hr-page">
+    <div class="container">
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-attendance"></i> Attendance</h3>
+                    <p class="subtitle">Track staff attendance records</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <button class="btn btn-white" onclick="document.getElementById('attendance-date').focus()">
+                        <i class="icofont-calendar"></i> Select Date
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card"><div class="stat-number" id="total-today">0</div><p class="stat-label">Total Today</p></div>
+            <div class="stat-card"><div class="stat-number" id="present-today" style="color:#28a745;">0</div><p class="stat-label">Present</p></div>
+            <div class="stat-card"><div class="stat-number" id="absent-today" style="color:#dc3545;">0</div><p class="stat-label">Absent</p></div>
+            <div class="stat-card"><div class="stat-number" id="late-today" style="color:#fd7e14;">0</div><p class="stat-label">Late</p></div>
+        </div>
+
+        <div class="filter-bar">
+            <div class="row align-items-end">
+                <div class="col-md-4">
+                    <label class="filter-label">Search Employee</label>
+                    <input type="text" id="search-input" class="form-control" placeholder="Name..." onkeyup="loadAttendance()">
+                </div>
+                <div class="col-md-4">
+                    <label class="filter-label">Date</label>
+                    <input type="date" id="attendance-date" class="form-control" onchange="loadAttendance()">
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-reset w-100" onclick="resetFilters()"><i class="icofont-refresh"></i> Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="attendance-container">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Loading attendance records...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        document.getElementById('attendance-date').value = new Date().toISOString().split('T')[0];
+        loadAttendance();
+        setInterval(loadAttendance, 60000);
+    });
+
+    function loadAttendance() {
+        const search = document.getElementById('search-input').value;
+        const date = document.getElementById('attendance-date').value;
+
+        let url = '/api/hr/attendance/';
+        let params = [];
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        if (date) params.push(`date=${date}`);
+        if (params.length) url += '?' + params.join('&');
+
+        fetch(url, {  })
+        .then(r => r.json())
+        .then(data => {
+            renderAttendance(data);
+            updateStats(data);
+        })
+        .catch(() => {
+            document.getElementById('attendance-container').innerHTML = `
+                <div class="text-center py-5"><i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                <p class="mt-2 text-danger">Error loading attendance</p></div>`;
+        });
+    }
+
+    function updateStats(data) {
+        const results = data.results || [];
+        const total = results.length;
+        const present = results.filter(a => !a.is_absent && !a.is_late).length;
+        const absent = results.filter(a => a.is_absent).length;
+        const late = results.filter(a => a.is_late && !a.is_absent).length;
+
+        document.getElementById('total-today').textContent = total;
+        document.getElementById('present-today').textContent = present;
+        document.getElementById('absent-today').textContent = absent;
+        document.getElementById('late-today').textContent = late;
+    }
+
+    function renderAttendance(data) {
+        const results = data.results || [];
+        const container = document.getElementById('attendance-container');
+
+        if (!results.length) {
+            container.innerHTML = `<div class="text-center py-5"><i class="icofont-attendance" style="font-size:40px;opacity:0.3;"></i>
+                <p class="mt-2 text-muted">No attendance records for this date</p></div>`;
+            return;
+        }
+
+        container.innerHTML = results.map(att => {
+            const status = att.is_absent ? 'absent' : (att.is_late ? 'late' : 'present');
+            return `
+                <div class="attendance-card">
+                    <div class="attendance-header">
+                        <div>
+                            <div class="employee-name">${att.employee_name || 'N/A'}</div>
+                            <div style="font-size:13px;color:var(--text-color);">${att.employee || 'N/A'}</div>
+                        </div>
+                        <span class="badge-status ${status}">${status.toUpperCase()}</span>
+                    </div>
+                    <div class="attendance-details">
+                        <span><strong>Check In:</strong> ${att.check_in_time || '--:--'}</span>
+                        <span><strong>Check Out:</strong> ${att.check_out_time || '--:--'}</span>
+                        <span><strong>Hours:</strong> ${att.total_hours || 0}</span>
+                        ${att.remarks ? `<span><strong>Remarks:</strong> ${att.remarks}</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function resetFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('attendance-date').value = new Date().toISOString().split('T')[0];
+        loadAttendance();
+    }
+</script>
+{% endblock %}

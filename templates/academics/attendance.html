@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Attendance - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .academics-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white {
+        background: white; color: var(--primary-color); padding: 8px 22px;
+        border-radius: 50px; font-weight: 600; border: none; transition: all 0.3s ease;
+    }
+
+    .filter-bar {
+        background: white; padding: 15px 20px; border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .filter-bar .filter-label {
+        font-size: 12px; font-weight: 600; color: var(--text-color);
+        text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; display: block;
+    }
+    .filter-bar .form-control,
+    .filter-bar .form-select {
+        height: 38px; border-radius: 8px; border: 1px solid #e8ecf1;
+        font-size: 13px; transition: all 0.3s ease; background: #f8f9fc;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .stat-card {
+        background: white; border-radius: 12px; padding: 15px 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+    }
+    .stat-card .stat-number { font-size: 22px; font-weight: 700; color: var(--primary-color); }
+    .stat-card .stat-label { font-size: 12px; color: var(--text-color); margin: 0; }
+
+    .attendance-card {
+        background: white; border-radius: 12px; padding: 18px 22px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.3s ease; margin-bottom: 12px;
+    }
+    .attendance-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .attendance-card .attendance-header {
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    }
+    .attendance-card .attendance-header .student-name {
+        font-weight: 600; color: var(--text-dark); font-size: 16px;
+    }
+    .attendance-card .attendance-details {
+        display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px;
+        font-size: 13px; color: var(--text-color);
+    }
+    .attendance-card .attendance-details span strong { color: var(--text-dark); }
+    .attendance-card .attendance-actions {
+        display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;
+    }
+
+    .badge-status {
+        padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .badge-status.present { background: #e8f5e9; color: #1b5e20; }
+    .badge-status.absent { background: #ffebee; color: #b71c1c; }
+    .badge-status.late { background: #fff3e0; color: #e65100; }
+    .badge-status.excused { background: #e3f2fd; color: #0d47a1; }
+
+    .progress-custom {
+        height: 6px; border-radius: 3px; background: #f0f0f0; overflow: hidden;
+        margin-top: 5px;
+    }
+    .progress-custom .progress-bar {
+        height: 100%; border-radius: 3px; transition: width 0.6s ease;
+    }
+
+    .modal-dialog-large { max-width: 700px; }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .stats-grid { grid-template-columns: 1fr 1fr; }
+        .filter-bar .row > div { margin-bottom: 10px; }
+        .attendance-card .attendance-header { flex-direction: column; align-items: flex-start; }
+        .modal-dialog-large { max-width: 95%; }
+    }
+</style>
+
+<div class="academics-page">
+    <div class="container">
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-attendance"></i> Attendance</h3>
+                    <p class="subtitle">Record and track student attendance</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <button class="btn btn-white" onclick="openRecordAttendance()">
+                        <i class="icofont-plus"></i> Record Attendance
+                    </button>
+                    <button class="btn btn-white ml-2" onclick="exportAttendance()">
+                        <i class="icofont-file-excel"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-number" id="total-records">0</div><p class="stat-label">Total Records</p></div>
+            <div class="stat-card"><div class="stat-number" id="present-today" style="color:#28a745;">0</div><p class="stat-label">Present Today</p></div>
+            <div class="stat-card"><div class="stat-number" id="absent-today" style="color:#dc3545;">0</div><p class="stat-label">Absent Today</p></div>
+            <div class="stat-card"><div class="stat-number" id="attendance-rate" style="color:var(--primary-color);">0%</div><p class="stat-label">Overall Rate</p></div>
+        </div>
+
+        <!-- ===== FILTER BAR ===== -->
+<div class="filter-bar">
+    <form id="filter-form" onsubmit="return false;">
+        <div class="row align-items-end">
+            <div class="col-md-3">
+                <label class="filter-label"><i class="icofont-search"></i> Search</label>
+                <input type="text" id="search-input" class="form-control" 
+                       placeholder="Student name..." onkeyup="debounceAttendanceFilter()">
+            </div>
+            <div class="col-md-3">
+                <label class="filter-label"><i class="icofont-calendar"></i> Date</label>
+                <input type="date" id="date-filter" class="form-control" onchange="loadAttendance()">
+            </div>
+            <div class="col-md-3">
+                <label class="filter-label"><i class="icofont-check-circled"></i> Status</label>
+                <select id="status-filter" class="form-select" onchange="loadAttendance()">
+                    <option value="">All Status</option>
+                    <option value="present">✅ Present</option>
+                    <option value="absent">❌ Absent</option>
+                    <option value="late">⏰ Late</option>
+                    <option value="excused">📝 Excused</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-reset w-100" onclick="resetAttendanceFilters()">
+                    <i class="icofont-refresh"></i> Reset
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+        <div id="attendance-container">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Loading attendance records...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Record Attendance Modal -->
+<div class="modal fade" id="attendanceModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-large" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--primary-color); color: white;">
+                <h5 class="modal-title"><i class="icofont-plus"></i> Record Attendance</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Student <span class="text-danger">*</span></label>
+                            <select class="form-control" id="attendance-student">
+                                <option value="">Select Student</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Course Unit <span class="text-danger">*</span></label>
+                            <select class="form-control" id="attendance-unit">
+                                <option value="">Select Unit</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Class <span class="text-danger">*</span></label>
+                            <select class="form-control" id="attendance-class">
+                                <option value="">Select Class</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="attendance-date">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Status <span class="text-danger">*</span></label>
+                            <select class="form-control" id="attendance-status">
+                                <option value="present">Present</option>
+                                <option value="absent">Absent</option>
+                                <option value="late">Late</option>
+                                <option value="excused">Excused</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Time In</label>
+                            <input type="time" class="form-control" id="attendance-time-in">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Time Out</label>
+                            <input type="time" class="form-control" id="attendance-time-out">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Remarks</label>
+                    <textarea class="form-control" id="attendance-remarks" rows="2" placeholder="Additional remarks"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-main" onclick="saveAttendance()"><i class="icofont-save"></i> Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        document.getElementById('date-filter').value = new Date().toISOString().split('T')[0];
+        loadStudents();
+        loadCourseUnits();
+        loadClasses();
+        loadAttendance();
+        setInterval(loadAttendance, 30000);
+    });
+
+    function loadStudents() {
+        fetch('/api/students/')
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('attendance-student');
+            if (data.results) {
+                select.innerHTML = '<option value="">Select Student</option>';
+                data.results.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.registration_number} - ${s.first_name} ${s.last_name}`;
+                    select.appendChild(opt);
+                });
+            }
+        }).catch(() => {});
+    }
+
+    function loadCourseUnits() {
+        fetch('/api/academics/course-units/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('attendance-unit');
+            if (data.results) {
+                select.innerHTML = '<option value="">Select Unit</option>';
+                data.results.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = `${u.code} - ${u.name}`;
+                    select.appendChild(opt);
+                });
+            }
+        }).catch(() => {});
+    }
+
+    function loadClasses() {
+        fetch('/api/classes/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('attendance-class');
+            if (data.results) {
+                select.innerHTML = '<option value="">Select Class</option>';
+                data.results.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    select.appendChild(opt);
+                });
+            }
+        }).catch(() => {});
+    }
+
+    // ============================================
+// ATTENDANCE FILTERS - FIXED
+// ============================================
+
+let attendanceFilterTimeout;
+
+function debounceAttendanceFilter() {
+    clearTimeout(attendanceFilterTimeout);
+    attendanceFilterTimeout = setTimeout(() => {
+        loadAttendance();
+    }, 500);
+}
+
+function loadAttendance() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!user || !user.id) {
+        window.location.href = '/login/'; // Redirect to login
+        return;
+    }
+
+    const search = document.getElementById('search-input').value.trim();
+    const date = document.getElementById('date-filter').value;
+    const status = document.getElementById('status-filter').value;
+
+    console.log('Filtering attendance:', { search, date, status });
+
+    let url = '/api/academics/attendance/';
+    let params = [];
+    
+    if (search) {
+        params.push(`search=${encodeURIComponent(search)}`);
+    }
+    if (date) {
+        params.push(`date=${date}`);
+    }
+    if (status && status !== '') {
+        params.push(`status=${status}`);
+    }
+    
+    params.push(`ordering=-date`);
+    
+    if (params.length > 0) {
+        url += '?' + params.join('&');
+    }
+
+    console.log('Fetching URL:', url);
+
+    fetch(url, {
+        
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Filtered attendance:', data);
+        renderAttendance(data);
+    })
+    .catch(error => {
+        console.error('Error loading attendance:', error);
+        document.getElementById('attendance-container').innerHTML = `
+            <div class="text-center py-5">
+                <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                <p class="mt-2 text-danger">Error loading attendance: ${error.message}</p>
+                <button class="btn btn-sm btn-main mt-2" onclick="loadAttendance()">Retry</button>
+            </div>
+        `;
+    });
+}
+
+function resetAttendanceFilters() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('date-filter').value = new Date().toISOString().split('T')[0];
+    document.getElementById('status-filter').value = '';
+    loadAttendance();
+}
+
+    function renderAttendance(data) {
+        const results = data.results || [];
+        const container = document.getElementById('attendance-container');
+
+        const total = results.length;
+        const present = results.filter(a => a.status === 'present').length;
+        const absent = results.filter(a => a.status === 'absent').length;
+        const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+
+        document.getElementById('total-records').textContent = data.count || 0;
+        document.getElementById('present-today').textContent = present;
+        document.getElementById('absent-today').textContent = absent;
+        document.getElementById('attendance-rate').textContent = rate + '%';
+
+        if (!results.length) {
+            container.innerHTML = `<div class="text-center py-5"><i class="icofont-attendance" style="font-size:40px;opacity:0.3;"></i>
+                <p class="mt-2 text-muted">No attendance records found</p></div>`;
+            return;
+        }
+
+        container.innerHTML = results.map(a => {
+            const status = a.status || 'pending';
+            return `
+                <div class="attendance-card">
+                    <div class="attendance-header">
+                        <div>
+                            <div class="student-name">${a.student_name || 'N/A'}</div>
+                            <div style="font-size:13px;color:var(--text-color);">${a.course_unit_name || 'N/A'}</div>
+                        </div>
+                        <span class="badge-status ${status}">${status.toUpperCase()}</span>
+                    </div>
+                    <div class="attendance-details">
+                        <span><strong>Date:</strong> ${a.date ? new Date(a.date).toLocaleDateString() : 'N/A'}</span>
+                        <span><strong>Class:</strong> ${a.class_obj || 'N/A'}</span>
+                        ${a.time_in ? `<span><strong>Time In:</strong> ${a.time_in}</span>` : ''}
+                        ${a.time_out ? `<span><strong>Time Out:</strong> ${a.time_out}</span>` : ''}
+                        ${a.remarks ? `<span><strong>Remarks:</strong> ${a.remarks}</span>` : ''}
+                    </div>
+                    <div class="progress-custom">
+                        <div class="progress-bar" style="width: ${status === 'present' ? 100 : status === 'late' ? 50 : 0}%; background: ${status === 'present' ? '#28a745' : status === 'late' ? '#ffc107' : '#dc3545'};"></div>
+                    </div>
+                    <div class="attendance-actions">
+                        <button class="btn btn-sm btn-main" onclick="editAttendance('${a.id}')"><i class="icofont-edit"></i> Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteAttendance('${a.id}')"><i class="icofont-trash"></i> Delete</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function openRecordAttendance() {
+        document.getElementById('attendance-student').value = '';
+        document.getElementById('attendance-unit').value = '';
+        document.getElementById('attendance-class').value = '';
+        document.getElementById('attendance-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('attendance-status').value = 'present';
+        document.getElementById('attendance-time-in').value = '';
+        document.getElementById('attendance-time-out').value = '';
+        document.getElementById('attendance-remarks').value = '';
+        $('#attendanceModal').modal('show');
+    }
+
+    function editAttendance(id) {
+        fetch(`/api/academics/attendance/${id}/`, {  })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('attendance-student').value = data.student || '';
+            document.getElementById('attendance-unit').value = data.course_unit || '';
+            document.getElementById('attendance-class').value = data.class_obj || '';
+            document.getElementById('attendance-date').value = data.date || '';
+            document.getElementById('attendance-status').value = data.status || 'present';
+            document.getElementById('attendance-time-in').value = data.time_in || '';
+            document.getElementById('attendance-time-out').value = data.time_out || '';
+            document.getElementById('attendance-remarks').value = data.remarks || '';
+            $('#attendanceModal').modal('show');
+        }).catch(() => alert('Error loading attendance details'));
+    }
+
+    function saveAttendance() {
+        const id = document.getElementById('edit-attendance-id')?.value;
+        const data = {
+            student: document.getElementById('attendance-student').value,
+            course_unit: document.getElementById('attendance-unit').value,
+            class_obj: document.getElementById('attendance-class').value,
+            date: document.getElementById('attendance-date').value,
+            status: document.getElementById('attendance-status').value,
+            time_in: document.getElementById('attendance-time-in').value,
+            time_out: document.getElementById('attendance-time-out').value,
+            remarks: document.getElementById('attendance-remarks').value
+        };
+
+        if (!data.student || !data.course_unit || !data.class_obj || !data.date || !data.status) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/api/academics/attendance/${id}/` : '/api/academics/attendance/record_attendance/';
+
+        fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(() => {
+            $('#attendanceModal').modal('hide');
+            loadAttendance();
+            alert(id ? 'Attendance updated!' : 'Attendance recorded!');
+        })
+        .catch(() => alert('Error saving attendance'));
+    }
+
+    function deleteAttendance(id) {
+        if (!confirm('Delete this attendance record?')) return;
+        fetch(`/api/academics/attendance/${id}/`, {
+            method: 'DELETE',
+            
+        })
+        .then(() => { loadAttendance(); alert('Attendance record deleted!'); })
+        .catch(() => alert('Error deleting attendance'));
+    }
+
+    function exportAttendance() {
+        alert('Export functionality will be available soon.');
+    }
+
+    function resetFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('date-filter').value = new Date().toISOString().split('T')[0];
+        document.getElementById('status-filter').value = '';
+        loadAttendance();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: glide-erp
+    runtime: python
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: gunicorn glide_sms.wsgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: glide_sms.settings
+      - key: RENDER
+        value: true
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DEBUG
+        value: False

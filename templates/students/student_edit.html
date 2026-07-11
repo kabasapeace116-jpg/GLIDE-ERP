@@ -1,0 +1,938 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit Student - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .student-edit-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white-outline {
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        background: transparent;
+        padding: 8px 22px;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white-outline:hover {
+        background: white;
+        color: var(--primary-color);
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+
+    .form-section {
+        padding: 20px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .form-section:last-child {
+        border-bottom: none;
+    }
+    .form-section .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .form-section .section-title i {
+        color: var(--secondary-color);
+        font-size: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+    .form-group label {
+        font-weight: 600;
+        color: var(--text-dark);
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    .form-group label .required {
+        color: #c62828;
+        margin-left: 2px;
+    }
+
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        padding: 10px 15px;
+        height: 42px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: #f8f9fc;
+    }
+    .form-control:focus {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 3px rgba(225, 36, 84, 0.08);
+        background: white;
+    }
+    textarea.form-control {
+        height: auto;
+        min-height: 80px;
+        resize: vertical;
+    }
+    select.form-control {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236F8BA4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 15px center;
+    }
+
+    .image-preview {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--primary-color);
+        margin-top: 10px;
+        background: #f8f9fc;
+    }
+
+    .btn-submit {
+        padding: 14px 50px;
+        font-weight: 700;
+        border-radius: 10px;
+        font-size: 16px;
+        background: var(--secondary-color);
+        color: white;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-submit:hover {
+        background: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        color: white;
+    }
+    .btn-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-cancel {
+        padding: 14px 30px;
+        font-weight: 700;
+        border-radius: 10px;
+        font-size: 16px;
+        background: #6c757d;
+        color: white;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-cancel:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        color: white;
+    }
+
+    .alert {
+        border-radius: 10px;
+        padding: 15px 20px;
+    }
+
+    .loading-spinner {
+        text-align: center;
+        padding: 40px 0;
+    }
+    .loading-spinner .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f0f0f0;
+        border-top-color: var(--secondary-color);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 15px;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .page-header-custom {
+            padding: 20px;
+            text-align: center;
+        }
+        .form-container {
+            padding: 20px 15px;
+        }
+        .form-section {
+            padding: 15px 0;
+        }
+        .btn-submit,
+        .btn-cancel {
+            padding: 12px 20px;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .image-preview {
+            width: 80px;
+            height: 80px;
+        }
+    }
+</style>
+
+<div class="student-edit-page">
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-edit"></i> Edit Student</h3>
+                    <p class="subtitle" id="student-id-display">Loading...</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <a href="/students/" class="btn btn-white-outline">
+                        <i class="icofont-arrow-left"></i> Back to Students
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-container">
+            <div id="form-alert" class="alert alert-danger d-none">
+                <i class="icofont-warning mr-2"></i> <span id="alert-message"></span>
+            </div>
+            <div id="form-success" class="alert alert-success d-none">
+                <i class="icofont-check-circled mr-2"></i> <span id="success-message"></span>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Loading student data...</p>
+            </div>
+
+            <!-- Form (hidden until data loads) -->
+            <form id="student-form" novalidate style="display: none;">
+                <input type="hidden" id="student-id">
+                        <input type="hidden" id="user-id" value="">
+
+                <!-- Personal Information -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="icofont-user"></i> Personal Information
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>First Name <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="first-name" name="first_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Last Name <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="last-name" name="last_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Other Name</label>
+                                <input type="text" class="form-control" id="other-name" name="other_name">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Date of Birth <span class="required">*</span></label>
+                                <input type="date" class="form-control" id="dob" name="date_of_birth" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Gender <span class="required">*</span></label>
+                                <select class="form-control" id="gender" name="gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Nationality</label>
+                                <input type="text" class="form-control" id="nationality" name="nationality" value="Ugandan">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>National ID</label>
+                                <input type="text" class="form-control" id="national-id" name="national_id" placeholder="e.g., CM1234567890">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Marital Status</label>
+                                <select class="form-control" id="marital-status" name="marital_status">
+                                    <option value="single">Single</option>
+                                    <option value="married">Married</option>
+                                    <option value="divorced">Divorced</option>
+                                    <option value="widowed">Widowed</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Religion</label>
+                                <input type="text" class="form-control" id="religion" name="religion" placeholder="e.g., Christian">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Profile Picture</label>
+                                <input type="file" class="form-control" id="profile-picture" name="profile_picture" accept="image/*" style="padding: 8px;">
+                                <div class="form-text">Upload a passport-size photo (JPG, PNG, JPEG)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <img id="profile-preview" src="/static/images/default-avatar.png" alt="Profile Preview" class="image-preview">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="icofont-phone"></i> Contact Information
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Phone Number <span class="required">*</span></label>
+                                <input type="tel" class="form-control" id="phone" name="phone" required placeholder="e.g., 0777123456">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Alternate Phone</label>
+                                <input type="tel" class="form-control" id="alt-phone" name="alternate_phone" placeholder="e.g., 0755123456">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Email Address <span class="required">*</span></label>
+                                <input type="email" class="form-control" id="email" name="email" required placeholder="student@example.com">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Physical Address <span class="required">*</span></label>
+                                <textarea class="form-control" id="address" name="address" rows="2" required placeholder="Enter full residential address"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>District</label>
+                                <input type="text" class="form-control" id="district" name="district" placeholder="e.g., Kampala">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>County</label>
+                                <input type="text" class="form-control" id="county" name="county" placeholder="e.g., Kampala Central">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Sub County</label>
+                                <input type="text" class="form-control" id="sub-county" name="sub_county" placeholder="e.g., Kampala">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Village/Cell</label>
+                                <input type="text" class="form-control" id="village" name="village" placeholder="e.g., Ntinda">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Academic Information -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="icofont-book"></i> Academic Information
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Course <span class="required">*</span></label>
+                                <select class="form-control" id="course" name="course" required>
+                                    <option value="">Select Course...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Class</label>
+                                <select class="form-control" id="class-select" name="current_class">
+                                    <option value="">Select Class...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Registration Number</label>
+                                <input type="text" class="form-control" id="reg-number" name="registration_number" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Student Status</label>
+                                <select class="form-control" id="status" name="status">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="graduated">Graduated</option>
+                                    <option value="dropped">Dropped</option>
+                                    <option value="suspended">Suspended</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Sponsor Type</label>
+                                <select class="form-control" id="sponsor-type" name="sponsor_type">
+                                    <option value="">Select Sponsor...</option>
+                                    <option value="self">Self Sponsored</option>
+                                    <option value="parent">Parent/Guardian</option>
+                                    <option value="employer">Employer</option>
+                                    <option value="bursary">Bursary/Scholarship</option>
+                                    <option value="government">Government</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parent/Guardian -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="icofont-users"></i> Parent/Guardian Information
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Relationship</label>
+                                <select class="form-control" id="parent-relationship" name="parent_relationship">
+                                    <option value="">Select Relationship...</option>
+                                    <option value="Father">Father</option>
+                                    <option value="Mother">Mother</option>
+                                    <option value="Guardian">Guardian</option>
+                                    <option value="Aunt">Aunt</option>
+                                    <option value="Uncle">Uncle</option>
+                                    <option value="Brother">Brother</option>
+                                    <option value="Sister">Sister</option>
+                                    <option value="Spouse">Spouse</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" class="form-control" id="parent-name" name="parent_name" placeholder="Full name">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="tel" class="form-control" id="parent-phone" name="parent_phone" placeholder="e.g., 0777123456">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Address</label>
+                                <textarea class="form-control" id="parent-address" name="parent_address" rows="2" placeholder="Full address"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Declaration -->
+                <div class="form-section" style="border-bottom: none;">
+                    <div class="section-title">
+                        <i class="icofont-check-circled"></i> Declaration
+                    </div>
+                    <div class="info-box warning" style="padding: 15px 20px; border-radius: 10px; background: #fff3e0; border-left: 4px solid #e65100; margin-bottom: 15px;">
+                        <p style="margin: 0; font-size: 13px;"><strong>IMPORTANT:</strong> By submitting this form, you confirm that the information provided is accurate.</p>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="declaration-check">
+                        <label class="form-check-label" for="declaration-check" style="font-size: 14px;">
+                            I confirm that the information provided on this form is <strong>true and complete</strong> to the best of my knowledge.
+                        </label>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Signature <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="signature" name="signature" required placeholder="Type full name as signature">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Date <span class="required">*</span></label>
+                                <input type="date" class="form-control" id="declaration-date" name="declaration_date" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn-submit" id="submit-btn">
+    <i class="icofont-save"></i> Update Student
+</button>
+                    <a href="/students/" class="btn-cancel">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let studentId = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('=== STUDENT EDIT PAGE LOADED ===');
+        
+        if (!user || !user.id) {
+            console.log('No token found, redirecting to login');
+            window.location.href = '/login/'; // Redirect to login
+            return;
+        }
+
+        // Get student ID from URL - IMPROVED VERSION
+        const path = window.location.pathname;
+        console.log('Full path:', path);
+        
+        // Try multiple ways to get the ID
+        let id = null;
+        
+        // Method 1: Look for pattern /students/ID/edit/
+        const match = path.match(/\/students\/(\d+)\/edit\//);
+        if (match) {
+            id = match[1];
+            console.log('Method 1 (regex) found ID:', id);
+        }
+        
+        // Method 2: If Method 1 fails, try parts
+        if (!id) {
+            const parts = path.split('/');
+            console.log('URL parts:', parts);
+            for (let i = parts.length - 1; i >= 0; i--) {
+                if (parts[i] === 'edit' && i > 0) {
+                    id = parts[i - 1];
+                    console.log('Method 2 (parts) found ID:', id);
+                    break;
+                }
+            }
+        }
+        
+        // Method 3: If still no ID, try parts[parts.length - 2]
+        if (!id) {
+            const parts = path.split('/');
+            id = parts[parts.length - 2];
+            console.log('Method 3 (last) found ID:', id);
+        }
+        
+        console.log('Extracted student ID:', id);
+
+        if (id && !isNaN(parseInt(id))) {
+            studentId = parseInt(id);
+            console.log('Student ID set to:', studentId);
+            document.getElementById('student-id-display').textContent = `Editing Student #${studentId}`;
+            document.getElementById('student-id').value = studentId;
+            document.getElementById('loading-state').innerHTML = `
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>Loading student data...</p>
+                </div>
+            `;
+            loadStudent(studentId);
+        } else {
+            console.error('Invalid student ID:', id);
+            document.getElementById('loading-state').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="icofont-warning mr-2"></i> 
+                    <strong>Invalid student ID.</strong> Please go back and try again.
+                    <br><br>
+                    <a href="/students/" class="btn btn-main btn-sm">Back to Students</a>
+                </div>
+            `;
+            document.getElementById('student-form').style.display = 'none';
+        }
+
+        // Load dropdowns
+        loadCourses();
+        loadClasses();
+
+        // Set default date
+        document.getElementById('declaration-date').value = new Date().toISOString().split('T')[0];
+
+        // Profile picture preview
+        document.getElementById('profile-picture').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    document.getElementById('profile-preview').src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle form submission - FIXED
+        const form = document.getElementById('student-form');
+        console.log('Form element:', form);
+        
+        form.addEventListener('submit', function(e) {
+            console.log('=== FORM SUBMIT EVENT TRIGGERED ===');
+            e.preventDefault();
+            console.log('Form submission prevented, calling handleSubmit...');
+            handleSubmit(e);
+        });
+        
+        console.log('Form submit event attached');
+    });
+
+    function loadStudent(id) {
+        console.log('Loading student with ID:', id);
+        
+        fetch(`/api/students/${id}/`, {
+            
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Student data loaded:', data);
+            // Hide loading, show form
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('student-form').style.display = 'block';
+            populateForm(data);
+        })
+        .catch(error => {
+            console.error('Error loading student:', error);
+            document.getElementById('loading-state').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="icofont-warning mr-2"></i> 
+                    <strong>Error loading student data:</strong> ${error.message}
+                    <br><br>
+                    <a href="/students/" class="btn btn-main btn-sm">Back to Students</a>
+                </div>
+            `;
+            document.getElementById('student-form').style.display = 'none';
+        });
+    }
+
+    function populateForm(data) {
+    console.log('Populating form with:', data);
+    
+    try {
+        // Store the user ID for later use
+        document.getElementById('user-id').value = data.user || '';
+        
+        // Personal Information
+        document.getElementById('first-name').value = data.first_name || '';
+        document.getElementById('last-name').value = data.last_name || '';
+        document.getElementById('other-name').value = data.other_name || '';
+        document.getElementById('dob').value = data.date_of_birth || '';
+        document.getElementById('gender').value = data.gender || '';
+        document.getElementById('nationality').value = data.nationality || 'Ugandan';
+        document.getElementById('national-id').value = data.national_id || '';
+        document.getElementById('marital-status').value = data.marital_status || 'single';
+        document.getElementById('religion').value = data.religion || '';
+
+        // Profile picture
+        if (data.profile_picture) {
+            document.getElementById('profile-preview').src = data.profile_picture;
+        }
+
+        // Contact Information
+        document.getElementById('phone').value = data.phone || '';
+        document.getElementById('alt-phone').value = data.alternate_phone || '';
+        document.getElementById('email').value = data.email || '';
+        document.getElementById('address').value = data.address || '';
+        document.getElementById('district').value = data.district || '';
+        document.getElementById('county').value = data.county || '';
+        document.getElementById('sub-county').value = data.sub_county || '';
+        document.getElementById('village').value = data.village || '';
+
+        // Academic Information
+        document.getElementById('course').value = data.course || '';
+        document.getElementById('class-select').value = data.current_class || '';
+        document.getElementById('reg-number').value = data.registration_number || '';
+        document.getElementById('status').value = data.status || 'active';
+        document.getElementById('sponsor-type').value = data.sponsor_type || '';
+
+        // Parent/Guardian
+        document.getElementById('parent-relationship').value = data.parent_relationship || '';
+        document.getElementById('parent-name').value = data.parent_name || '';
+        document.getElementById('parent-phone').value = data.parent_phone || '';
+        document.getElementById('parent-address').value = data.parent_address || '';
+
+        // Declaration
+        document.getElementById('signature').value = data.first_name + ' ' + data.last_name;
+        document.getElementById('declaration-check').checked = true;
+        
+        console.log('Form populated successfully');
+        console.log('User ID set to:', data.user);
+    } catch (error) {
+        console.error('Error populating form:', error);
+    }
+}
+
+    function loadCourses() {
+        fetch('/api/courses/', {
+            
+        })
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('course');
+            if (data.results) {
+                select.innerHTML = '<option value="">Select Course...</option>';
+                data.results.forEach(course => {
+                    const option = document.createElement('option');
+                    option.value = course.id;
+                    option.textContent = `${course.name} (${course.code})`;
+                    select.appendChild(option);
+                });
+                console.log('Courses loaded:', data.results.length);
+            }
+        })
+        .catch(error => console.error('Error loading courses:', error));
+    }
+
+    function loadClasses() {
+        fetch('/api/classes/', {
+            
+        })
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('class-select');
+            if (data.results) {
+                select.innerHTML = '<option value="">Select Class...</option>';
+                data.results.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = `${cls.name} (${cls.code})`;
+                    select.appendChild(option);
+                });
+                console.log('Classes loaded:', data.results.length);
+            }
+        })
+        .catch(error => console.error('Error loading classes:', error));
+    }
+
+    
+    function handleSubmit(event) {
+    console.log('=== HANDLE SUBMIT CALLED ===');
+    console.log('Student ID:', studentId);
+    
+    if (event) {
+        event.preventDefault();
+        console.log('Event prevented');
+    }
+
+    // Get the registration number from the form
+    const registrationNumber = document.getElementById('reg-number').value.trim();
+    
+    // Get the user ID from the form or use the one from the loaded data
+    // The user ID is stored in the student data when loaded
+    const userId = document.getElementById('user-id') ? 
+        parseInt(document.getElementById('user-id').value) : 
+        studentId; // Fallback
+
+    // Collect form data with proper type conversion
+    const data = {
+        // === REQUIRED FIELDS ===
+        user: userId,  // Use the correct user ID
+        registration_number: registrationNumber || `GLIDE/2026/TEMP/${studentId}`,
+        first_name: document.getElementById('first-name').value.trim(),
+        last_name: document.getElementById('last-name').value.trim(),
+        other_name: document.getElementById('other-name').value.trim() || '',
+        date_of_birth: document.getElementById('dob').value,
+        gender: document.getElementById('gender').value,
+        nationality: document.getElementById('nationality').value || 'Ugandan',
+        national_id: document.getElementById('national-id').value || '',
+        marital_status: document.getElementById('marital-status').value || 'single',
+        religion: document.getElementById('religion').value || '',
+        phone: document.getElementById('phone').value.trim(),
+        alternate_phone: document.getElementById('alt-phone').value.trim() || '',
+        email: document.getElementById('email').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        district: document.getElementById('district').value || '',
+        county: document.getElementById('county').value || '',
+        sub_county: document.getElementById('sub-county').value || '',
+        village: document.getElementById('village').value || '',
+        course: parseInt(document.getElementById('course').value) || null,
+        current_class: document.getElementById('class-select').value ? parseInt(document.getElementById('class-select').value) : null,
+        status: document.getElementById('status').value || 'active',
+        sponsor_type: document.getElementById('sponsor-type').value || '',
+        parent_name: document.getElementById('parent-name').value || '',
+        parent_phone: document.getElementById('parent-phone').value || '',
+        parent_address: document.getElementById('parent-address').value || '',
+        signature: document.getElementById('signature').value.trim(),
+        declaration_date: document.getElementById('declaration-date').value,
+        declaration_agreed: document.getElementById('declaration-check').checked || false
+    };
+
+    console.log('Form data collected (with type conversion):', data);
+
+    // Validate required fields
+    const requiredFields = ['first_name', 'last_name', 'date_of_birth', 'gender', 'phone', 'email', 'address', 'course', 'signature'];
+    const missingFields = requiredFields.filter(field => !data[field]);
+    
+    if (missingFields.length > 0) {
+        console.log('Missing required fields:', missingFields);
+        showAlert(`Please fill in all required fields: ${missingFields.join(', ')}`, 'danger');
+        return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+        showAlert('Please enter a valid email address', 'danger');
+        return;
+    }
+
+    console.log('Validation passed, sending update request...');
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Updating...';
+
+    console.log('Sending PUT request to:', `/api/students/${studentId}/`);
+    console.log('With data:', JSON.stringify(data, null, 2));
+
+    fetch(`/api/students/${studentId}/`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.text().then(text => {
+            console.log('Response body:', text);
+            try {
+                return { status: response.status, data: JSON.parse(text) };
+            } catch {
+                return { status: response.status, data: { error: text } };
+            }
+        });
+    })
+    .then(result => {
+        console.log('Parsed result:', result);
+        
+        if (result.status === 200 || result.status === 201) {
+            showSuccess('Student updated successfully!');
+            btn.innerHTML = '<i class="icofont-check"></i> Updated!';
+            setTimeout(() => {
+                window.location.href = `/students/${studentId}/`;
+            }, 1500);
+        } else {
+            let errorMsg = 'Invalid data';
+            if (result.data) {
+                if (typeof result.data === 'string') {
+                    errorMsg = result.data;
+                } else if (result.data.detail) {
+                    errorMsg = result.data.detail;
+                } else if (result.data.error) {
+                    errorMsg = result.data.error;
+                } else if (result.data.message) {
+                    errorMsg = result.data.message;
+                } else {
+                    const fieldErrors = Object.entries(result.data)
+                        .filter(([key, val]) => key !== 'non_field_errors')
+                        .map(([key, val]) => `${key}: ${val}`)
+                        .join('; ');
+                    if (fieldErrors) errorMsg = fieldErrors;
+                }
+            }
+            showAlert('Error: ' + errorMsg, 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-save"></i> Update Student';
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        showAlert('Connection error: ' + error.message, 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="icofont-save"></i> Update Student';
+    });
+}
+
+    function showAlert(message, type) {
+        const alertDiv = document.getElementById('form-alert');
+        const successDiv = document.getElementById('form-success');
+        const alertMessage = document.getElementById('alert-message');
+        successDiv.classList.add('d-none');
+        alertMessage.textContent = message;
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.classList.remove('d-none');
+        setTimeout(() => alertDiv.classList.add('d-none'), 5000);
+    }
+
+    function showSuccess(message) {
+        const alertDiv = document.getElementById('form-alert');
+        const successDiv = document.getElementById('form-success');
+        const successMessage = document.getElementById('success-message');
+        alertDiv.classList.add('d-none');
+        successMessage.textContent = message;
+        successDiv.className = 'alert alert-success';
+        successDiv.classList.remove('d-none');
+        setTimeout(() => successDiv.classList.add('d-none'), 5000);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Courses - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        padding: 40px 0;
+        color: white;
+    }
+    .page-header-custom h3 {
+        color: white;
+        margin: 0;
+    }
+    .page-header-custom small {
+        color: rgba(255,255,255,0.7);
+    }
+    
+    .filter-bar {
+        background: white;
+        padding: 15px 20px;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        margin-bottom: 25px;
+        border: 1px solid var(--border-color);
+    }
+    .filter-bar select,
+    .filter-bar input {
+        height: 40px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        padding: 0 12px;
+    }
+    .filter-bar select:focus,
+    .filter-bar input:focus {
+        border-color: var(--primary-color);
+        outline: none;
+    }
+    
+    .course-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+        transition: var(--transition);
+        height: 100%;
+    }
+    .course-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+    }
+    .course-card .course-badge {
+        display: inline-block;
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+    }
+    .course-card .course-badge.diploma { background: #28a745; color: white; }
+    .course-card .course-badge.certificate { background: #17a2b8; color: white; }
+    .course-card .course-badge.occupational { background: #fd7e14; color: white; }
+    .course-card .course-badge.modular { background: #6f42c1; color: white; }
+    .course-card .course-badge.driving { background: #dc3545; color: white; }
+    
+    .course-card h5 {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    .course-card .course-code {
+        font-size: 13px;
+        color: var(--text-color);
+    }
+    .course-card .course-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin: 12px 0;
+        font-size: 14px;
+    }
+    .course-card .course-meta .meta-item {
+        color: var(--text-color);
+    }
+    .course-card .course-meta .meta-item strong {
+        color: var(--text-dark);
+    }
+    .course-card .course-description {
+        color: var(--text-color);
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 15px;
+    }
+    .course-card .course-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    @media (max-width: 768px) {
+        .filter-bar {
+            padding: 15px;
+        }
+        .filter-bar .filter-group {
+            flex-direction: column;
+            gap: 10px;
+        }
+        .filter-bar .filter-group select,
+        .filter-bar .filter-group input {
+            width: 100%;
+        }
+    }
+</style>
+
+<!-- Page Header -->
+<div class="page-header-custom">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h3><i class="icofont-book"></i> Courses & Programmes</h3>
+                <small>Browse all available courses and programmes</small>
+            </div>
+            {% if user.user_type == 'admin' or user.user_type == 'registrar' %}
+            <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                <a href="/academics/courses/create/" class="btn btn-main-2 btn-round-full">
+                    <i class="icofont-plus"></i> Add Course
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="container">
+        <div class="filter-bar">
+    <div class="row align-items-end">
+        <div class="col-md-4">
+            <label class="text-sm font-weight-bold">Search</label>
+            <input type="text" id="search-input" class="form-control form-control-sm" 
+                   placeholder="Course name or code..." onkeyup="debounceCourseFilter()">
+        </div>
+        <div class="col-md-3">
+            <label class="text-sm font-weight-bold">Category</label>
+            <select id="category-filter" class="form-control form-control-sm" onchange="loadCourses(1)">
+                <option value="">All Categories</option>
+                <option value="diploma">Diploma</option>
+                <option value="certificate">Certificate</option>
+                <option value="occupational">Occupational</option>
+                <option value="modular">Modular</option>
+                <option value="driving">Driving</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="text-sm font-weight-bold">Duration</label>
+            <select id="duration-filter" class="form-control form-control-sm" onchange="loadCourses(1)">
+                <option value="">All Durations</option>
+                <option value="1_month">1 Month</option>
+                <option value="2_weeks">2 Weeks</option>
+                <option value="1_week">1 Week</option>
+                <option value="1_year">1 Year</option>
+                <option value="2_years">2 Years</option>
+                <option value="3_years">3 Years</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-main btn-sm btn-block" onclick="resetCourseFilters()">
+                <i class="icofont-refresh"></i> Reset
+            </button>
+        </div>
+    </div>
+</div>
+
+        <!-- Courses Grid -->
+        <div id="courses-container">
+            <div class="text-center py-5">
+                <i class="icofont-spinner icofont-spin" style="font-size: 40px;"></i>
+                <p class="mt-2 text-muted">Loading courses...</p>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <nav id="pagination-container">
+            <ul class="pagination-custom" id="pagination-links"></ul>
+        </nav>
+    </div>
+</section>
+
+<script>
+    let currentPage = 1;
+    let totalPages = 1;
+
+    // ============================================
+// COURSES FILTERS - FIXED
+// ============================================
+
+let courseFilterTimeout;
+
+function debounceCourseFilter() {
+    clearTimeout(courseFilterTimeout);
+    courseFilterTimeout = setTimeout(() => {
+        loadCourses(1);
+    }, 500);
+}
+
+function loadCourses(page = 1) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!user || !user.id) {
+        window.location.href = '/login/'; // Redirect to login
+        return;
+    }
+
+    const search = document.getElementById('search-input').value.trim();
+    const category = document.getElementById('category-filter').value;
+    const duration = document.getElementById('duration-filter').value;
+
+    console.log('Filtering courses:', { search, category, duration, page });
+
+    let url = `/api/courses/?page=${page}`;
+    let params = [];
+    
+    if (search) {
+        params.push(`search=${encodeURIComponent(search)}`);
+    }
+    if (category && category !== '') {
+        params.push(`category__category_type=${category}`);
+    }
+    if (duration && duration !== '') {
+        params.push(`duration=${duration}`);
+    }
+    
+    // Add ordering
+    params.push(`ordering=name`);
+    
+    if (params.length > 0) {
+        url += '&' + params.join('&');
+    }
+
+    console.log('Fetching URL:', url);
+
+    fetch(url, {
+        
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Filtered courses:', data);
+        renderCourses(data);
+    })
+    .catch(error => {
+        console.error('Error loading courses:', error);
+        document.getElementById('courses-container').innerHTML = `
+            <div class="text-center py-5">
+                <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                <p class="mt-2 text-danger">Error loading courses: ${error.message}</p>
+                <button class="btn btn-sm btn-main mt-2" onclick="loadCourses(1)">Retry</button>
+            </div>
+        `;
+    });
+}
+
+function resetCourseFilters() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('category-filter').value = '';
+    document.getElementById('duration-filter').value = '';
+    loadCourses(1);
+}
+
+    function renderCourses(data) {
+        const container = document.getElementById('courses-container');
+        
+        if (!data.results || data.results.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="icofont-book" style="font-size: 40px; color: var(--text-color);"></i>
+                    <p class="mt-2 text-muted">No courses found</p>
+                </div>
+            `;
+            document.getElementById('pagination-links').innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="row">
+                ${data.results.map(course => `
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="course-card">
+                            <span class="course-badge ${course.category?.category_type || 'certificate'}">
+                                ${course.category?.name || 'Certificate'}
+                            </span>
+                            <h5>${course.name}</h5>
+                            <div class="course-code">${course.code}</div>
+                            <div class="course-meta">
+                                <span class="meta-item"><strong>Duration:</strong> ${course.duration.replace('_', ' ')}</span>
+                                <span class="meta-item"><strong>Department:</strong> ${course.department_name || 'N/A'}</span>
+                                <span class="meta-item"><strong>Tuition:</strong> UGX ${(course.tuition_fee || 0).toLocaleString()}</span>
+                            </div>
+                            <div class="course-description">
+                                ${course.description?.length > 100 ? course.description.substring(0, 100) + '...' : course.description || 'No description available'}
+                            </div>
+                            <div class="course-actions">
+                                <a href="/academics/courses/${course.id}/" class="btn btn-sm btn-main">View Details</a>
+                                <a href="/admissions/apply/?course=${course.id}" class="btn btn-sm btn-main-2">Apply Now</a>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        // Pagination
+        totalPages = Math.ceil(data.count / 20) || 1;
+        currentPage = data.current_page || 1;
+        renderPagination();
+    }
+
+    function renderPagination() {
+        const container = document.getElementById('pagination-links');
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        if (currentPage > 1) {
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="loadCourses(${currentPage - 1})">‹</a></li>`;
+        }
+        
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === currentPage) {
+                html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+            } else if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 2) {
+                html += `<li class="page-item"><a class="page-link" href="#" onclick="loadCourses(${i})">${i}</a></li>`;
+            } else if (i === currentPage - 3 || i === currentPage + 3) {
+                html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+            }
+        }
+        
+        if (currentPage < totalPages) {
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="loadCourses(${currentPage + 1})">›</a></li>`;
+        }
+        
+        container.innerHTML = html;
+    }
+
+    function filterCourses() {
+        loadCourses(1);
+    }
+
+    function resetFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('category-filter').value = '';
+        document.getElementById('duration-filter').value = '';
+        loadCourses(1);
+    }
+
+    // Load courses on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCourses(1);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,666 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Results - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .academics-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white {
+        background: white; color: var(--primary-color); padding: 8px 22px;
+        border-radius: 50px; font-weight: 600; border: none; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+
+    .filter-bar {
+        background: white; padding: 15px 20px; border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .filter-bar .filter-label {
+        font-size: 12px; font-weight: 600; color: var(--text-color);
+        text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; display: block;
+    }
+    .filter-bar .form-control,
+    .filter-bar .form-select {
+        height: 38px; border-radius: 8px; border: 1px solid #e8ecf1;
+        font-size: 13px; transition: all 0.3s ease; background: #f8f9fc;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .stat-card {
+        background: white; border-radius: 12px; padding: 15px 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+    }
+    .stat-card .stat-number { font-size: 22px; font-weight: 700; color: var(--primary-color); }
+    .stat-card .stat-label { font-size: 12px; color: var(--text-color); margin: 0; }
+
+    .result-card {
+        background: white; border-radius: 12px; padding: 18px 22px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.3s ease; margin-bottom: 12px;
+    }
+    .result-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .result-card .result-header {
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    }
+    .result-card .result-header .result-student {
+        font-weight: 600; color: var(--text-dark); font-size: 16px;
+    }
+    .result-card .result-details {
+        display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px;
+        font-size: 13px; color: var(--text-color);
+    }
+    .result-card .result-details span strong { color: var(--text-dark); }
+    .result-card .result-actions {
+        display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;
+    }
+
+    .grade-badge {
+        padding: 4px 12px; border-radius: 5px; font-weight: 700; font-size: 13px;
+        min-width: 35px; text-align: center;
+    }
+    .grade-badge.A { background: #28a745; color: white; }
+    .grade-badge.Bplus { background: #17a2b8; color: white; }
+    .grade-badge.B { background: #5bc0de; color: white; }
+    .grade-badge.Cplus { background: #ffc107; color: #212529; }
+    .grade-badge.C { background: #fd7e14; color: white; }
+    .grade-badge.D { background: #6c757d; color: white; }
+    .grade-badge.F { background: #dc3545; color: white; }
+
+    .badge-status {
+        padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .badge-status.published { background: #e8f5e9; color: #1b5e20; }
+    .badge-status.draft { background: #eceff1; color: #37474f; }
+
+    .modal-dialog-large { max-width: 700px; }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .stats-grid { grid-template-columns: 1fr 1fr; }
+        .filter-bar .row > div { margin-bottom: 10px; }
+        .result-card .result-header { flex-direction: column; align-items: flex-start; }
+        .modal-dialog-large { max-width: 95%; }
+    }
+</style>
+
+<div class="academics-page">
+    <div class="container">
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-graduate"></i> Results</h3>
+                    <p class="subtitle">Manage student results</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <button class="btn btn-white" onclick="openAddResultModal()">
+                        <i class="icofont-plus"></i> Add Result
+                    </button>
+                    <button class="btn btn-white ml-2" onclick="exportResults()">
+                        <i class="icofont-file-excel"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-number" id="total-results">0</div><p class="stat-label">Total</p></div>
+            <div class="stat-card"><div class="stat-number" id="published-results" style="color:#28a745;">0</div><p class="stat-label">Published</p></div>
+            <div class="stat-card"><div class="stat-number" id="draft-results" style="color:#fd7e14;">0</div><p class="stat-label">Draft</p></div>
+            <div class="stat-card"><div class="stat-number" id="pass-rate" style="color:var(--primary-color);">0%</div><p class="stat-label">Pass Rate</p></div>
+        </div>
+
+        <!-- ===== FILTER BAR ===== -->
+<div class="filter-bar">
+    <form id="filter-form" onsubmit="return false;">
+        <div class="row align-items-end">
+            <div class="col-md-3">
+                <label class="filter-label"><i class="icofont-search"></i> Search</label>
+                <input type="text" id="search-input" class="form-control" 
+                       placeholder="Student name or unit..." onkeyup="debounceResultFilter()">
+            </div>
+            <div class="col-md-3">
+                <label class="filter-label"><i class="icofont-book"></i> Course</label>
+                <select id="course-filter" class="form-select" onchange="loadResults()">
+                    <option value="">All Courses</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="filter-label"><i class="icofont-check-circled"></i> Status</label>
+                <select id="status-filter" class="form-select" onchange="loadResults()">
+                    <option value="">All Status</option>
+                    <option value="true">✅ Published</option>
+                    <option value="false">📝 Draft</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-reset w-100" onclick="resetResultFilters()">
+                    <i class="icofont-refresh"></i> Reset
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+        <div id="results-container">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Loading results...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Result Modal -->
+<div class="modal fade" id="resultModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-large" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--primary-color); color: white;">
+                <h5 class="modal-title" id="modal-title"><i class="icofont-plus"></i> Add Result</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-result-id">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Student <span class="text-danger">*</span></label>
+                            <select class="form-control" id="result-student">
+                                <option value="">Select Student</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Course Unit <span class="text-danger">*</span></label>
+                            <select class="form-control" id="result-unit">
+                                <option value="">Select Unit</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Assessment <span class="text-danger">*</span></label>
+                            <select class="form-control" id="result-assessment">
+                                <option value="">Select Assessment</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Semester <span class="text-danger">*</span></label>
+                            <select class="form-control" id="result-semester">
+                                <option value="">Select Semester</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Score <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="result-score" placeholder="0-100">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Grade</label>
+                            <input type="text" class="form-control" id="result-grade" placeholder="Auto-calculated" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select class="form-control" id="result-status">
+                                <option value="false">Draft</option>
+                                <option value="true">Publish</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Remarks</label>
+                    <textarea class="form-control" id="result-remarks" rows="2" placeholder="Additional remarks"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-main" onclick="saveResult()"><i class="icofont-save"></i> Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Upload Modal -->
+<div class="modal fade" id="bulkUploadModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #28a745; color: white;">
+                <h5 class="modal-title"><i class="icofont-upload"></i> Bulk Upload Results</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="icofont-info-circle"></i> Upload an Excel or CSV file with columns: Student ID, Unit Code, Score
+                </div>
+                <div class="form-group">
+                    <label>Semester <span class="text-danger">*</span></label>
+                    <select class="form-control" id="bulk-semester">
+                        <option value="">Select Semester</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Assessment <span class="text-danger">*</span></label>
+                    <select class="form-control" id="bulk-assessment">
+                        <option value="">Select Assessment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>File <span class="text-danger">*</span></label>
+                    <input type="file" class="form-control" id="bulk-file" accept=".csv,.xlsx,.xls">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="bulkUpload()"><i class="icofont-upload"></i> Upload</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        loadStudents();
+        loadCourseUnits();
+        loadAssessments();
+        loadSemesters();
+        loadCourses();
+        loadResults();
+        setInterval(loadResults, 30000);
+
+        // Auto-calculate grade on score change
+        document.getElementById('result-score').addEventListener('input', function() {
+            const score = parseFloat(this.value);
+            const grade = calculateGrade(score);
+            document.getElementById('result-grade').value = grade;
+        });
+    });
+
+    function calculateGrade(score) {
+        if (score >= 80) return 'A';
+        if (score >= 70) return 'B+';
+        if (score >= 60) return 'B';
+        if (score >= 50) return 'C+';
+        if (score >= 40) return 'C';
+        if (score >= 35) return 'D';
+        return 'F';
+    }
+
+    function loadStudents() {
+        fetch('/api/students/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('result-student');
+            if (data.results) {
+                select.innerHTML = '<option value="">Select Student</option>';
+                data.results.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.registration_number} - ${s.first_name} ${s.last_name}`;
+                    select.appendChild(opt);
+                });
+            }
+        }).catch(() => {});
+    }
+
+    function loadCourseUnits() {
+        fetch('/api/academics/course-units/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('result-unit');
+            if (data.results) {
+                select.innerHTML = '<option value="">Select Unit</option>';
+                data.results.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = `${u.code} - ${u.name}`;
+                    select.appendChild(opt);
+                });
+            }
+        }).catch(() => {});
+    }
+
+    function loadAssessments() {
+        fetch('/api/academics/assessments/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const selects = ['result-assessment', 'bulk-assessment'];
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                if (select && data.results) {
+                    select.innerHTML = '<option value="">Select Assessment</option>';
+                    data.results.forEach(a => {
+                        const opt = document.createElement('option');
+                        opt.value = a.id;
+                        opt.textContent = `${a.name} (${a.assessment_type})`;
+                        select.appendChild(opt);
+                    });
+                }
+            });
+        }).catch(() => {});
+    }
+
+    function loadSemesters() {
+        fetch('/api/admissions/semesters/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const selects = ['result-semester', 'bulk-semester'];
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                if (select && data.results) {
+                    select.innerHTML = '<option value="">Select Semester</option>';
+                    data.results.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = `${s.name} - ${s.academic_year_name}`;
+                        select.appendChild(opt);
+                    });
+                }
+            });
+        }).catch(() => {});
+    }
+
+    function loadCourses() {
+        fetch('/api/courses/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('course-filter');
+            if (data.results) {
+                select.innerHTML = '<option value="">All Courses</option>';
+                data.results.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    select.appendChild(opt);
+                });
+            }
+        }).catch(() => {});
+    }
+
+    // ============================================
+// RESULTS FILTERS - FIXED
+// ============================================
+
+let resultFilterTimeout;
+
+function debounceResultFilter() {
+    clearTimeout(resultFilterTimeout);
+    resultFilterTimeout = setTimeout(() => {
+        loadResults();
+    }, 500);
+}
+
+function loadResults() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!user || !user.id) {
+        window.location.href = '/login/'; // Redirect to login
+        return;
+    }
+
+    const search = document.getElementById('search-input').value.trim();
+    const course = document.getElementById('course-filter').value;
+    const status = document.getElementById('status-filter').value;
+
+    console.log('Filtering results:', { search, course, status });
+
+    let url = '/api/academics/results/';
+    let params = [];
+    
+    if (search) {
+        params.push(`search=${encodeURIComponent(search)}`);
+    }
+    if (course && course !== '') {
+        params.push(`course=${course}`);
+    }
+    if (status !== '') {
+        params.push(`is_published=${status}`);
+    }
+    
+    params.push(`ordering=-created_at`);
+    
+    if (params.length > 0) {
+        url += '?' + params.join('&');
+    }
+
+    console.log('Fetching URL:', url);
+
+    fetch(url, {
+        
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Filtered results:', data);
+        renderResults(data);
+    })
+    .catch(error => {
+        console.error('Error loading results:', error);
+        document.getElementById('results-container').innerHTML = `
+            <div class="text-center py-5">
+                <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                <p class="mt-2 text-danger">Error loading results: ${error.message}</p>
+                <button class="btn btn-sm btn-main mt-2" onclick="loadResults()">Retry</button>
+            </div>
+        `;
+    });
+}
+
+function resetResultFilters() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('course-filter').value = '';
+    document.getElementById('status-filter').value = '';
+    loadResults();
+}
+
+    function renderResults(data) {
+        const results = data.results || [];
+        const container = document.getElementById('results-container');
+
+        const total = results.length;
+        const published = results.filter(r => r.is_published).length;
+        const draft = total - published;
+        const passed = results.filter(r => r.grade && r.grade !== 'F').length;
+        const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+
+        document.getElementById('total-results').textContent = data.count || 0;
+        document.getElementById('published-results').textContent = published;
+        document.getElementById('draft-results').textContent = draft;
+        document.getElementById('pass-rate').textContent = passRate + '%';
+
+        if (!results.length) {
+            container.innerHTML = `<div class="text-center py-5"><i class="icofont-graduate" style="font-size:40px;opacity:0.3;"></i>
+                <p class="mt-2 text-muted">No results found</p></div>`;
+            return;
+        }
+
+        const gradeClass = (grade) => {
+            const map = { 'A': 'A', 'B+': 'Bplus', 'B': 'B', 'C+': 'Cplus', 'C': 'C', 'D': 'D', 'F': 'F' };
+            return map[grade] || 'P';
+        };
+
+        container.innerHTML = results.map(r => `
+            <div class="result-card">
+                <div class="result-header">
+                    <div>
+                        <div class="result-student">${r.student_name || 'N/A'}</div>
+                        <div style="font-size:13px;color:var(--text-color);">${r.course_unit_name || 'N/A'} • ${r.assessment || 'N/A'}</div>
+                    </div>
+                    <div>
+                        <span class="grade-badge ${gradeClass(r.grade)}">${r.grade || 'P'}</span>
+                        <span class="badge-status ${r.is_published ? 'published' : 'draft'}">${r.is_published ? 'PUBLISHED' : 'DRAFT'}</span>
+                    </div>
+                </div>
+                <div class="result-details">
+                    <span><strong>Score:</strong> ${r.score || 0}</span>
+                    <span><strong>Semester:</strong> ${r.semester || 'N/A'}</span>
+                    ${r.remarks ? `<span><strong>Remarks:</strong> ${r.remarks}</span>` : ''}
+                </div>
+                <div class="result-actions">
+                    <button class="btn btn-sm btn-main" onclick="editResult('${r.id}')"><i class="icofont-edit"></i> Edit</button>
+                    ${!r.is_published ? `
+                        <button class="btn btn-sm btn-success" onclick="publishResult('${r.id}')"><i class="icofont-check"></i> Publish</button>
+                    ` : ''}
+                    <button class="btn btn-sm btn-danger" onclick="deleteResult('${r.id}')"><i class="icofont-trash"></i> Delete</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function openAddResultModal() {
+        document.getElementById('modal-title').innerHTML = '<i class="icofont-plus"></i> Add Result';
+        document.getElementById('edit-result-id').value = '';
+        document.getElementById('result-student').value = '';
+        document.getElementById('result-unit').value = '';
+        document.getElementById('result-assessment').value = '';
+        document.getElementById('result-semester').value = '';
+        document.getElementById('result-score').value = '';
+        document.getElementById('result-grade').value = '';
+        document.getElementById('result-remarks').value = '';
+        document.getElementById('result-status').value = 'false';
+        $('#resultModal').modal('show');
+    }
+
+    function editResult(id) {
+        fetch(`/api/academics/results/${id}/`, {  })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('modal-title').innerHTML = '<i class="icofont-edit"></i> Edit Result';
+            document.getElementById('edit-result-id').value = data.id;
+            document.getElementById('result-student').value = data.student || '';
+            document.getElementById('result-unit').value = data.course_unit || '';
+            document.getElementById('result-assessment').value = data.assessment || '';
+            document.getElementById('result-semester').value = data.semester || '';
+            document.getElementById('result-score').value = data.score || '';
+            document.getElementById('result-grade').value = data.grade || '';
+            document.getElementById('result-remarks').value = data.remarks || '';
+            document.getElementById('result-status').value = data.is_published ? 'true' : 'false';
+            $('#resultModal').modal('show');
+        }).catch(() => alert('Error loading result details'));
+    }
+
+    function saveResult() {
+        const id = document.getElementById('edit-result-id').value;
+        const score = parseFloat(document.getElementById('result-score').value);
+        const data = {
+            student: document.getElementById('result-student').value,
+            course_unit: document.getElementById('result-unit').value,
+            assessment: document.getElementById('result-assessment').value,
+            semester: document.getElementById('result-semester').value,
+            score: score || 0,
+            grade: calculateGrade(score),
+            remarks: document.getElementById('result-remarks').value,
+            is_published: document.getElementById('result-status').value === 'true'
+        };
+
+        if (!data.student || !data.course_unit || !data.assessment || !data.semester) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/api/academics/results/${id}/` : '/api/academics/results/';
+
+        fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(() => {
+            $('#resultModal').modal('hide');
+            loadResults();
+            alert(id ? 'Result updated!' : 'Result added!');
+        })
+        .catch(() => alert('Error saving result'));
+    }
+
+    function publishResult(id) {
+        fetch(`/api/academics/results/${id}/publish/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json' }
+        })
+        .then(() => { loadResults(); alert('Result published!'); })
+        .catch(() => alert('Error publishing result'));
+    }
+
+    function deleteResult(id) {
+        if (!confirm('Delete this result?')) return;
+        fetch(`/api/academics/results/${id}/`, {
+            method: 'DELETE',
+            
+        })
+        .then(() => { loadResults(); alert('Result deleted!'); })
+        .catch(() => alert('Error deleting result'));
+    }
+
+    function exportResults() {
+        alert('Export functionality will be available soon.');
+        // In production, this would generate an Excel/CSV file
+    }
+
+    function resetFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('course-filter').value = '';
+        document.getElementById('status-filter').value = '';
+        loadResults();
+    }
+
+    // Bulk upload functionality
+    function openBulkUpload() {
+        $('#bulkUploadModal').modal('show');
+    }
+
+    function bulkUpload() {
+        const semester = document.getElementById('bulk-semester').value;
+        const assessment = document.getElementById('bulk-assessment').value;
+        const file = document.getElementById('bulk-file').files[0];
+
+        if (!semester || !assessment || !file) {
+            alert('Please fill in all fields and select a file');
+            return;
+        }
+
+        alert('Bulk upload functionality will process the file and add results.');
+        // In production, this would upload the file and process it
+        $('#bulkUploadModal').modal('hide');
+    }
+</script>
+{% endblock %}

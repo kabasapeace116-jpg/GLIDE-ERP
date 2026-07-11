@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create Course - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .course-form-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white-outline {
+        border: 2px solid rgba(255,255,255,0.3); color: white; background: transparent;
+        padding: 8px 22px; border-radius: 50px; font-weight: 600; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white-outline:hover { background: white; color: var(--primary-color); }
+
+    .form-container {
+        background: white; border-radius: 15px; padding: 30px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+    }
+
+    .form-section {
+        padding: 20px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .form-section:last-child { border-bottom: none; }
+    .form-section .section-title {
+        font-size: 16px; font-weight: 700; color: var(--primary-color);
+        margin-bottom: 18px; display: flex; align-items: center; gap: 10px;
+    }
+    .form-section .section-title i { color: var(--secondary-color); font-size: 20px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+        font-weight: 600; color: var(--text-dark); font-size: 14px; margin-bottom: 4px;
+    }
+    .form-group label .required { color: #c62828; margin-left: 2px; }
+
+    .form-control {
+        border-radius: 8px; border: 1px solid #e0e0e0; padding: 10px 15px;
+        height: 42px; font-size: 14px; transition: all 0.3s ease; background: #f8f9fc;
+    }
+    .form-control:focus {
+        border-color: var(--secondary-color); box-shadow: 0 0 0 3px rgba(225,36,84,0.08);
+        background: white;
+    }
+    textarea.form-control { height: auto; min-height: 80px; resize: vertical; }
+    select.form-control {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236F8BA4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 15px center;
+    }
+
+    .btn-submit {
+        padding: 14px 50px; font-weight: 700; border-radius: 10px; font-size: 16px;
+        background: var(--secondary-color); color: white; border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-submit:hover {
+        background: var(--primary-color); transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15); color: white;
+    }
+    .btn-submit:disabled {
+        opacity: 0.6; cursor: not-allowed; transform: none;
+    }
+
+    .info-box {
+        padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid;
+    }
+    .info-box.info { background: #e3f2fd; border-left-color: #1565c0; }
+    .info-box.warning { background: #fff3e0; border-left-color: #e65100; }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .form-container { padding: 20px 15px; }
+        .form-section { padding: 15px 0; }
+        .btn-submit { padding: 12px 20px; font-size: 14px; width: 100%; }
+    }
+</style>
+
+<div class="course-form-page">
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-book"></i> Create New Course</h3>
+                    <p class="subtitle">Add a new course to the system. All fields marked with <span style="color: var(--secondary-color);">*</span> are required.</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <a href="/academics/courses/" class="btn btn-white-outline">
+                        <i class="icofont-arrow-left"></i> Back to Courses
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-container">
+            <div id="form-alert" class="alert alert-danger d-none">
+                <i class="icofont-warning mr-2"></i> <span id="alert-message"></span>
+            </div>
+            <div id="form-success" class="alert alert-success d-none">
+                <i class="icofont-check-circled mr-2"></i> <span id="success-message"></span>
+            </div>
+
+            <form id="course-form" novalidate>
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <div class="section-title"><i class="icofont-info-circle"></i> Basic Information</div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Course Name <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="course-name" name="name" required placeholder="e.g., Diploma in Information Technology">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Course Code <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="course-code" name="code" required placeholder="e.g., DIT">
+                                <small class="text-muted" style="font-size: 12px;">Short, unique identifier for the course</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Category <span class="required">*</span></label>
+                                <select class="form-control" id="course-category" name="category" required>
+                                    <option value="">Select Category</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Department <span class="required">*</span></label>
+                                <select class="form-control" id="course-department" name="department" required>
+                                    <option value="">Select Department</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Duration <span class="required">*</span></label>
+                                <select class="form-control" id="course-duration" name="duration" required>
+                                    <option value="">Select Duration</option>
+                                    <option value="1_month">1 Month</option>
+                                    <option value="2_weeks">2 Weeks</option>
+                                    <option value="1_week">1 Week</option>
+                                    <option value="1_year">1 Year</option>
+                                    <option value="2_years">2 Years</option>
+                                    <option value="3_years">3 Years</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Level</label>
+                                <select class="form-control" id="course-level" name="level">
+                                    <option value="">Select Level (Optional)</option>
+                                    <option value="level1">Level 1</option>
+                                    <option value="level2">Level 2</option>
+                                    <option value="level3">Level 3</option>
+                                    <option value="level4">Level 4</option>
+                                    <option value="level5">Level 5</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fees & Requirements -->
+                <div class="form-section">
+                    <div class="section-title"><i class="icofont-wallet"></i> Fees & Requirements</div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Tuition Fee (UGX) <span class="required">*</span></label>
+                                <input type="number" class="form-control" id="course-tuition" name="tuition_fee" required placeholder="e.g., 2500000">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Application Fee (UGX)</label>
+                                <input type="number" class="form-control" id="course-application-fee" name="application_fee" placeholder="e.g., 50000">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Entry Requirements <span class="required">*</span></label>
+                                <textarea class="form-control" id="course-requirements" name="entry_requirements" rows="2" required placeholder="e.g., At least One Principal Pass in a relevant subject at A-Level"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="form-section">
+                    <div class="section-title"><i class="icofont-file-text"></i> Description</div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Course Description <span class="required">*</span></label>
+                                <textarea class="form-control" id="course-description" name="description" rows="3" required placeholder="Provide a detailed description of the course..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="form-section" style="border-bottom: none;">
+                    <div class="section-title"><i class="icofont-check-circled"></i> Status</div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="course-active" checked>
+                        <label class="form-check-label" for="course-active">Active</label>
+                        <small class="d-block text-muted" style="font-size: 12px;">Inactive courses will not appear in the course listings</small>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn-submit" id="submit-btn">
+                        <i class="icofont-save"></i> Create Course
+                    </button>
+                    <a href="/academics/courses/" class="btn btn-secondary btn-lg ml-2" style="padding: 14px 30px; border-radius: 10px;">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        loadCategories();
+        loadDepartments();
+        setupFormSubmit();
+    });
+
+    function loadCategories() {
+        fetch('/api/course-categories/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('course-category');
+            if (data.results) {
+                data.results.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat.id;
+                    opt.textContent = `${cat.name} (${cat.category_type})`;
+                    select.appendChild(opt);
+                });
+            }
+        }).catch(() => {});
+    }
+
+    function loadDepartments() {
+        fetch('/api/departments/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('course-department');
+            if (data.results) {
+                data.results.forEach(dept => {
+                    const opt = document.createElement('option');
+                    opt.value = dept.id;
+                    opt.textContent = dept.name;
+                    select.appendChild(opt);
+                });
+            }
+        }).catch(() => {});
+    }
+
+    function setupFormSubmit() {
+        document.getElementById('course-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Creating...';
+
+            const data = {
+                name: document.getElementById('course-name').value.trim(),
+                code: document.getElementById('course-code').value.trim().toUpperCase(),
+                category: document.getElementById('course-category').value,
+                department: document.getElementById('course-department').value,
+                duration: document.getElementById('course-duration').value,
+                level: document.getElementById('course-level').value || '',
+                tuition_fee: parseFloat(document.getElementById('course-tuition').value) || 0,
+                application_fee: parseFloat(document.getElementById('course-application-fee').value) || 0,
+                entry_requirements: document.getElementById('course-requirements').value.trim(),
+                description: document.getElementById('course-description').value.trim(),
+                is_active: document.getElementById('course-active').checked
+            };
+
+            // Validate
+            if (!data.name || !data.code || !data.category || !data.department || !data.duration || !data.entry_requirements || !data.description) {
+                showAlert('Please fill in all required fields', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="icofont-save"></i> Create Course';
+                return;
+            }
+
+            fetch('/api/courses/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.id) {
+                    showSuccess(`Course created successfully! Code: ${data.code}`);
+                    btn.innerHTML = '<i class="icofont-check"></i> Created!';
+                    setTimeout(() => {
+                        window.location.href = '/academics/courses/';
+                    }, 1500);
+                } else {
+                    showAlert(data.detail || 'Error creating course', 'danger');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="icofont-save"></i> Create Course';
+                }
+            })
+            .catch(error => {
+                showAlert('Error: ' + error.message, 'danger');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="icofont-save"></i> Create Course';
+            });
+        });
+    }
+
+    function showAlert(message, type) {
+        const alertDiv = document.getElementById('form-alert');
+        const successDiv = document.getElementById('form-success');
+        const alertMessage = document.getElementById('alert-message');
+        successDiv.classList.add('d-none');
+        alertMessage.textContent = message;
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.classList.remove('d-none');
+        setTimeout(() => alertDiv.classList.add('d-none'), 5000);
+    }
+
+    function showSuccess(message) {
+        const alertDiv = document.getElementById('form-alert');
+        const successDiv = document.getElementById('form-success');
+        const successMessage = document.getElementById('success-message');
+        alertDiv.classList.add('d-none');
+        successMessage.textContent = message;
+        successDiv.className = 'alert alert-success';
+        successDiv.classList.remove('d-none');
+    }
+</script>
+{% endblock %}

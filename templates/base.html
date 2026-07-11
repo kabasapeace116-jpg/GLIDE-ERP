@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>GLIDE Institute - {% block title %}SMS{% endblock %}</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="GLIDE Institute Student Management System">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    
+    <!-- Favicon -->
+    <link rel="shortcut icon" type="image/x-icon" href="/static/images/favicon.png" />
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    
+    <!-- Icofont -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/icofont@1.0.1/css/icofont.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Exo:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ==================== ROOT VARIABLES ==================== */
+        :root {
+            --primary-color: #223a66;
+            --primary-dark: #152440;
+            --primary-darker: #090f1a;
+            --secondary-color: #e12454;
+            --text-color: #6F8BA4;
+            --text-dark: #222;
+            --light-bg: #f4f9fc;
+            --white: #ffffff;
+            --gray-bg: #eff0f3;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            --border-color: #e9ecef;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 5px 20px rgba(0, 0, 0, 0.1);
+            --radius: 10px;
+            --transition: all 0.3s ease;
+        }
+
+        /* ==================== BASE STYLES ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            line-height: 1.6;
+            font-family: "Roboto", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            font-size: 16px;
+            color: var(--text-color);
+            font-weight: 400;
+            overflow-x: hidden;
+            background: var(--white);
+            padding-top: 0;
+        }
+
+        h1, .h1, h2, .h2, h3, .h3, h4, .h4, h5, .h5, h6, .h6 {
+            font-family: "Exo", sans-serif;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        p {
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        a {
+            color: var(--text-dark);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        a:hover {
+            color: var(--secondary-color);
+            text-decoration: none;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* ==================== UTILITY ==================== */
+        .text-color { color: var(--primary-color) !important; }
+        .text-color-2 { color: var(--secondary-color) !important; }
+        .text-sm { font-size: 14px; }
+        .text-md { font-size: 1.5rem; }
+        .text-lg { font-size: 2.5rem; }
+
+        .bg-gray { background: var(--gray-bg); }
+        .bg-primary { background: var(--primary-color); }
+        .gray-bg { background: var(--light-bg); }
+
+        .section { padding: 60px 0; }
+        .section-sm { padding: 40px 0; }
+
+        .section-title { margin-bottom: 40px; }
+        .section-title h2 { color: var(--primary-color); }
+
+        .divider {
+            width: 40px;
+            height: 5px;
+            background: var(--secondary-color);
+            border-radius: 3px;
+        }
+        .divider.white { background: var(--white); }
+        .divider.mx-auto { margin: 0 auto; }
+
+        .letter-spacing { letter-spacing: 2px; }
+        .lh-35 { line-height: 35px; }
+
+        .overlay { position: relative; }
+        .overlay:before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.9;
+            background: var(--primary-color);
+        }
+
+        /* ==================== BUTTONS ==================== */
+        .btn {
+            display: inline-block;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 0.6rem 1.8rem;
+            font-family: "Exo", sans-serif;
+            text-transform: uppercase;
+            border-radius: 5px;
+            border: 2px solid transparent;
+            transition: var(--transition);
+        }
+        .btn:focus { outline: 0; box-shadow: none; }
+
+        .btn-main {
+            background: var(--primary-color);
+            color: var(--white);
+            border-color: var(--primary-color);
+        }
+        .btn-main:hover {
+            background: var(--secondary-color);
+            border-color: var(--secondary-color);
+            color: var(--white);
+        }
+
+        .btn-main-2 {
+            background: var(--secondary-color);
+            color: var(--white);
+            border-color: var(--secondary-color);
+        }
+        .btn-main-2:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-solid-border {
+            border: 2px solid var(--primary-color);
+            background: transparent;
+            color: var(--primary-color);
+        }
+        .btn-solid-border:hover {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-outline-light {
+            border-color: var(--white);
+            color: var(--white);
+        }
+        .btn-outline-light:hover {
+            background: var(--white);
+            color: var(--primary-color);
+        }
+
+        .btn-round-full { border-radius: 50px; }
+        .btn-block { display: block; width: 100%; }
+        .btn-sm { padding: 0.3rem 1rem; font-size: 0.7rem; }
+
+        /* ==================== HEADER & NAVIGATION ==================== */
+        .header-top-bar {
+            background: var(--primary-color);
+            font-size: 13px;
+            padding: 6px 0;
+            color: var(--white);
+        }
+        .top-bar-info {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .top-bar-info li {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        .top-bar-info li a { color: var(--white); }
+        .top-bar-info li a:hover { color: var(--secondary-color); }
+
+        .top-right-bar a span {
+            color: var(--white);
+            font-weight: 600;
+            letter-spacing: 1px;
+            vertical-align: middle;
+        }
+        .top-right-bar a i {
+            color: var(--white);
+            margin-right: 10px;
+        }
+
+        /* ===== MAIN NAVIGATION - JAVASCRIPT DRIVEN ===== */
+        .navigation {
+            background: var(--white);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand { padding: 8px 0; }
+
+        .navbar-nav .nav-link {
+            font-weight: 600;
+            padding: 18px 16px;
+            color: var(--text-dark);
+            font-family: "Exo", sans-serif;
+            text-transform: capitalize;
+            font-size: 14px;
+            transition: var(--transition);
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .navbar-nav .nav-link:hover,
+        .navbar-nav .active .nav-link {
+            color: var(--secondary-color);
+        }
+
+        .navbar-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background: var(--secondary-color);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        .navbar-nav .nav-link:hover::after,
+        .navbar-nav .active .nav-link::after {
+            width: 50%;
+        }
+
+        .navbar-nav .nav-link i {
+            font-size: 16px;
+            margin-right: 3px;
+        }
+
+        @media (max-width: 991px) {
+            .navbar-nav .nav-link {
+                padding: 10px 15px;
+            }
+            .navbar-nav .nav-link::after { display: none; }
+        }
+
+        /* ==================== PAGE TITLE ==================== */
+        .page-title {
+            padding: 80px 0 50px;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+        }
+        .page-title .block h1 {
+            color: var(--white);
+            font-size: 2.5rem;
+        }
+        .page-title .block p {
+            color: rgba(255,255,255,0.85);
+        }
+
+        @media (max-width: 768px) {
+            .page-title { padding: 50px 0 30px; }
+            .page-title .block h1 { font-size: 1.8rem; }
+        }
+
+        /* ==================== STATS CARDS ==================== */
+        .stat-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 18px 22px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+        .stat-card .stat-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .stat-card .stat-icon.blue { background: rgba(34,58,102,0.1); color: var(--primary-color); }
+        .stat-card .stat-icon.red { background: rgba(225,36,84,0.1); color: var(--secondary-color); }
+        .stat-card .stat-icon.green { background: rgba(40,167,69,0.1); color: var(--success); }
+        .stat-card .stat-icon.yellow { background: rgba(255,193,7,0.1); color: var(--warning); }
+        .stat-card .stat-icon.purple { background: rgba(111,66,193,0.1); color: #6f42c1; }
+        .stat-card .stat-icon.orange { background: rgba(253,126,20,0.1); color: #fd7e14; }
+
+        .stat-number { font-size: 26px; font-weight: 700; color: var(--primary-color); margin: 0; }
+        .stat-label { font-size: 13px; color: var(--text-color); margin: 0; }
+
+        /* ==================== TABLES ==================== */
+        .table-responsive {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 15px;
+            box-shadow: var(--shadow);
+        }
+        .table thead th {
+            border-bottom: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .table tbody tr:hover { background: rgba(34,58,102,0.03); }
+
+        /* ==================== BADGES ==================== */
+        .badge-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-status.active { background: var(--success); color: var(--white); }
+        .badge-status.pending { background: var(--warning); color: #212529; }
+        .badge-status.inactive,
+        .badge-status.dropped,
+        .badge-status.suspended { background: var(--danger); color: var(--white); }
+        .badge-status.graduated { background: var(--info); color: var(--white); }
+
+        /* ==================== FORMS ==================== */
+        .form-control {
+            box-shadow: none;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            height: 42px;
+            transition: var(--transition);
+        }
+        .form-control:focus {
+            box-shadow: none;
+            border-color: var(--primary-color);
+        }
+        textarea.form-control { height: auto; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label {
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 14px;
+        }
+
+        /* ==================== FOOTER ==================== */
+        .footer {
+            padding: 50px 0 10px;
+            background: var(--light-bg);
+            margin-top: 30px;
+        }
+        .footer .widget h4 {
+            color: var(--primary-color);
+            margin-bottom: 18px;
+            font-size: 16px;
+        }
+        .footer .widget .divider { margin: 8px 0 15px; }
+        .footer .footer-menu a {
+            color: var(--text-color);
+            display: block;
+            padding: 4px 0;
+            transition: var(--transition);
+            font-size: 14px;
+        }
+        .footer .footer-menu a:hover {
+            color: var(--secondary-color);
+            padding-left: 5px;
+        }
+        .footer .footer-socials li a {
+            width: 36px;
+            height: 36px;
+            background: var(--primary-color);
+            color: var(--white);
+            display: inline-block;
+            text-align: center;
+            border-radius: 50%;
+            padding-top: 6px;
+            transition: var(--transition);
+        }
+        .footer .footer-socials li a:hover {
+            background: var(--secondary-color);
+            transform: translateY(-3px);
+        }
+        .footer .footer-contact-block { margin-bottom: 12px; }
+        .footer .footer-contact-block .icon i {
+            font-size: 18px;
+            color: var(--primary-color);
+        }
+        .footer .footer-contact-block h4 a { color: var(--text-dark); }
+        .footer .footer-contact-block h4 a:hover { color: var(--secondary-color); }
+
+        .footer-btm {
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            padding-top: 15px;
+            margin-top: 20px;
+        }
+        .footer .subscribe { position: relative; }
+        .footer .subscribe .form-control {
+            border-radius: 50px;
+            height: 45px;
+            padding-left: 20px;
+            border-color: #ddd;
+        }
+        .footer .subscribe .btn {
+            position: absolute;
+            right: 6px;
+            top: 6px;
+            padding: 0.4rem 1.2rem;
+            font-size: 12px;
+        }
+        @media (max-width: 768px) {
+            .footer .subscribe .btn {
+                position: relative;
+                right: 0;
+                top: 0;
+                width: 100%;
+                margin-top: 8px;
+            }
+        }
+
+        /* ==================== BACK TO TOP ==================== */
+        .backtop {
+            position: fixed;
+            background: var(--primary-color);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            right: 25px;
+            width: 40px;
+            height: 40px;
+            bottom: 25px;
+            border-radius: 50px;
+            opacity: 0;
+            transition: var(--transition);
+            color: var(--white);
+            font-size: 16px;
+            visibility: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        .backtop:hover {
+            background: var(--secondary-color);
+            color: var(--white);
+            transform: translateY(-3px);
+        }
+        .backtop.visible { opacity: 1; visibility: visible; }
+
+        /* ==================== SCROLLBAR ==================== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--light-bg); }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--secondary-color); }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 768px) {
+            .section { padding: 30px 0; }
+            .footer { padding: 30px 0 10px; }
+        }
+        @media print {
+            .header-top-bar, .navigation, .footer, .backtop { display: none !important; }
+        }
+
+        /* ==================== NOTIFICATION TOAST ==================== */
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 10px;
+            font-weight: 500;
+            z-index: 9999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            animation: slideIn 0.5s ease;
+            max-width: 400px;
+        }
+        .notification-toast.success { background: #28a745; }
+        .notification-toast.error { background: #dc3545; }
+        .notification-toast.warning { background: #ffc107; color: #212529; }
+        .notification-toast.info { background: var(--primary-color); }
+        @keyframes slideIn {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body id="top">
+    <!-- ==================== HEADER ==================== -->
+    <header>
+        <!-- Top Bar -->
+        <div class="header-top-bar">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-6">
+                        <ul class="top-bar-info">
+                            <li>
+                                <a href="mailto:info@glideafrica.org">
+                                    <i class="icofont-support-faq mr-2"></i>info@glideafrica.org
+                                </a>
+                            </li>
+                            <li>
+                                <i class="icofont-location-pin mr-2"></i>P.O Box 7062, Kampala, Uganda
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="text-lg-right top-right-bar mt-2 mt-lg-0">
+                            <span class="h5">Tel: +256-779-854989</span>
+                            <a href="https://elearning.glideafrica.org/" target="_blank" class="ml-2">
+                                <button type="button" class="btn btn-danger btn-sm">E-Learning</button>
+                            </a>
+                            <button id="logout-btn-top" class="btn btn-outline-light ml-2 btn-sm" style="display:none;" onclick="handleLogout();">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== MAIN NAVIGATION - JAVASCRIPT DRIVEN ===== -->
+        <nav class="navbar navbar-expand-lg navigation">
+            <div class="container">
+                <a class="navbar-brand" href="/">
+                    <img src="/static/images/logo.png" width="90" alt="GLIDE Logo" class="img-fluid">
+                </a>
+                <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" 
+                        data-target="#navbarmain" aria-controls="navbarmain" 
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="icofont-navigation-menu"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarmain">
+                    <ul class="navbar-nav ml-auto" id="nav-links">
+                        <!-- Rendered by JavaScript -->
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- ==================== MESSAGES ==================== -->
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mr-auto col-sm-6">
+                    <div class="widget mb-5 mb-lg-0">
+                        <div class="logo mb-4">
+                            <img src="/static/images/logo.png" alt="" width="90" class="img-fluid">
+                        </div>
+                        <p>Bukedi Sub-region,<br>Butaleja District,<br>Nampologoma Trading Center</p>
+                        <ul class="list-inline footer-socials mt-4">
+                            <li class="list-inline-item"><a href="#"><i class="icofont-facebook"></i></a></li>
+                            <li class="list-inline-item"><a href="#"><i class="icofont-twitter"></i></a></li>
+                            <li class="list-inline-item"><a href="#"><i class="icofont-linkedin"></i></a></li>
+                            <li class="list-inline-item"><a href="#"><i class="icofont-brand-youtube"></i></a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-6 col-sm-6">
+                    <div class="widget mb-5 mb-lg-0">
+                        <h4 class="text-capitalize mb-3">Quick Links</h4>
+                        <div class="divider mb-4"></div>
+                        <ul class="list-unstyled footer-menu lh-35">
+                            <li><a href="/dashboard/">Dashboard</a></li>
+                            <li><a href="/academics/dashboard/">Academics</a></li>
+                            <li><a href="/admissions/">Admissions</a></li>
+                            <li><a href="/contact/">Contact</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-6 col-sm-6">
+                    <div class="widget mb-5 mb-lg-0">
+                        <h4 class="text-capitalize mb-3">Support</h4>
+                        <div class="divider mb-4"></div>
+                        <ul class="list-unstyled footer-menu lh-35">
+                            <li><a href="/terms/">Terms & Conditions</a></li>
+                            <li><a href="/privacy/">Privacy Policy</a></li>
+                            <li><a href="/faq/">FAQ</a></li>
+                            <li><a href="/contact/">Contact Us</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="widget widget-contact mb-5 mb-lg-0">
+                        <h4 class="text-capitalize mb-3">Get in Touch</h4>
+                        <div class="divider mb-4"></div>
+                        <div class="footer-contact-block mb-4">
+                            <div class="icon d-flex align-items-center">
+                                <i class="icofont-email mr-3"></i>
+                                <span class="h6 mb-0">Email</span>
+                            </div>
+                            <h4 class="mt-2"><a href="mailto:info@glideafrica.org">info@glideafrica.org</a></h4>
+                        </div>
+                        <div class="footer-contact-block">
+                            <div class="icon d-flex align-items-center">
+                                <i class="icofont-support mr-3"></i>
+                                <span class="h6 mb-0">Phone</span>
+                            </div>
+                            <h4 class="mt-2"><a href="tel:+256-702991814">+256-702991814</a></h4>
+                        </div>
+                        <div class="footer-contact-block">
+                            <div class="icon d-flex align-items-center">
+                                <i class="icofont-clock mr-3"></i>
+                                <span class="h6 mb-0">Mon - Fri: 8:00 AM - 5:00 PM</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-btm">
+                <div class="row align-items-center justify-content-between">
+                    <div class="col-lg-6">
+                        <div class="copyright">
+                            Copyright &copy; <script>document.write(new Date().getFullYear());</script>, GLIDE Institute of Science and Technology
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="subscribe-form text-lg-right mt-3 mt-lg-0">
+                            <form action="#" class="subscribe" onsubmit="return false;">
+                                <input type="email" class="form-control" placeholder="Your Email address" required id="subscribe-email">
+                                <button type="submit" class="btn btn-main-2 btn-round-full">Subscribe</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==================== BACK TO TOP ==================== -->
+    <a class="backtop" href="#top">
+        <i class="icofont-long-arrow-up"></i>
+    </a>
+
+    <!-- ==================== SCRIPTS ==================== -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // ============================================
+        // AUTHENTICATION FUNCTIONS
+        // ============================================
+
+        ');
+        }
+
+        function getCurrentUser() {
+    try {
+        return JSON.parse(localStorage.getItem('user') || '{}');
+    } catch {
+        return null;
+    }
+} catch {
+                return null;
+            }
+        }
+
+        function isAuthenticated() {
+    const user = getCurrentUser();
+    return !!(user && user.id);
+}
+
+        // ============================================
+        // SHOW NOTIFICATION
+        // ============================================
+        function showNotification(message, type = 'info') {
+            const colors = {
+                success: '#28a745',
+                info: '#223a66',
+                warning: '#ffc107',
+                error: '#dc3545'
+            };
+            
+            const notification = document.createElement('div');
+            notification.className = `notification-toast ${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                background: ${colors[type] || '#223a66'};
+                color: ${type === 'warning' ? '#212529' : 'white'};
+                border-radius: 10px;
+                font-weight: 500;
+                z-index: 9999;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                animation: slideIn 0.5s ease;
+                max-width: 400px;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => notification.remove(), 500);
+            }, 4000);
+        }
+
+        // ============================================
+        // RENDER NAVIGATION - ROLE BASED
+        // ============================================
+        function renderNavigation() {
+            const navContainer = document.getElementById('nav-links');
+            const user = getCurrentUser();
+            const user = getAuthToken();
+            
+            // Show/hide logout button in top bar
+            const logoutBtn = document.getElementById('logout-btn-top');
+            if (logoutBtn) {
+                logoutBtn.style.display = (token && user) ? 'inline-block' : 'none';
+            }
+            
+            let html = '';
+            
+            if (token && user) {
+                // ===== LOGGED IN =====
+                
+                // Dashboard (All users)
+                let dashboardUrl = '/dashboard/';
+                if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'registrar') {
+                    dashboardUrl = '/dashboard/admin/';
+                } else if (user.user_type === 'student') {
+                    dashboardUrl = '/dashboard/student/';
+                } else if (user.user_type === 'finance') {
+                    dashboardUrl = '/dashboard/finance/';
+                } else if (user.user_type === 'staff' || user.user_type === 'lecturer') {
+                    dashboardUrl = '/dashboard/staff/';
+                } else if (user.user_type === 'hr') {
+                    dashboardUrl = '/dashboard/hr/';
+                }
+                
+                html += `<li class="nav-item">
+                    <a class="nav-link" href="${dashboardUrl}"><i class="icofont-dashboard"></i> Dashboard</a>
+                </li>`;
+                
+                // ============================================================
+                // ACADEMICS - Only for non-student users
+                // Students should NOT see Academics
+                // ============================================================
+                if (user.user_type !== 'student' && user.user_type !== 'finance') {
+                    html += `<li class="nav-item">
+                        <a class="nav-link" href="/academics/dashboard/"><i class="icofont-book"></i> Academics</a>
+                    </li>`;
+                }
+                
+                // ============================================================
+                // ADMISSIONS - Only for non-student users
+                // Students should NOT see Admissions
+                // ============================================================
+                if (user.user_type !== 'student' && user.user_type !== 'finance') {
+                    html += `<li class="nav-item">
+                        <a class="nav-link" href="/admissions/"><i class="icofont-forms"></i> Admissions</a>
+                    </li>`;
+                }
+                
+                // ============================================================
+                // FINANCE - Finance, Admin, Super Admin, Registrar
+                // ============================================================
+                if (user.user_type === 'finance' || user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'registrar') {
+                    html += `<li class="nav-item">
+                        <a class="nav-link" href="/dashboard/finance/"><i class="icofont-wallet"></i> Finance</a>
+                    </li>`;
+                }
+                
+                // ============================================================
+                // HR - HR, Admin, Super Admin
+                // ============================================================
+                if (user.user_type === 'hr' || user.user_type === 'admin' || user.user_type === 'super_admin') {
+                    html += `<li class="nav-item">
+                        <a class="nav-link" href="/hr/dashboard/"><i class="icofont-users"></i> HR</a>
+                    </li>`;
+                }
+                
+                // ============================================================
+                // REPORTS - Admin, Super Admin only
+                // ============================================================
+                if (user.user_type === 'admin' || user.user_type === 'super_admin') {
+                    html += `<li class="nav-item">
+                        <a class="nav-link" href="/reports/"><i class="icofont-file-pdf"></i> Reports</a>
+                    </li>`;
+                }
+                
+                // ============================================================
+                // USERS - Admin, Super Admin only
+                // ============================================================
+                if (user.user_type === 'admin' || user.user_type === 'super_admin') {
+                    html += `<li class="nav-item">
+                        <a class="nav-link" href="/users/"><i class="icofont-user"></i> Users</a>
+                    </li>`;
+                }
+                
+                // ============================================================
+                // STUDENTS - Admin, Super Admin only
+                // ============================================================
+                if (user.user_type === 'admin' || user.user_type === 'super_admin') {
+                    html += `<li class="nav-item">
+                        <a class="nav-link" href="/students/"><i class="icofont-graduate"></i> Students</a>
+                    </li>`;
+                }
+                
+                // ============================================================
+                // COURSES - Admin, Super Admin, Staff, Lecturer
+                // ============================================================
+                if (user.user_type === 'admin' || user.user_type === 'super_admin' || user.user_type === 'staff' || user.user_type === 'lecturer') {
+                    html += `<li class="nav-item">
+                        <a class="nav-link" href="/academics/courses/"><i class="icofont-book"></i> Courses</a>
+                    </li>`;
+                }
+                
+                // ============================================================
+                // CLASSES - Admin, Super Admin, Staff, Lecturer
+                // ============================================================
+                if (user.user_type === 'admin' || user.user_type === 'super_admin' || user.user_type === 'staff' || user.user_type === 'lecturer') {
+                    html += `<li class="nav-item">
+                        <a class="nav-link" href="/academics/classes/"><i class="icofont-education"></i> Classes</a>
+                    </li>`;
+                }
+                
+                // ============================================================
+                // LOGOUT
+                // ============================================================
+                html += `<li class="nav-item">
+                    <a class="nav-link" href="#" onclick="handleLogout();"><i class="icofont-logout"></i> Logout</a>
+                </li>`;
+                
+            } else {
+                // ===== NOT LOGGED IN =====
+                html += `<li class="nav-item">
+                    <a class="nav-link" href="/login/"><i class="icofont-login"></i> Login</a>
+                </li>`;
+            }
+            
+            navContainer.innerHTML = html;
+        }
+
+        // ============================================
+        // LOGOUT FUNCTION
+        // ============================================
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                // REMOVED: 
+                
+                localStorage.removeItem('user');
+                localStorage.removeItem('student');
+                sessionStorage.clear();
+                renderNavigation();
+                window.location.href = '/login/'; // Redirect to login
+            }
+        }
+
+        // ============================================
+        // LOGIN FUNCTION
+        // ============================================
+        function handleLogin(username, password) {
+            fetch('/api/auth/login/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.access) {
+                    // REMOVED: 
+                    localStorage.setItem('refresh_token', data.refresh);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    renderNavigation();
+                    
+                    const userType = data.user.user_type;
+                    const redirects = {
+                        'student': '/dashboard/student/',
+                        'admin': '/dashboard/admin/',
+                        'registrar': '/dashboard/admin/',
+                        'finance': '/dashboard/finance/',
+                        'staff': '/dashboard/staff/',
+                        'lecturer': '/dashboard/staff/',
+                        'hr': '/dashboard/hr/',
+                        'super_admin': '/dashboard/admin/'
+                    };
+                    window.location.href = redirects[userType] || '/dashboard/';
+                } else {
+                    showNotification('Login failed: ' + (data.detail || 'Invalid credentials'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                showNotification('Connection error. Please try again.', 'error');
+            });
+        }
+
+        // ============================================
+        // INITIALIZE
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial render
+            renderNavigation();
+            
+            // Check token validity
+            const user = getAuthToken();
+            if (user.id) {
+                fetch('/api/auth/current_user/', {
+                    
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.id) {
+                        localStorage.setItem('user', JSON.stringify(data));
+                        renderNavigation();
+                    }
+                })
+                .catch(() => {
+                    // REMOVED: 
+                    
+                    localStorage.removeItem('user');
+                    renderNavigation();
+                });
+            }
+            
+            // Subscribe form
+            const subscribeForm = document.querySelector('.subscribe');
+            if (subscribeForm) {
+                subscribeForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const email = this.querySelector('#subscribe-email');
+                    if (email && email.value) {
+                        showNotification('Thank you for subscribing! You will receive updates from GLIDE Institute.', 'success');
+                        email.value = '';
+                    } else {
+                        showNotification('Please enter a valid email address.', 'warning');
+                    }
+                });
+            }
+        });
+
+        // Re-render when page becomes visible again
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                renderNavigation();
+            }
+        });
+
+        // ==================== BACK TO TOP ====================
+        (function() {
+            var backtop = document.querySelector('.backtop');
+            if (backtop) {
+                window.addEventListener('scroll', function() {
+                    if (window.pageYOffset > 300) {
+                        backtop.classList.add('visible');
+                    } else {
+                        backtop.classList.remove('visible');
+                    }
+                });
+            }
+        })();
+
+        // ==================== EXPOSE GLOBALLY ====================
+        window.handleLogout = handleLogout;
+        window.handleLogin = handleLogin;
+        window.getCurrentUser = getCurrentUser;
+        window.getAuthToken = getAuthToken;
+        window.isAuthenticated = isAuthenticated;
+        window.renderNavigation = renderNavigation;
+        window.showNotification = showNotification;
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

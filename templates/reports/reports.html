@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reports Dashboard - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .reports-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+    .reports-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .reports-header h3 { color: white; margin: 0; font-weight: 700; }
+    .reports-header h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .reports-header .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+
+    .report-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px 20px;
+        text-align: center;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        height: 100%;
+    }
+    .report-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+        border-color: var(--secondary-color);
+    }
+    .report-card .icon {
+        font-size: 48px;
+        margin-bottom: 12px;
+        display: block;
+    }
+    .report-card .icon.blue { color: var(--primary-color); }
+    .report-card .icon.green { color: #28a745; }
+    .report-card .icon.red { color: var(--secondary-color); }
+    .report-card .icon.orange { color: #fd7e14; }
+    .report-card .icon.purple { color: #6f42c1; }
+    .report-card .icon.teal { color: #20c997; }
+    .report-card h5 { color: var(--primary-color); font-weight: 600; margin: 0 0 5px; }
+    .report-card p { font-size: 13px; color: var(--text-color); margin: 0; }
+    .report-card .badge {
+        margin-top: 10px;
+        padding: 4px 15px;
+        border-radius: 50px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .report-card .badge.blue { background: rgba(34,58,102,0.1); color: var(--primary-color); }
+    .report-card .badge.green { background: rgba(40,167,69,0.1); color: #28a745; }
+    .report-card .badge.red { background: rgba(225,36,84,0.1); color: var(--secondary-color); }
+    .report-card .badge.orange { background: rgba(253,126,20,0.1); color: #fd7e14; }
+
+    .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    .quick-stat {
+        background: white;
+        border-radius: 12px;
+        padding: 15px 18px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .quick-stat .number { font-size: 24px; font-weight: 700; color: var(--primary-color); }
+    .quick-stat .label { font-size: 12px; color: var(--text-color); margin: 0; }
+
+    @media (max-width: 768px) {
+        .reports-header { padding: 20px; text-align: center; }
+        .quick-stats { grid-template-columns: repeat(2, 1fr); }
+        .report-card { padding: 20px 15px; }
+        .report-card .icon { font-size: 36px; }
+    }
+    @media (max-width: 480px) {
+        .quick-stats { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="reports-page">
+    <div class="container">
+        <div class="reports-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-file-pdf"></i> Reports & Analytics</h3>
+                    <p class="subtitle">Comprehensive reports and analytics for your institution</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <button class="btn btn-white btn-sm" onclick="window.location.href='/reports/generate-pdf/'">
+                        <i class="icofont-file-pdf"></i> Generate Full Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats" id="quick-stats">
+            <div class="quick-stat"><div class="number" id="total-students">0</div><p class="label">Students</p></div>
+            <div class="quick-stat"><div class="number" id="total-courses">0</div><p class="label">Courses</p></div>
+            <div class="quick-stat"><div class="number" id="total-staff">0</div><p class="label">Staff</p></div>
+            <div class="quick-stat"><div class="number" id="total-revenue">UGX 0</div><p class="label">Revenue</p></div>
+        </div>
+
+        <!-- Report Cards -->
+        <div class="row">
+            <div class="col-md-4 col-sm-6 mb-4">
+                <div class="report-card" onclick="window.location.href='/reports/student-statistics/'">
+                    <span class="icon blue"><i class="icofont-graduate"></i></span>
+                    <h5>Student Statistics</h5>
+                    <p>Demographics, enrollment trends, and student distribution</p>
+                    <span class="badge blue">View Report →</span>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-6 mb-4">
+                <div class="report-card" onclick="window.location.href='/reports/academic-performance/'">
+                    <span class="icon green"><i class="icofont-chart-line"></i></span>
+                    <h5>Academic Performance</h5>
+                    <p>Grade distribution, GPA analysis, and course performance</p>
+                    <span class="badge green">View Report →</span>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-6 mb-4">
+                <div class="report-card" onclick="window.location.href='/reports/financial-summary/'">
+                    <span class="icon red"><i class="icofont-wallet"></i></span>
+                    <h5>Financial Summary</h5>
+                    <p>Revenue, payments, outstanding balances, and clearance</p>
+                    <span class="badge red">View Report →</span>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-6 mb-4">
+                <div class="report-card" onclick="window.location.href='/reports/attendance-summary/'">
+                    <span class="icon orange"><i class="icofont-attendance"></i></span>
+                    <h5>Attendance Summary</h5>
+                    <p>Attendance rates by course, class, and individual students</p>
+                    <span class="badge orange">View Report →</span>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-6 mb-4">
+                <div class="report-card" onclick="window.location.href='/reports/course-enrollment/'">
+                    <span class="icon purple"><i class="icofont-book"></i></span>
+                    <h5>Course Enrollment</h5>
+                    <p>Enrollment numbers by course, program, and department</p>
+                    <span class="badge purple">View Report →</span>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-6 mb-4">
+                <div class="report-card" onclick="window.location.href='/reports/generate-pdf/'">
+                    <span class="icon teal"><i class="icofont-file-pdf"></i></span>
+                    <h5>Generate PDF</h5>
+                    <p>Create a comprehensive PDF report with all data</p>
+                    <span class="badge green">Download →</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+
+    // Load quick stats
+    fetch('/api/reports/student-statistics/', {
+        
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('total-students').textContent = data.total_students || 0;
+    }).catch(() => {});
+
+    fetch('/api/courses/', {
+        
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('total-courses').textContent = data.count || 0;
+    }).catch(() => {});
+
+    fetch('/api/hr/employees/', {
+        
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('total-staff').textContent = data.count || 0;
+    }).catch(() => {});
+
+    fetch('/api/reports/financial-summary/', {
+        
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('total-revenue').textContent = 'UGX ' + (data.total_payments || 0).toLocaleString();
+    }).catch(() => {});
+});
+</script>
+{% endblock %}

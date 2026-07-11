@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Employee Details - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .employee-detail-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white {
+        background: white; color: var(--primary-color); padding: 8px 22px;
+        border-radius: 50px; font-weight: 600; border: none; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+    .page-header-custom .btn-white-outline {
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        background: transparent;
+        padding: 8px 22px;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white-outline:hover { background: white; color: var(--primary-color); }
+
+    .detail-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px 30px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+        margin-bottom: 25px;
+    }
+    .detail-section .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .detail-section .section-title i { color: var(--secondary-color); font-size: 20px; }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px 30px;
+    }
+    .detail-grid .detail-item {
+        display: flex;
+        flex-direction: column;
+        padding: 8px 0;
+        border-bottom: 1px solid #f5f5f5;
+    }
+    .detail-grid .detail-item:last-child { border-bottom: none; }
+    .detail-grid .detail-item .label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .detail-grid .detail-item .value {
+        font-size: 15px;
+        color: var(--text-dark);
+        font-weight: 500;
+        margin-top: 2px;
+    }
+
+    .badge-status {
+        padding: 6px 18px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    .badge-status.active { background: #e8f5e9; color: #1b5e20; }
+    .badge-status.inactive { background: #ffebee; color: #b71c1c; }
+    .badge-status.on_leave { background: #fff3e0; color: #e65100; }
+    .badge-status.terminated { background: #ffebee; color: #b71c1c; }
+
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--primary-color);
+        display: block;
+    }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .detail-section { padding: 15px; }
+        .detail-grid { grid-template-columns: 1fr; }
+        .profile-avatar { width: 80px; height: 80px; }
+    }
+</style>
+
+<div class="employee-detail-page">
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-user"></i> Employee Details</h3>
+                    <p class="subtitle" id="employee-id-display">Loading...</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <a href="/hr/employees/" class="btn btn-white-outline">
+    <i class="icofont-arrow-left"></i> Back to Employees
+</a>
+                    <button class="btn btn-white ml-2" onclick="window.print()">
+                        <i class="icofont-print"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="employee-container">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Loading employee details...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let employeeId = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) {
+            window.location.href = '/login/'; // Redirect to login
+            return;
+        }
+
+        // Get employee ID from URL using regex
+        const path = window.location.pathname;
+        console.log('Detail page - Full path:', path);
+        
+        const regexMatch = path.match(/\/hr\/employees\/(\d+)\//);
+        console.log('Detail page - Regex match:', regexMatch);
+        
+        if (regexMatch && regexMatch[1]) {
+            employeeId = regexMatch[1];
+            console.log('Detail page - Employee ID:', employeeId);
+            loadEmployee(employeeId);
+        } else {
+            document.getElementById('employee-container').innerHTML = `
+                <div class="detail-section text-center py-5">
+                    <h4 class="text-danger"><i class="icofont-warning"></i> Invalid Employee ID</h4>
+                    <a href="/hr/" class="btn btn-main">Back to Employees</a>
+                </div>
+            `;
+        }
+    });
+
+    function loadEmployee(id) {
+        console.log('Loading employee with ID:', id);
+        
+        fetch(`/api/hr/employees/${id}/`, {
+            
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Employee data loaded:', data);
+            renderEmployee(data);
+            const user = data.user || {};
+            const fullName = user.first_name && user.last_name ? 
+                `${user.first_name} ${user.last_name}` : 
+                (user.first_name || user.username || data.user_name || 'N/A');
+            document.getElementById('employee-id-display').textContent = `${fullName} - ${data.employee_number}`;
+        })
+        .catch(error => {
+            console.error('Error loading employee:', error);
+            document.getElementById('employee-container').innerHTML = `
+                <div class="detail-section text-center py-5">
+                    <h4 class="text-danger"><i class="icofont-warning"></i> Error Loading Employee</h4>
+                    <p class="text-muted">${error.message}</p>
+                    <a href="/hr/" class="btn btn-main">Back to Employees</a>
+                </div>
+            `;
+        });
+    }
+
+    function renderEmployee(data) {
+        const container = document.getElementById('employee-container');
+        const user = data.user || {};
+        
+        // Safely get avatar - use a data URI or default without onerror loop
+        let avatar = '/static/images/default-avatar.png';
+        if (user.profile_picture) {
+            avatar = user.profile_picture;
+        }
+        
+        // Safely get full name
+        let fullName = 'N/A';
+        if (user.first_name && user.last_name) {
+            fullName = `${user.first_name} ${user.last_name}`;
+        } else if (user.first_name) {
+            fullName = user.first_name;
+        } else if (user.username) {
+            fullName = user.username;
+        } else if (data.user_name) {
+            fullName = data.user_name;
+        }
+        
+        const status = data.status || 'active';
+        const statusDisplay = status.toUpperCase();
+
+        container.innerHTML = `
+            <!-- Profile -->
+            <div class="detail-section">
+                <div class="row align-items-center">
+                    <div class="col-md-2 text-center">
+                        <img src="${avatar}" alt="Profile" class="profile-avatar" 
+                             onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'width:120px;height:120px;border-radius:50%;background:#e0e0e0;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:40px;color:#999;border:4px solid var(--primary-color);\\'><i class=\\'icofont-user\\'></i></div>'">
+                    </div>
+                    <div class="col-md-7">
+                        <h4 style="color:var(--primary-color);margin:0;">${fullName}</h4>
+                        <span class="badge-status ${status}">${statusDisplay}</span>
+                        <div style="font-size:14px;color:var(--text-color);margin-top:5px;">
+                            ${data.employee_number || 'N/A'} • ${data.position || 'No Position'}
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-md-right mt-3 mt-md-0">
+                        <a href="/hr/employees/${data.id}/edit/" class="btn btn-sm btn-warning">
+                            <i class="icofont-edit"></i> Edit
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employment Information -->
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-briefcase"></i> Employment Information</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Employee Number</span>
+                        <span class="value">${data.employee_number || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Position</span>
+                        <span class="value">${data.position || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Department</span>
+                        <span class="value">${data.department_name || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Employment Type</span>
+                        <span class="value">${data.employment_type || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Status</span>
+                        <span class="value"><span class="badge-status ${status}">${statusDisplay}</span></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Employment Date</span>
+                        <span class="value">${data.employment_date ? new Date(data.employment_date).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    ${data.contract_end_date ? `
+                    <div class="detail-item">
+                        <span class="label">Contract End Date</span>
+                        <span class="value">${new Date(data.contract_end_date).toLocaleDateString()}</span>
+                    </div>` : ''}
+                </div>
+            </div>
+
+            <!-- Financial Information -->
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-wallet"></i> Financial Information</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Salary</span>
+                        <span class="value">UGX ${(data.salary || 0).toLocaleString()}</span>
+                    </div>
+                    ${data.bank_name ? `
+                    <div class="detail-item">
+                        <span class="label">Bank Name</span>
+                        <span class="value">${data.bank_name}</span>
+                    </div>` : ''}
+                    ${data.bank_account ? `
+                    <div class="detail-item">
+                        <span class="label">Bank Account</span>
+                        <span class="value">${data.bank_account}</span>
+                    </div>` : ''}
+                    ${data.nssf_number ? `
+                    <div class="detail-item">
+                        <span class="label">NSSF Number</span>
+                        <span class="value">${data.nssf_number}</span>
+                    </div>` : ''}
+                </div>
+            </div>
+
+            <!-- Emergency Contact -->
+            ${data.emergency_contact ? `
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-phone"></i> Emergency Contact</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Contact Name</span>
+                        <span class="value">${data.emergency_contact}</span>
+                    </div>
+                    ${data.emergency_phone ? `
+                    <div class="detail-item">
+                        <span class="label">Phone</span>
+                        <span class="value">${data.emergency_phone}</span>
+                    </div>` : ''}
+                </div>
+            </div>` : ''}
+        `;
+    }
+</script>
+{% endblock %}

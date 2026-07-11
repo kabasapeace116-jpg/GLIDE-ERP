@@ -1,0 +1,555 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Applications - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .applications-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white {
+        background: white; color: var(--primary-color); padding: 8px 22px;
+        border-radius: 50px; font-weight: 600; border: none; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+
+    .filter-bar {
+        background: white; padding: 18px 22px; border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .filter-bar .filter-label {
+        font-size: 12px; font-weight: 600; color: var(--text-color);
+        text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; display: block;
+    }
+    .filter-bar .filter-label i { margin-right: 4px; color: var(--secondary-color); }
+    .filter-bar .form-control,
+    .filter-bar .form-select {
+        height: 42px; border-radius: 8px; border: 1px solid #e8ecf1;
+        font-size: 14px; transition: all 0.3s ease; background: #f8f9fc;
+    }
+    .filter-bar .form-control:focus,
+    .filter-bar .form-select:focus {
+        border-color: var(--secondary-color); box-shadow: 0 0 0 3px rgba(225,36,84,0.08);
+        background: white;
+    }
+    .filter-bar .btn-reset {
+        height: 42px; border-radius: 8px; font-weight: 600; padding: 0 20px;
+        background: transparent; color: var(--text-color); border: 1px solid #e8ecf1;
+        transition: all 0.3s ease; width: 100%;
+    }
+    .filter-bar .btn-reset:hover { border-color: var(--secondary-color); color: var(--secondary-color); }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .stat-card {
+        background: white; border-radius: 12px; padding: 15px 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+    }
+    .stat-card .stat-number { font-size: 22px; font-weight: 700; color: var(--primary-color); }
+    .stat-card .stat-label { font-size: 12px; color: var(--text-color); margin: 0; }
+
+    .application-card {
+        background: white; border-radius: 12px; padding: 18px 22px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.3s ease; margin-bottom: 12px;
+    }
+    .application-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .application-card .app-header {
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    }
+    .application-card .app-header .app-id {
+        font-weight: 600; color: var(--primary-color); font-size: 14px;
+    }
+    .application-card .app-header .app-name {
+        font-weight: 600; color: var(--text-dark); font-size: 16px;
+    }
+    .application-card .app-details {
+        display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px;
+        font-size: 13px; color: var(--text-color);
+    }
+    .application-card .app-details span strong { color: var(--text-dark); }
+    .application-card .app-actions {
+        display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;
+    }
+
+    .badge-status {
+        padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .badge-status.pending { background: #fff3e0; color: #e65100; }
+    .badge-status.reviewing { background: #e3f2fd; color: #0d47a1; }
+    .badge-status.interview { background: #f3e5f5; color: #6a1b9a; }
+    .badge-status.admitted { background: #e8f5e9; color: #1b5e20; }
+    .badge-status.rejected { background: #ffebee; color: #b71c1c; }
+    .badge-status.waitlisted { background: #eceff1; color: #37474f; }
+
+    .pagination-custom {
+        display: flex; gap: 6px; justify-content: center; margin-top: 25px; flex-wrap: wrap;
+    }
+    .pagination-custom .page-item .page-link {
+        border-radius: 8px; color: var(--text-color); border: 1px solid #e8ecf1;
+        padding: 8px 14px; font-weight: 500; transition: all 0.3s ease; background: white;
+    }
+    .pagination-custom .page-item .page-link:hover { background: var(--light-bg); border-color: var(--secondary-color); color: var(--secondary-color); }
+    .pagination-custom .page-item.active .page-link { background: var(--primary-color); border-color: var(--primary-color); color: white; }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .stats-grid { grid-template-columns: 1fr 1fr; }
+        .filter-bar .row > div { margin-bottom: 10px; }
+        .application-card .app-header { flex-direction: column; align-items: flex-start; }
+    }
+</style>
+
+<div class="applications-page">
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-forms"></i> Applications</h3>
+                    <p class="subtitle">Review and manage student applications</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <a href="/admissions/apply/" class="btn btn-white" target="_blank">
+                        <i class="icofont-plus"></i> New Application
+                    </a>
+                    <button class="btn btn-white ml-2" onclick="window.print()">
+                        <i class="icofont-print"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-number" id="total-apps">0</div><p class="stat-label">Total</p></div>
+            <div class="stat-card"><div class="stat-number" id="pending-apps" style="color:#e65100;">0</div><p class="stat-label">Pending</p></div>
+            <div class="stat-card"><div class="stat-number" id="reviewing-apps" style="color:#0d47a1;">0</div><p class="stat-label">Reviewing</p></div>
+            <div class="stat-card"><div class="stat-number" id="admitted-apps" style="color:#1b5e20;">0</div><p class="stat-label">Admitted</p></div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <form id="filter-form" onsubmit="return false;">
+                <div class="row align-items-end">
+                    <div class="col-md-3">
+                        <label class="filter-label"><i class="icofont-search"></i> Search</label>
+                        <input type="text" id="search-input" class="form-control" 
+                               placeholder="Name or ID..." onkeyup="debounceAppFilter()">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="filter-label"><i class="icofont-check-circled"></i> Status</label>
+                        <select id="status-filter" class="form-select" onchange="loadApplications(1)">
+                            <option value="">All Status</option>
+                            <option value="pending">⏳ Pending</option>
+                            <option value="reviewing">📋 Reviewing</option>
+                            <option value="interview">📅 Interview</option>
+                            <option value="admitted">✅ Admitted</option>
+                            <option value="rejected">❌ Rejected</option>
+                            <option value="waitlisted">📝 Waitlisted</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="filter-label"><i class="icofont-book"></i> Category</label>
+                        <select id="category-filter" class="form-select" onchange="loadApplications(1)">
+                            <option value="">All Categories</option>
+                            <option value="diploma">🎓 Diploma</option>
+                            <option value="certificate">📜 Certificate</option>
+                            <option value="occupational">🔧 Occupational</option>
+                            <option value="modular">📚 Modular</option>
+                            <option value="driving">🚗 Driving</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-reset w-100" onclick="resetAppFilters()">
+                            <i class="icofont-refresh"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Applications List -->
+        <div id="applications-container">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Loading applications...</p>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <nav id="pagination-container">
+            <ul class="pagination-custom" id="pagination-links"></ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--primary-color); color: white; border-radius: 12px 12px 0 0;">
+                <h5 class="modal-title"><i class="icofont-check-circled mr-2"></i> Review Application</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="review-content">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Application ID:</strong> <span id="review-app-id" class="text-color-2"></span></p>
+                            <p><strong>Name:</strong> <span id="review-app-name"></span></p>
+                            <p><strong>Email:</strong> <span id="review-app-email"></span></p>
+                            <p><strong>Phone:</strong> <span id="review-app-phone"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Category:</strong> <span id="review-app-category"></span></p>
+                            <p><strong>Course:</strong> <span id="review-app-course"></span></p>
+                            <p><strong>Applied:</strong> <span id="review-app-date"></span></p>
+                            <p><strong>Status:</strong> <span id="review-app-status"></span></p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="form-group">
+                        <label style="font-weight: 600;">Decision</label>
+                        <select id="review-decision" class="form-control">
+                            <option value="pending">Pending</option>
+                            <option value="reviewing">Reviewing</option>
+                            <option value="interview">Schedule Interview</option>
+                            <option value="admitted">Admit</option>
+                            <option value="rejected">Reject</option>
+                            <option value="waitlisted">Waitlist</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: 600;">Review Notes</label>
+                        <textarea id="review-notes" class="form-control" rows="3" placeholder="Add review notes..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-main" onclick="submitReview()">
+                    <i class="icofont-check"></i> Submit Review
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // APPLICATIONS FILTERS & DISPLAY
+    // ============================================
+
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let currentPage = 1;
+    let totalPages = 1;
+    let currentAppId = null;
+    let appFilterTimeout;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) {
+            window.location.href = '/login/'; // Redirect to login
+            return;
+        }
+
+        // Set default date for date filter
+        loadApplications(1);
+    });
+
+    // ============================================
+    // DEBOUNCE SEARCH
+    // ============================================
+    function debounceAppFilter() {
+        clearTimeout(appFilterTimeout);
+        appFilterTimeout = setTimeout(() => {
+            loadApplications(1);
+        }, 500);
+    }
+
+    // ============================================
+    // LOAD APPLICATIONS
+    // ============================================
+    function loadApplications(page = 1) {
+        if (!user || !user.id) {
+            window.location.href = '/login/'; // Redirect to login
+            return;
+        }
+
+        const search = document.getElementById('search-input').value.trim();
+        const status = document.getElementById('status-filter').value;
+        const category = document.getElementById('category-filter').value;
+
+        console.log('🔍 Filtering applications:', { search, status, category, page });
+
+        let url = `/api/applications/?page=${page}`;
+        let params = [];
+
+        if (search) {
+            params.push(`search=${encodeURIComponent(search)}`);
+        }
+        if (status && status !== '') {
+            params.push(`status=${status}`);
+        }
+        if (category && category !== '') {
+            params.push(`category=${category}`);
+        }
+
+        // Add ordering
+        params.push(`ordering=-created_at`);
+
+        if (params.length > 0) {
+            url += '&' + params.join('&');
+        }
+
+        console.log('📡 Fetching URL:', url);
+
+        fetch(url, {
+            
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.error('Error response:', text);
+                    throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('📊 Applications data:', data);
+            renderApplications(data);
+            updateStats(data);
+        })
+        .catch(error => {
+            console.error('❌ Error loading applications:', error);
+            document.getElementById('applications-container').innerHTML = `
+                <div class="text-center py-5">
+                    <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                    <p class="mt-2 text-danger">Error loading applications: ${error.message}</p>
+                    <button class="btn btn-sm btn-main mt-2" onclick="loadApplications(1)">Retry</button>
+                </div>
+            `;
+        });
+    }
+
+    // ============================================
+    // UPDATE STATS
+    // ============================================
+    function updateStats(data) {
+        const results = data.results || [];
+        const total = data.count || 0;
+        const pending = results.filter(a => a.status === 'pending').length;
+        const reviewing = results.filter(a => a.status === 'reviewing').length;
+        const admitted = results.filter(a => a.status === 'admitted').length;
+
+        document.getElementById('total-apps').textContent = total;
+        document.getElementById('pending-apps').textContent = pending;
+        document.getElementById('reviewing-apps').textContent = reviewing;
+        document.getElementById('admitted-apps').textContent = admitted;
+    }
+
+    // ============================================
+    // RENDER APPLICATIONS
+    // ============================================
+    function renderApplications(data) {
+        const results = data.results || [];
+        const container = document.getElementById('applications-container');
+
+        console.log('Rendering applications:', results.length);
+
+        if (!results.length) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="icofont-forms" style="font-size:40px;opacity:0.3;"></i>
+                    <p class="mt-2 text-muted">No applications found</p>
+                </div>
+            `;
+            document.getElementById('pagination-links').innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = results.map(app => `
+            <div class="application-card">
+                <div class="app-header">
+                    <div>
+                        <span class="app-id">${app.application_id}</span>
+                        <span class="app-name">${app.full_name || app.first_name + ' ' + app.last_name}</span>
+                    </div>
+                    <span class="badge-status ${app.status}">${app.status.toUpperCase()}</span>
+                </div>
+                <div class="app-details">
+                    <span><strong>Course:</strong> ${app.program_applied || app.modular_course || app.diploma_course || 'N/A'}</span>
+                    <span><strong>Category:</strong> ${app.category || app.course_type || 'N/A'}</span>
+                    <span><strong>Email:</strong> ${app.email}</span>
+                    <span><strong>Phone:</strong> ${app.phone}</span>
+                    <span><strong>Applied:</strong> ${app.application_date ? new Date(app.application_date).toLocaleDateString() : 'N/A'}</span>
+                </div>
+                <div class="app-actions">
+                    <button class="btn btn-sm btn-main" onclick="openReview('${app.id}')">
+                        <i class="icofont-check"></i> Review
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="viewApplication('${app.id}')">
+                        <i class="icofont-eye"></i> View Details
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        // Pagination
+        totalPages = Math.ceil(data.count / 20) || 1;
+        currentPage = data.current_page || 1;
+        renderPagination();
+    }
+
+    // ============================================
+    // PAGINATION
+    // ============================================
+    function renderPagination() {
+        const container = document.getElementById('pagination-links');
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        if (currentPage > 1) {
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="loadApplications(${currentPage - 1})">‹</a></li>`;
+        }
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === currentPage) {
+                html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+            } else if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 2) {
+                html += `<li class="page-item"><a class="page-link" href="#" onclick="loadApplications(${i})">${i}</a></li>`;
+            }
+        }
+        if (currentPage < totalPages) {
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="loadApplications(${currentPage + 1})">›</a></li>`;
+        }
+        container.innerHTML = html;
+    }
+
+    // ============================================
+    // RESET FILTERS
+    // ============================================
+    function resetAppFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('status-filter').value = '';
+        document.getElementById('category-filter').value = '';
+        loadApplications(1);
+    }
+
+    // ============================================
+    // OPEN REVIEW MODAL
+    // ============================================
+    function openReview(appId) {
+        if (!user || !user.id) {
+            window.location.href = '/login/'; // Redirect to login
+            return;
+        }
+
+        currentAppId = appId;
+        console.log('Opening review for:', appId);
+
+        fetch(`/api/applications/${appId}/`, {
+            
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Application data:', data);
+
+            document.getElementById('review-app-id').textContent = data.application_id;
+            document.getElementById('review-app-name').textContent = data.full_name || data.first_name + ' ' + data.last_name;
+            document.getElementById('review-app-email').textContent = data.email || 'N/A';
+            document.getElementById('review-app-phone').textContent = data.phone || 'N/A';
+            document.getElementById('review-app-category').textContent = data.category || data.course_type || 'N/A';
+            document.getElementById('review-app-course').textContent = data.program_applied || data.modular_course || data.diploma_course || 'N/A';
+            document.getElementById('review-app-date').textContent = data.application_date ? new Date(data.application_date).toLocaleDateString() : 'N/A';
+            document.getElementById('review-app-status').textContent = data.status.toUpperCase();
+
+            document.getElementById('review-decision').value = data.status || 'pending';
+            document.getElementById('review-notes').value = data.review_notes || '';
+
+            $('#reviewModal').modal('show');
+        })
+        .catch(error => {
+            console.error('Error loading application details:', error);
+            alert('Error loading application details: ' + error.message);
+        });
+    }
+
+    // ============================================
+    // SUBMIT REVIEW
+    // ============================================
+    function submitReview() {
+        if (!user || !user.id) {
+            window.location.href = '/login/'; // Redirect to login
+            return;
+        }
+
+        const status = document.getElementById('review-decision').value;
+        const notes = document.getElementById('review-notes').value;
+
+        if (!status) {
+            alert('Please select a decision');
+            return;
+        }
+
+        console.log('Submitting review:', { status, notes });
+
+        fetch(`/api/applications/${currentAppId}/review/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                status: status,
+                notes: notes
+            })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Review submitted:', data);
+            $('#reviewModal').modal('hide');
+            loadApplications(currentPage);
+            alert('✅ Application reviewed successfully!');
+        })
+        .catch(error => {
+            console.error('Error submitting review:', error);
+            alert('❌ Error submitting review: ' + error.message);
+        });
+    }
+
+    // ============================================
+    // VIEW APPLICATION DETAILS
+    // ============================================
+    function viewApplication(appId) {
+        window.location.href = `/admissions/applications/${appId}/`;
+    }
+</script>
+{% endblock %}

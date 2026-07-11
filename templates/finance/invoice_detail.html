@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Invoice Details - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .invoice-detail-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white {
+        background: white; color: var(--primary-color); padding: 8px 22px;
+        border-radius: 50px; font-weight: 600; border: none; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+    .page-header-custom .btn-white-outline {
+        border: 2px solid rgba(255,255,255,0.3); color: white; background: transparent;
+        padding: 8px 22px; border-radius: 50px; font-weight: 600; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white-outline:hover { background: white; color: var(--primary-color); }
+
+    .detail-section {
+        background: white; border-radius: 15px; padding: 25px 30px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+        margin-bottom: 25px;
+    }
+    .detail-section .section-title {
+        font-size: 16px; font-weight: 700; color: var(--primary-color);
+        margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0;
+        display: flex; align-items: center; gap: 10px;
+    }
+    .detail-section .section-title i { color: var(--secondary-color); font-size: 20px; }
+
+    .detail-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px 30px;
+    }
+    .detail-grid .detail-item {
+        display: flex; flex-direction: column; padding: 8px 0;
+        border-bottom: 1px solid #f5f5f5;
+    }
+    .detail-grid .detail-item:last-child { border-bottom: none; }
+    .detail-grid .detail-item .label {
+        font-size: 12px; font-weight: 600; color: var(--text-color);
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .detail-grid .detail-item .value {
+        font-size: 15px; color: var(--text-dark); font-weight: 500; margin-top: 2px;
+    }
+    .detail-grid .detail-item .value .highlight {
+        color: var(--secondary-color); font-weight: 600;
+    }
+
+    .amount-box {
+        background: var(--light-bg); border-radius: 12px; padding: 15px 20px;
+        text-align: center; flex: 1;
+    }
+    .amount-box .number { font-size: 24px; font-weight: 700; color: var(--primary-color); }
+    .amount-box .number.green { color: #28a745; }
+    .amount-box .number.red { color: var(--secondary-color); }
+    .amount-box .label { font-size: 12px; color: var(--text-color); margin: 0; }
+
+    .amount-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px; margin-top: 15px;
+    }
+
+    .badge-status {
+        padding: 6px 18px; border-radius: 20px; font-size: 14px; font-weight: 600;
+    }
+    .badge-status.fully_paid { background: #e8f5e9; color: #1b5e20; }
+    .badge-status.partially_paid { background: #fff3e0; color: #e65100; }
+    .badge-status.pending { background: #ffebee; color: #b71c1c; }
+    .badge-status.overdue { background: #ffebee; color: #b71c1c; }
+    .badge-status.draft { background: #eceff1; color: #37474f; }
+    .badge-status.issued { background: #e3f2fd; color: #0d47a1; }
+
+    .payment-history-table {
+        width: 100%; border-collapse: collapse; font-size: 14px;
+    }
+    .payment-history-table thead th {
+        background: var(--light-bg); padding: 10px 12px; text-align: left;
+        font-size: 12px; font-weight: 600; color: var(--text-color);
+        text-transform: uppercase; letter-spacing: 0.5px;
+        border-bottom: 2px solid var(--border-color);
+    }
+    .payment-history-table tbody td {
+        padding: 10px 12px; border-bottom: 1px solid var(--border-color);
+        color: var(--text-dark);
+    }
+    .payment-history-table tbody tr:hover { background: var(--light-bg); }
+
+    .progress-custom {
+        height: 20px; border-radius: 10px; background: #f0f0f0; overflow: hidden;
+        margin-top: 10px;
+    }
+    .progress-custom .progress-bar {
+        height: 100%; border-radius: 10px; transition: width 0.6s ease;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px; font-weight: 600; color: white;
+    }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .detail-section { padding: 15px; }
+        .detail-grid { grid-template-columns: 1fr; }
+        .amount-grid { grid-template-columns: 1fr 1fr; }
+        .amount-box .number { font-size: 20px; }
+    }
+</style>
+
+<div class="invoice-detail-page">
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-file-text"></i> Invoice Details</h3>
+                    <p class="subtitle" id="invoice-id-display">Loading...</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <a href="/finance/invoices/" class="btn btn-white-outline">
+                        <i class="icofont-arrow-left"></i> Back to Invoices
+                    </a>
+                    <button class="btn btn-white ml-2" onclick="window.print()">
+                        <i class="icofont-print"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="invoice-container">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Loading invoice details...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Record Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #ffc107; color: #212529;">
+                <h5 class="modal-title"><i class="icofont-wallet"></i> Record Payment</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Amount (UGX) <span class="text-danger">*</span></label>
+                    <input type="number" id="payment-amount" class="form-control" placeholder="Enter amount">
+                </div>
+                <div class="form-group">
+                    <label>Payment Method <span class="text-danger">*</span></label>
+                    <select id="payment-method" class="form-control">
+                        <option value="cash">Cash</option>
+                        <option value="bank">Bank Transfer</option>
+                        <option value="mobile">Mobile Money</option>
+                        <option value="card">Card</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Reference Number</label>
+                    <input type="text" id="payment-ref" class="form-control" placeholder="Reference number">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="recordPayment()"><i class="icofont-save"></i> Record Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let invoiceId = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+
+        const path = window.location.pathname;
+        const parts = path.split('/');
+        invoiceId = parts[parts.length - 2];
+
+        if (invoiceId) {
+            loadInvoice(invoiceId);
+        } else {
+            document.getElementById('invoice-container').innerHTML = `
+                <div class="detail-section text-center py-5">
+                    <h4 class="text-danger"><i class="icofont-warning"></i> Invalid Invoice ID</h4>
+                    <a href="/finance/invoices/" class="btn btn-main">Back to Invoices</a>
+                </div>
+            `;
+        }
+    });
+
+    function loadInvoice(id) {
+        fetch(`/api/finance/invoices/${id}/`, {
+            
+        })
+        .then(r => r.json())
+        .then(data => {
+            renderInvoice(data);
+            document.getElementById('invoice-id-display').textContent = `Invoice: ${data.invoice_number}`;
+        })
+        .catch(error => {
+            document.getElementById('invoice-container').innerHTML = `
+                <div class="detail-section text-center py-5">
+                    <h4 class="text-danger"><i class="icofont-warning"></i> Error Loading Invoice</h4>
+                    <p class="text-muted">${error.message}</p>
+                    <a href="/finance/invoices/" class="btn btn-main">Back to Invoices</a>
+                </div>
+            `;
+        });
+    }
+
+    function renderInvoice(data) {
+        const container = document.getElementById('invoice-container');
+
+        const paidPercent = data.total_amount > 0 ? Math.round((data.amount_paid / data.total_amount) * 100) : 0;
+
+        container.innerHTML = `
+            <!-- Status -->
+            <div class="detail-section">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                        <h4 style="margin:0;color:var(--primary-color);">${data.invoice_number}</h4>
+                        <span class="badge-status ${data.status}">${data.status.replace('_', ' ').toUpperCase()}</span>
+                        <span class="ml-3 text-muted">Issued: ${data.issue_date ? new Date(data.issue_date).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    <div class="mt-2 mt-md-0">
+                        <button class="btn btn-sm btn-warning" onclick="openPaymentModal()">
+                            <i class="icofont-wallet"></i> Record Payment
+                        </button>
+                    </div>
+                </div>
+                <div class="progress-custom">
+                    <div class="progress-bar" style="width: ${paidPercent}%; background: ${paidPercent >= 100 ? '#28a745' : paidPercent >= 50 ? '#ffc107' : '#dc3545'};">
+                        ${paidPercent}% Paid
+                    </div>
+                </div>
+            </div>
+
+            <!-- Amount Breakdown -->
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-money"></i> Amount Breakdown</div>
+                <div class="amount-grid">
+                    <div class="amount-box">
+                        <div class="number">UGX ${(data.total_amount || 0).toLocaleString()}</div>
+                        <p class="label">Total Amount</p>
+                    </div>
+                    <div class="amount-box">
+                        <div class="number green">UGX ${(data.amount_paid || 0).toLocaleString()}</div>
+                        <p class="label">Amount Paid</p>
+                    </div>
+                    <div class="amount-box">
+                        <div class="number red">UGX ${(data.balance || 0).toLocaleString()}</div>
+                        <p class="label">Balance</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Information -->
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-user"></i> Student Information</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Student Name</span>
+                        <span class="value">${data.student_name || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Registration Number</span>
+                        <span class="value">${data.student || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Semester</span>
+                        <span class="value">${data.semester || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Due Date</span>
+                        <span class="value">${data.due_date ? new Date(data.due_date).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    ${data.notes ? `
+                    <div class="detail-item">
+                        <span class="label">Notes</span>
+                        <span class="value">${data.notes}</span>
+                    </div>` : ''}
+                </div>
+            </div>
+
+            <!-- Payment History -->
+            <div class="detail-section">
+                <div class="section-title"><i class="icofont-wallet"></i> Payment History</div>
+                <div id="payment-history">
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                        <span class="ml-2 text-muted">Loading payment history...</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Load payment history
+        loadPaymentHistory(data.id);
+    }
+
+    function loadPaymentHistory(invoiceId) {
+        fetch(`/api/finance/payments/?invoice=${invoiceId}`, {
+            
+        })
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('payment-history');
+            const results = data.results || [];
+
+            if (!results.length) {
+                container.innerHTML = `<p class="text-center text-muted py-3">No payments recorded yet.</p>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="table-responsive">
+                    <table class="payment-history-table">
+                        <thead>
+                            <tr>
+                                <th>Payment #</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Date</th>
+                                <th>Reference</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${results.map(p => `
+                                <tr>
+                                    <td><strong>${p.payment_number}</strong></td>
+                                    <td>UGX ${(p.amount || 0).toLocaleString()}</td>
+                                    <td><span class="badge badge-info">${p.payment_method}</span></td>
+                                    <td>${p.payment_date ? new Date(p.payment_date).toLocaleDateString() : 'N/A'}</td>
+                                    <td>${p.reference_number || 'N/A'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        })
+        .catch(() => {
+            document.getElementById('payment-history').innerHTML = `
+                <p class="text-center text-danger py-3">Error loading payment history</p>
+            `;
+        });
+    }
+
+    function openPaymentModal() {
+        document.getElementById('payment-amount').value = '';
+        document.getElementById('payment-method').value = 'cash';
+        document.getElementById('payment-ref').value = '';
+        $('#paymentModal').modal('show');
+    }
+
+    function recordPayment() {
+        const amount = parseFloat(document.getElementById('payment-amount').value);
+        const method = document.getElementById('payment-method').value;
+        const ref = document.getElementById('payment-ref').value;
+
+        if (!amount || amount <= 0) {
+            alert('Please enter a valid amount');
+            return;
+        }
+
+        fetch(`/api/finance/invoices/${invoiceId}/mark_paid/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                amount: amount,
+                payment_method: method,
+                reference_number: ref
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                $('#paymentModal').modal('hide');
+                loadInvoice(invoiceId);
+                alert('✅ Payment recorded successfully!');
+            } else {
+                alert('❌ ' + (data.error || 'Payment recording failed'));
+            }
+        })
+        .catch(error => {
+            alert('❌ Error recording payment: ' + error.message);
+        });
+    }
+</script>
+{% endblock %}

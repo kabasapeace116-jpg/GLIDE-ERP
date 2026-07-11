@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Student Details - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .student-detail-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white {
+        background: white; color: var(--primary-color); padding: 8px 22px;
+        border-radius: 50px; font-weight: 600; border: none; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+    .page-header-custom .btn-white-outline {
+        border: 2px solid rgba(255,255,255,0.3); color: white; background: transparent;
+        padding: 8px 22px; border-radius: 50px; font-weight: 600; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white-outline:hover { background: white; color: var(--primary-color); }
+
+    .detail-section {
+        background: white; border-radius: 15px; padding: 25px 30px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+        margin-bottom: 25px;
+    }
+    .detail-section .section-title {
+        font-size: 16px; font-weight: 700; color: var(--primary-color);
+        margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0;
+        display: flex; align-items: center; gap: 10px;
+    }
+    .detail-section .section-title i { color: var(--secondary-color); font-size: 20px; }
+
+    .detail-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px 30px;
+    }
+    .detail-grid .detail-item {
+        display: flex; flex-direction: column; padding: 8px 0;
+        border-bottom: 1px solid #f5f5f5;
+    }
+    .detail-grid .detail-item:last-child { border-bottom: none; }
+    .detail-grid .detail-item .label {
+        font-size: 12px; font-weight: 600; color: var(--text-color);
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .detail-grid .detail-item .value {
+        font-size: 15px; color: var(--text-dark); font-weight: 500; margin-top: 2px;
+    }
+
+    .badge-status {
+        padding: 6px 18px; border-radius: 20px; font-size: 14px; font-weight: 600;
+    }
+    .badge-status.active { background: #e8f5e9; color: #1b5e20; }
+    .badge-status.inactive { background: #ffebee; color: #b71c1c; }
+    .badge-status.graduated { background: #e3f2fd; color: #0d47a1; }
+    .badge-status.suspended { background: #fff3e0; color: #e65100; }
+    .badge-status.dropped { background: #ffebee; color: #b71c1c; }
+
+    .profile-avatar {
+        width: 120px; height: 120px; border-radius: 50%;
+        object-fit: cover; border: 4px solid var(--primary-color);
+    }
+
+    .stats-mini {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 10px; margin-top: 15px;
+    }
+    .stats-mini .stat-box {
+        background: var(--light-bg); border-radius: 8px; padding: 10px;
+        text-align: center;
+    }
+    .stats-mini .stat-box .number { font-size: 20px; font-weight: 700; color: var(--primary-color); }
+    .stats-mini .stat-box .label { font-size: 11px; color: var(--text-color); margin: 0; }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .detail-section { padding: 15px; }
+        .detail-grid { grid-template-columns: 1fr; }
+        .profile-avatar { width: 80px; height: 80px; }
+    }
+</style>
+
+<div class="student-detail-page">
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-user"></i> Student Details</h3>
+                    <p class="subtitle" id="student-id-display">Loading...</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <a href="/students/" class="btn btn-white-outline">
+                        <i class="icofont-arrow-left"></i> Back to Students
+                    </a>
+                    <button class="btn btn-white ml-2" onclick="window.print()">
+                        <i class="icofont-print"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="student-container">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Loading student details...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let studentId = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+
+        const path = window.location.pathname;
+        const parts = path.split('/');
+        studentId = parts[parts.length - 2];
+
+        if (studentId) {
+            loadStudent(studentId);
+        } else {
+            document.getElementById('student-container').innerHTML = `
+                <div class="detail-section text-center py-5">
+                    <h4 class="text-danger"><i class="icofont-warning"></i> Invalid Student ID</h4>
+                    <a href="/students/" class="btn btn-main">Back to Students</a>
+                </div>
+            `;
+        }
+    });
+
+    function loadStudent(id) {
+        Promise.all([
+            fetch(`/api/students/${id}/`, {  }),
+            fetch(`/api/academics/results/student_results/?student_id=${id}`, {  }),
+            fetch(`/api/finance/invoices/?student=${id}`, {  })
+        ])
+        .then(([studentRes, resultsRes, invoicesRes]) => {
+            return Promise.all([studentRes.json(), resultsRes.json(), invoicesRes.json()]);
+        })
+        .then(([student, results, invoices]) => {
+            renderStudent(student, results, invoices);
+            document.getElementById('student-id-display').textContent = `${student.first_name} ${student.last_name} - ${student.registration_number}`;
+        })
+        .catch(error => {
+            document.getElementById('student-container').innerHTML = `
+                <div class="detail-section text-center py-5">
+                    <h4 class="text-danger"><i class="icofont-warning"></i> Error Loading Student</h4>
+                    <p class="text-muted">${error.message}</p>
+                    <a href="/students/" class="btn btn-main">Back to Students</a>
+                </div>
+            `;
+        });
+    }
+
+    function editStudent(id) {
+    window.location.href = `/students/${id}/edit/`;
+}
+
+    function renderStudent(student, results, invoices) {
+    const container = document.getElementById('student-container');
+
+    // Ensure data is properly formatted
+    const resultsData = Array.isArray(results) ? results : (results.results || []);
+    const invoicesData = Array.isArray(invoices) ? invoices : (invoices.results || []);
+    
+    console.log('Results data:', resultsData);
+    console.log('Invoices data:', invoicesData);
+
+    const totalInvoices = invoicesData.length > 0 ? invoicesData.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0) : 0;
+    const totalPaid = invoicesData.length > 0 ? invoicesData.reduce((s, inv) => s + parseFloat(inv.amount_paid || 0), 0) : 0;
+    const outstanding = totalInvoices - totalPaid;
+
+    // ... rest of the render function (same as before but with safe data)
+    
+    container.innerHTML = `
+        <!-- Profile -->
+        <div class="detail-section">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center">
+                    <img src="${student.profile_picture || '/static/images/default-avatar.png'}" alt="Profile" class="profile-avatar">
+                </div>
+                <div class="col-md-7">
+                    <h4 style="color:var(--primary-color);margin:0;">${student.first_name} ${student.last_name}</h4>
+                    <span class="badge-status ${student.status}">${student.status.toUpperCase()}</span>
+                    <div style="font-size:14px;color:var(--text-color);margin-top:5px;">
+                        ${student.registration_number} • ${student.course_name || 'No Course'}
+                    </div>
+                </div>
+                <div class="col-md-3 text-md-right mt-3 mt-md-0">
+                    <button class="btn btn-sm btn-warning" onclick="window.location.href='/students/${student.id}/edit/'">
+    <i class="icofont-edit"></i> Edit
+</button>
+                </div>
+            </div>
+            <div class="stats-mini">
+                <div class="stat-box">
+                    <div class="number">${resultsData.length}</div>
+                    <p class="label">Results</p>
+                </div>
+                <div class="stat-box">
+                    <div class="number">${invoicesData.length}</div>
+                    <p class="label">Invoices</p>
+                </div>
+                <div class="stat-box">
+                    <div class="number" style="color:#28a745;">UGX ${totalPaid.toLocaleString()}</div>
+                    <p class="label">Paid</p>
+                </div>
+                <div class="stat-box">
+                    <div class="number" style="color:var(--secondary-color);">UGX ${outstanding.toLocaleString()}</div>
+                    <p class="label">Outstanding</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personal Information -->
+        <div class="detail-section">
+            <div class="section-title"><i class="icofont-user"></i> Personal Information</div>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <span class="label">Full Name</span>
+                    <span class="value">${student.first_name} ${student.last_name} ${student.other_name || ''}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Registration Number</span>
+                    <span class="value">${student.registration_number}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Date of Birth</span>
+                    <span class="value">${student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'N/A'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Gender</span>
+                    <span class="value">${student.gender || 'N/A'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Nationality</span>
+                    <span class="value">${student.nationality || 'N/A'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Marital Status</span>
+                    <span class="value">${student.marital_status || 'N/A'}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="detail-section">
+            <div class="section-title"><i class="icofont-phone"></i> Contact Information</div>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <span class="label">Phone</span>
+                    <span class="value">${student.phone || 'N/A'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Alternate Phone</span>
+                    <span class="value">${student.alternate_phone || 'N/A'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Email</span>
+                    <span class="value">${student.email || 'N/A'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Address</span>
+                    <span class="value">${student.address || 'N/A'}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Academic Information -->
+        <div class="detail-section">
+            <div class="section-title"><i class="icofont-book"></i> Academic Information</div>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <span class="label">Course</span>
+                    <span class="value">${student.course_name || 'N/A'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Class</span>
+                    <span class="value">${student.current_class_name || 'Not Assigned'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Enrollment Date</span>
+                    <span class="value">${student.enrollment_date ? new Date(student.enrollment_date).toLocaleDateString() : 'N/A'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Status</span>
+                    <span class="value"><span class="badge-status ${student.status}">${student.status.toUpperCase()}</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Results -->
+        <div class="detail-section">
+            <div class="section-title"><i class="icofont-graduate"></i> Recent Results</div>
+            ${resultsData.length > 0 ? `
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Course Unit</th>
+                                <th>Score</th>
+                                <th>Grade</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${resultsData.slice(0, 5).map(r => `
+                                <tr>
+                                    <td>${r.course_unit_name || r.course_unit || 'N/A'}</td>
+                                    <td>${r.score || 0}</td>
+                                    <td><span class="badge badge-${r.grade === 'F' ? 'danger' : 'success'}">${r.grade || 'P'}</span></td>
+                                    <td>${r.grade === 'F' ? 'Retake' : 'Pass'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    ${resultsData.length > 5 ? `<p class="text-muted text-center small">Showing 5 of ${resultsData.length} results</p>` : ''}
+                </div>
+            ` : `<p class="text-muted text-center">No results available</p>`}
+        </div>
+
+        <!-- Financial Summary -->
+        <div class="detail-section">
+            <div class="section-title"><i class="icofont-wallet"></i> Financial Summary</div>
+            ${invoicesData.length > 0 ? `
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Amount</th>
+                                <th>Paid</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${invoicesData.slice(0, 5).map(inv => `
+                                <tr>
+                                    <td><a href="/finance/invoices/${inv.id}/">${inv.invoice_number}</a></td>
+                                    <td>UGX ${(inv.total_amount || 0).toLocaleString()}</td>
+                                    <td>UGX ${(inv.amount_paid || 0).toLocaleString()}</td>
+                                    <td>UGX ${(inv.balance || 0).toLocaleString()}</td>
+                                    <td><span class="badge-status ${inv.status}">${inv.status.replace('_', ' ').toUpperCase()}</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    ${invoicesData.length > 5 ? `<p class="text-muted text-center small">Showing 5 of ${invoicesData.length} invoices</p>` : ''}
+                </div>
+            ` : `<p class="text-muted text-center">No invoices available</p>`}
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <div class="stat-box">
+                        <div class="number">UGX ${totalInvoices.toLocaleString()}</div>
+                        <p class="label">Total Invoices</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-box">
+                        <div class="number" style="color:#28a745;">UGX ${totalPaid.toLocaleString()}</div>
+                        <p class="label">Total Paid</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-box">
+                        <div class="number" style="color:var(--secondary-color);">UGX ${outstanding.toLocaleString()}</div>
+                        <p class="label">Outstanding</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+</script>
+{% endblock %}

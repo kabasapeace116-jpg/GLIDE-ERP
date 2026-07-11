@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Financial Clearance - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .clearance-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white {
+        background: white; color: var(--primary-color); padding: 8px 22px;
+        border-radius: 50px; font-weight: 600; border: none; transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+
+    .filter-bar {
+        background: white; padding: 15px 20px; border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .filter-bar .filter-label {
+        font-size: 12px; font-weight: 600; color: var(--text-color);
+        text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; display: block;
+    }
+    .filter-bar .form-control,
+    .filter-bar .form-select {
+        height: 38px; border-radius: 8px; border: 1px solid #e8ecf1;
+        font-size: 13px; transition: all 0.3s ease; background: #f8f9fc;
+    }
+    .filter-bar .form-control:focus,
+    .filter-bar .form-select:focus {
+        border-color: var(--secondary-color); box-shadow: 0 0 0 3px rgba(225,36,84,0.08);
+        background: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .stat-card {
+        background: white; border-radius: 12px; padding: 15px 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+    }
+    .stat-card .stat-number { font-size: 24px; font-weight: 700; color: var(--primary-color); }
+    .stat-card .stat-number.green { color: #28a745; }
+    .stat-card .stat-number.red { color: var(--secondary-color); }
+    .stat-card .stat-number.orange { color: #fd7e14; }
+    .stat-card .stat-label { font-size: 12px; color: var(--text-color); margin: 0; }
+
+    .clearance-card {
+        background: white; border-radius: 12px; padding: 18px 22px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.3s ease; margin-bottom: 12px;
+    }
+    .clearance-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .clearance-card .clearance-header {
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    }
+    .clearance-card .clearance-header .student-name {
+        font-weight: 600; color: var(--text-dark); font-size: 16px;
+    }
+    .clearance-card .clearance-header .student-reg {
+        font-size: 13px; color: var(--text-color);
+    }
+    .clearance-card .clearance-status {
+        padding: 4px 16px; border-radius: 20px; font-weight: 600; font-size: 13px;
+    }
+    .clearance-card .clearance-status.cleared {
+        background: #e8f5e9; color: #1b5e20;
+    }
+    .clearance-card .clearance-status.pending {
+        background: #fff3e0; color: #e65100;
+    }
+    .clearance-card .clearance-details {
+        display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px;
+        font-size: 13px; color: var(--text-color);
+    }
+    .clearance-card .clearance-details span strong { color: var(--text-dark); }
+    .clearance-card .clearance-actions {
+        display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;
+    }
+    .clearance-card .clearance-actions .btn {
+        padding: 5px 14px; font-size: 12px; border-radius: 6px;
+    }
+
+    .progress-custom {
+        height: 8px; border-radius: 4px; background: #f0f0f0; overflow: hidden;
+        margin-top: 10px;
+    }
+    .progress-custom .progress-bar {
+        height: 100%; border-radius: 4px; transition: width 0.6s ease;
+    }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .stats-grid { grid-template-columns: 1fr 1fr; }
+        .filter-bar .row > div { margin-bottom: 10px; }
+        .clearance-card .clearance-header { flex-direction: column; align-items: flex-start; }
+        .clearance-card .clearance-status { margin-top: 8px; }
+    }
+</style>
+
+<div class="clearance-page">
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-check-circled"></i> Financial Clearance</h3>
+                    <p class="subtitle">Manage student financial clearance status</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <button class="btn btn-white" onclick="bulkClearance()">
+                        <i class="icofont-check"></i> Bulk Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card"><div class="stat-number" id="total-students">0</div><p class="stat-label">Total Students</p></div>
+            <div class="stat-card"><div class="stat-number green" id="cleared-students">0</div><p class="stat-label">Cleared</p></div>
+            <div class="stat-card"><div class="stat-number red" id="pending-students">0</div><p class="stat-label">Pending</p></div>
+            <div class="stat-card"><div class="stat-number orange" id="clearance-rate">0%</div><p class="stat-label">Clearance Rate</p></div>
+        </div>
+
+        <!-- Filter -->
+        <div class="filter-bar">
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label class="filter-label">Search</label>
+                    <input type="text" id="search-input" class="form-control" placeholder="Name or Reg No..." onkeyup="loadClearance()">
+                </div>
+                <div class="col-md-3">
+                    <label class="filter-label">Status</label>
+                    <select id="status-filter" class="form-select" onchange="loadClearance()">
+                        <option value="">All Status</option>
+                        <option value="cleared">Cleared</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="filter-label">Semester</label>
+                    <select id="semester-filter" class="form-select" onchange="loadClearance()">
+                        <option value="">All Semesters</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-reset w-100" onclick="resetFilters()"><i class="icofont-refresh"></i> Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clearance List -->
+        <div id="clearance-container">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Loading clearance records...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        loadSemesters();
+        loadClearance();
+    });
+
+    function loadSemesters() {
+        fetch('/api/admissions/semesters/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('semester-filter');
+            if (data.results) {
+                data.results.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.name} - ${s.academic_year_name}`;
+                    select.appendChild(opt);
+                });
+            }
+        }).catch(() => {});
+    }
+
+    function loadClearance() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const search = document.getElementById('search-input').value.trim();
+    const status = document.getElementById('status-filter').value;
+    const semester = document.getElementById('semester-filter').value;
+
+    console.log('Filtering clearance:', { search, status, semester });
+
+    let url = '/api/finance/clearance/';
+    let params = [];
+    if (search) params.push(`search=${encodeURIComponent(search)}`);
+    if (status) params.push(`is_cleared=${status === 'cleared'}`);
+    if (semester) params.push(`semester=${semester}`);
+    params.push(`ordering=-created_at`);
+    
+    if (params.length) url += '?' + params.join('&');
+
+    console.log('Fetching URL:', url);
+
+    fetch(url, {  })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Filtered clearance:', data);
+        renderClearance(data);
+    })
+    .catch(error => {
+        console.error('Error loading clearance:', error);
+        document.getElementById('clearance-container').innerHTML = `
+            <div class="text-center py-5">
+                <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                <p class="mt-2 text-danger">Error loading clearance: ${error.message}</p>
+            </div>
+        `;
+    });
+}
+
+    function renderClearance(data) {
+        const results = data.results || [];
+        const container = document.getElementById('clearance-container');
+
+        // Stats
+        const total = results.length;
+        const cleared = results.filter(c => c.is_cleared).length;
+        const pending = total - cleared;
+        const rate = total > 0 ? Math.round((cleared / total) * 100) : 0;
+
+        document.getElementById('total-students').textContent = total;
+        document.getElementById('cleared-students').textContent = cleared;
+        document.getElementById('pending-students').textContent = pending;
+        document.getElementById('clearance-rate').textContent = rate + '%';
+
+        if (!results.length) {
+            container.innerHTML = `<div class="text-center py-5"><i class="icofont-check-circled" style="font-size:40px;opacity:0.3;"></i>
+                <p class="mt-2 text-muted">No clearance records found</p></div>`;
+            return;
+        }
+
+        container.innerHTML = results.map(c => `
+            <div class="clearance-card">
+                <div class="clearance-header">
+                    <div>
+                        <div class="student-name">${c.student_name || 'N/A'}</div>
+                        <div class="student-reg">${c.student || 'N/A'}</div>
+                    </div>
+                    <span class="clearance-status ${c.is_cleared ? 'cleared' : 'pending'}">
+                        <i class="icofont-${c.is_cleared ? 'check-circled' : 'warning'}"></i>
+                        ${c.is_cleared ? 'CLEARED' : 'PENDING'}
+                    </span>
+                </div>
+                <div class="clearance-details">
+                    <span><strong>Semester:</strong> ${c.semester || 'N/A'}</span>
+                    ${c.clearance_date ? `<span><strong>Cleared On:</strong> ${new Date(c.clearance_date).toLocaleDateString()}</span>` : ''}
+                    ${c.cleared_by ? `<span><strong>Cleared By:</strong> ${c.cleared_by}</span>` : ''}
+                    ${c.notes ? `<span><strong>Notes:</strong> ${c.notes}</span>` : ''}
+                </div>
+                <div class="progress-custom">
+                    <div class="progress-bar" style="width: ${c.is_cleared ? 100 : 0}%; background: ${c.is_cleared ? '#28a745' : '#dc3545'};"></div>
+                </div>
+                <div class="clearance-actions">
+                    ${!c.is_cleared ? `
+                        <button class="btn btn-sm btn-success" onclick="clearStudent('${c.id}')">
+                            <i class="icofont-check"></i> Clear Student
+                        </button>
+                    ` : `
+                        <button class="btn btn-sm btn-warning" onclick="reverseClearance('${c.id}')">
+                            <i class="icofont-undo"></i> Reverse
+                        </button>
+                    `}
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewDetails('${c.id}')">
+                        <i class="icofont-eye"></i> Details
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function clearStudent(id) {
+        if (!confirm('Are you sure you want to clear this student?')) return;
+        fetch(`/api/finance/clearance/${id}/`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                is_cleared: true,
+                clearance_date: new Date().toISOString().split('T')[0]
+            })
+        })
+        .then(() => { loadClearance(); alert('Student cleared successfully!'); })
+        .catch(() => alert('Error clearing student'));
+    }
+
+    function reverseClearance(id) {
+        if (!confirm('Are you sure you want to reverse this clearance?')) return;
+        fetch(`/api/finance/clearance/${id}/`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                is_cleared: false,
+                clearance_date: null
+            })
+        })
+        .then(() => { loadClearance(); alert('Clearance reversed!'); })
+        .catch(() => alert('Error reversing clearance'));
+    }
+
+    function bulkClearance() {
+        if (!confirm('Clear ALL pending students? This action cannot be undone.')) return;
+        
+        // Get all pending clearances
+        fetch('/api/finance/clearance/?is_cleared=false', {
+            
+        })
+        .then(r => r.json())
+        .then(data => {
+            const pending = data.results || [];
+            if (!pending.length) {
+                alert('No pending clearances found.');
+                return;
+            }
+            
+            const promises = pending.map(c => 
+                fetch(`/api/finance/clearance/${c.id}/`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        is_cleared: true,
+                        clearance_date: new Date().toISOString().split('T')[0]
+                    })
+                })
+            );
+            
+            Promise.all(promises)
+                .then(() => { loadClearance(); alert(`Cleared ${pending.length} students!`); })
+                .catch(() => alert('Error during bulk clearance'));
+        }).catch(() => alert('Error loading pending clearances'));
+    }
+
+    function viewDetails(id) {
+        window.location.href = `/finance/clearance/${id}/`;
+    }
+
+    function resetFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('status-filter').value = '';
+        document.getElementById('semester-filter').value = '';
+        loadClearance();
+    }
+</script>
+{% endblock %}

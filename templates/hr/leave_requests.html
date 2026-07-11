@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Leave Requests - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .hr-page { padding: 30px 0 60px; background: #f0f4f8; min-height: 100vh; }
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px; border-radius: 15px; color: white; margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+
+    .filter-bar {
+        background: white; padding: 15px 20px; border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .filter-bar .filter-label {
+        font-size: 12px; font-weight: 600; color: var(--text-color);
+        text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; display: block;
+    }
+    .filter-bar .form-control,
+    .filter-bar .form-select {
+        height: 38px; border-radius: 8px; border: 1px solid #e8ecf1;
+        font-size: 13px; transition: all 0.3s ease; background: #f8f9fc;
+    }
+
+    .leave-card {
+        background: white; border-radius: 12px; padding: 18px 22px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.3s ease; margin-bottom: 12px;
+    }
+    .leave-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .leave-card .leave-header {
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    }
+    .leave-card .leave-header .leave-employee {
+        font-weight: 600; color: var(--text-dark); font-size: 16px;
+    }
+    .leave-card .leave-details {
+        display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px;
+        font-size: 13px; color: var(--text-color);
+    }
+    .leave-card .leave-details span strong { color: var(--text-dark); }
+    .leave-card .leave-actions {
+        display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;
+    }
+
+    .badge-status {
+        padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .badge-status.pending { background: #fff3e0; color: #e65100; }
+    .badge-status.approved { background: #e8f5e9; color: #1b5e20; }
+    .badge-status.rejected { background: #ffebee; color: #b71c1c; }
+    .badge-status.cancelled { background: #eceff1; color: #37474f; }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .filter-bar .row > div { margin-bottom: 10px; }
+        .leave-card .leave-header { flex-direction: column; align-items: flex-start; }
+    }
+</style>
+
+<div class="hr-page">
+    <div class="container">
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-calendar"></i> Leave Requests</h3>
+                    <p class="subtitle">Review and manage staff leave requests</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <div class="row align-items-end">
+                <div class="col-md-4">
+                    <label class="filter-label">Search</label>
+                    <input type="text" id="search-input" class="form-control" placeholder="Employee name..." onkeyup="loadLeave()">
+                </div>
+                <div class="col-md-4">
+                    <label class="filter-label">Status</label>
+                    <select id="status-filter" class="form-select" onchange="loadLeave()">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-reset w-100" onclick="resetFilters()"><i class="icofont-refresh"></i> Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="leave-container">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Loading leave requests...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        loadLeave();
+    });
+
+    function loadLeave() {
+        const search = document.getElementById('search-input').value;
+        const status = document.getElementById('status-filter').value;
+
+        let url = '/api/hr/leave-requests/';
+        let params = [];
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        if (status) params.push(`status=${status}`);
+        if (params.length) url += '?' + params.join('&');
+
+        fetch(url, {  })
+        .then(r => r.json())
+        .then(data => {
+            renderLeave(data);
+        })
+        .catch(() => {
+            document.getElementById('leave-container').innerHTML = `
+                <div class="text-center py-5"><i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                <p class="mt-2 text-danger">Error loading leave requests</p></div>`;
+        });
+    }
+
+    function renderLeave(data) {
+        const results = data.results || [];
+        const container = document.getElementById('leave-container');
+
+        if (!results.length) {
+            container.innerHTML = `<div class="text-center py-5"><i class="icofont-calendar" style="font-size:40px;opacity:0.3;"></i>
+                <p class="mt-2 text-muted">No leave requests found</p></div>`;
+            return;
+        }
+
+        container.innerHTML = results.map(leave => `
+            <div class="leave-card">
+                <div class="leave-header">
+                    <div>
+                        <div class="leave-employee">${leave.employee_name || 'N/A'}</div>
+                        <div style="font-size:13px;color:var(--text-color);">${leave.leave_type} Leave</div>
+                    </div>
+                    <span class="badge-status ${leave.status}">${leave.status.toUpperCase()}</span>
+                </div>
+                <div class="leave-details">
+                    <span><strong>From:</strong> ${leave.start_date ? new Date(leave.start_date).toLocaleDateString() : 'N/A'}</span>
+                    <span><strong>To:</strong> ${leave.end_date ? new Date(leave.end_date).toLocaleDateString() : 'N/A'}</span>
+                    <span><strong>Days:</strong> ${leave.days_requested || 0}</span>
+                    ${leave.reason ? `<span><strong>Reason:</strong> ${leave.reason}</span>` : ''}
+                </div>
+                ${leave.status === 'pending' ? `
+                    <div class="leave-actions">
+                        <button class="btn btn-sm btn-success" onclick="approveLeave('${leave.id}')">
+                            <i class="icofont-check"></i> Approve
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="rejectLeave('${leave.id}')">
+                            <i class="icofont-close"></i> Reject
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+    }
+
+    function approveLeave(id) {
+        if (!confirm('Approve this leave request?')) return;
+        fetch(`/api/hr/leave-requests/${id}/`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'approved' })
+        })
+        .then(() => { loadLeave(); alert('Leave approved!'); })
+        .catch(() => alert('Error approving leave'));
+    }
+
+    function rejectLeave(id) {
+        if (!confirm('Reject this leave request?')) return;
+        fetch(`/api/hr/leave-requests/${id}/`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'rejected' })
+        })
+        .then(() => { loadLeave(); alert('Leave rejected!'); })
+        .catch(() => alert('Error rejecting leave'));
+    }
+
+    function resetFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('status-filter').value = '';
+        loadLeave();
+    }
+</script>
+{% endblock %}

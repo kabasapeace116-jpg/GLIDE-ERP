@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Financial Summary - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .report-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .report-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .report-header h3 { color: white; margin: 0; font-weight: 700; }
+    .report-header h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .report-header .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .report-header .btn-white {
+        background: white; color: var(--primary-color); padding: 8px 22px;
+        border-radius: 50px; font-weight: 600; border: none; transition: all 0.3s ease;
+    }
+    .report-header .btn-white:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+
+    .report-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .report-section .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .report-section .section-title i { color: var(--secondary-color); font-size: 20px; }
+
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+    .stat-box {
+        background: var(--light-bg);
+        border-radius: 12px;
+        padding: 18px 20px;
+        text-align: center;
+    }
+    .stat-box .number { font-size: 28px; font-weight: 700; color: var(--primary-color); }
+    .stat-box .number.green { color: #28a745; }
+    .stat-box .number.red { color: #dc3545; }
+    .stat-box .number.orange { color: #fd7e14; }
+    .stat-box .label { font-size: 13px; color: var(--text-color); margin: 0; }
+
+    .table-responsive { overflow-x: auto; }
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+    .table thead th {
+        background: var(--light-bg);
+        padding: 10px 12px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid var(--border-color);
+    }
+    .table tbody td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-dark);
+    }
+    .table tbody tr:hover { background: var(--light-bg); }
+
+    .badge-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .badge-status.fully_paid { background: #e8f5e9; color: #1b5e20; }
+    .badge-status.partially_paid { background: #fff3e0; color: #e65100; }
+    .badge-status.pending { background: #ffebee; color: #b71c1c; }
+    .badge-status.overdue { background: #ffebee; color: #b71c1c; }
+
+    .badge-payment {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .badge-payment.cash { background: #e8f5e9; color: #1b5e20; }
+    .badge-payment.bank { background: #e3f2fd; color: #0d47a1; }
+    .badge-payment.mobile { background: #f3e5f5; color: #6a1b9a; }
+    .badge-payment.card { background: #fff3e0; color: #e65100; }
+
+    @media (max-width: 768px) {
+        .report-header { padding: 20px; text-align: center; }
+        .report-section { padding: 15px; }
+        .stat-grid { grid-template-columns: 1fr 1fr; }
+        .stat-box .number { font-size: 22px; }
+    }
+    @media (max-width: 480px) {
+        .stat-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="report-page">
+    <div class="container">
+        <!-- Header -->
+        <div class="report-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-wallet"></i> Financial Summary Report</h3>
+                    <p class="subtitle" id="report-date">Loading...</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <button class="btn btn-white" onclick="window.print()"><i class="icofont-print"></i> Print</button>
+                    <button class="btn btn-white ml-2" onclick="exportReport()"><i class="icofont-file-excel"></i> Export</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="report-container">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Loading financial data...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+
+    document.getElementById('report-date').textContent = 'Generated: ' + new Date().toLocaleString();
+
+    // Fetch financial summary
+    fetch('/api/reports/financial-summary/', {
+        
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Financial Summary Data:', data);
+        renderReport(data);
+    })
+    .catch(error => {
+        console.error('Error fetching financial summary:', error);
+        document.getElementById('report-container').innerHTML = `
+            <div class="report-section text-center py-5">
+                <h4 class="text-danger"><i class="icofont-warning"></i> Error Loading Report</h4>
+                <p class="text-muted">${error.message}</p>
+                <button class="btn btn-main mt-3" onclick="location.reload()">Retry</button>
+            </div>
+        `;
+    });
+});
+
+function renderReport(data) {
+    const container = document.getElementById('report-container');
+
+    // Ensure data exists
+    const totalInvoices = data.total_invoices || 0;
+    const totalPayments = data.total_payments || 0;
+    const outstandingBalance = data.outstanding_balance || 0;
+    const studentsWithBalance = data.students_with_balance || 0;
+    const paymentsByMethod = data.payments_by_method || [];
+
+    // Calculate payment rate
+    const paymentRate = totalInvoices > 0 ? Math.round((totalPayments / totalInvoices) * 100) : 0;
+
+    // Get students with balance from the data or fetch separately
+    const studentsWithBalanceList = data.students_with_balance_list || [];
+
+    container.innerHTML = `
+        <!-- Summary Stats -->
+        <div class="report-section">
+            <div class="section-title"><i class="icofont-chart-bar-graph"></i> Financial Overview</div>
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="number">UGX ${totalInvoices.toLocaleString()}</div>
+                    <p class="label">Total Invoices</p>
+                </div>
+                <div class="stat-box">
+                    <div class="number green">UGX ${totalPayments.toLocaleString()}</div>
+                    <p class="label">Total Payments</p>
+                </div>
+                <div class="stat-box">
+                    <div class="number red">UGX ${outstandingBalance.toLocaleString()}</div>
+                    <p class="label">Outstanding Balance</p>
+                </div>
+                <div class="stat-box">
+                    <div class="number orange">${studentsWithBalance}</div>
+                    <p class="label">Students with Balance</p>
+                </div>
+                <div class="stat-box">
+                    <div class="number">${paymentRate}%</div>
+                    <p class="label">Payment Rate</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments by Method -->
+        <div class="report-section">
+            <div class="section-title"><i class="icofont-wallet"></i> Payments by Method</div>
+            ${paymentsByMethod && paymentsByMethod.length > 0 ? `
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Payment Method</th>
+                                <th>Count</th>
+                                <th>Total Amount</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${paymentsByMethod.map(m => {
+                                const percentage = totalPayments > 0 ? Math.round((m.total / totalPayments) * 100) : 0;
+                                return `
+                                    <tr>
+                                        <td><span class="badge-payment ${m.payment_method}">${m.payment_method}</span></td>
+                                        <td>${m.count || 0}</td>
+                                        <td><strong>UGX ${(m.total || 0).toLocaleString()}</strong></td>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <span>${percentage}%</span>
+                                                <div class="progress-custom" style="flex: 1; height: 16px;">
+                                                    <div class="progress-bar" style="width: ${percentage}%; background: ${percentage > 30 ? '#28a745' : percentage > 15 ? '#ffc107' : '#dc3545'};">
+                                                        ${percentage > 10 ? percentage + '%' : ''}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            ` : '<p class="text-muted text-center py-3">No payment data available</p>'}
+        </div>
+
+        <!-- Students with Outstanding Balance -->
+        <div class="report-section">
+            <div class="section-title"><i class="icofont-users"></i> Students with Outstanding Balance</div>
+            ${studentsWithBalanceList && studentsWithBalanceList.length > 0 ? `
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Registration</th>
+                                <th>Course</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${studentsWithBalanceList.map(s => `
+                                <tr>
+                                    <td><strong>${s.student_name || s.name || 'N/A'}</strong></td>
+                                    <td>${s.registration_number || s.reg_no || 'N/A'}</td>
+                                    <td>${s.course || 'N/A'}</td>
+                                    <td style="color: #dc3545; font-weight: 600;">UGX ${(s.balance || 0).toLocaleString()}</td>
+                                    <td><span class="badge-status partially_paid">PARTIAL</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            ` : `
+                <div class="text-center py-4">
+                    <i class="icofont-check-circled" style="font-size: 40px; color: #28a745;"></i>
+                    <p class="mt-2 text-success" style="font-size: 16px;">✅ All students are financially cleared!</p>
+                    <p class="text-muted">No outstanding balances found.</p>
+                </div>
+            `}
+        </div>
+    `;
+}
+// In finance_dashboard.html - loadStats function
+function loadStats() {
+    // Revenue and financial summary
+    fetch('/api/reports/financial-summary/', {
+        
+    })
+    .then(r => r.json())
+    .then(data => {
+        console.log('Financial summary:', data);
+        document.getElementById('total-revenue').textContent = 'UGX ' + (data.total_payments || 0).toLocaleString();
+        document.getElementById('outstanding-balance').textContent = 'UGX ' + (data.outstanding_balance || 0).toLocaleString();
+        document.getElementById('students-with-balance').textContent = data.students_with_balance || 0;
+    })
+    .catch(error => {
+        console.error('Error loading financial summary:', error);
+    });
+}
+function exportReport() {
+    alert('Export functionality will be available soon.');
+}
+</script>
+{% endblock %}

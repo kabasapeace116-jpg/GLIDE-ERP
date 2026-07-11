@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Staff Dashboard - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .dashboard-wrapper {
+        display: flex;
+        min-height: 100vh;
+    }
+    .dashboard-sidebar {
+        width: 260px;
+        background: var(--primary-color);
+        color: white;
+        padding: 20px 0;
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+    }
+    .dashboard-sidebar .user-info {
+        text-align: center;
+        padding: 0 20px 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        margin-bottom: 20px;
+    }
+    .dashboard-sidebar .user-info .avatar {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid white;
+        margin-bottom: 10px;
+    }
+    .dashboard-sidebar .user-info h6 {
+        color: white;
+        margin: 0;
+    }
+    .dashboard-sidebar .user-info small {
+        color: rgba(255,255,255,0.7);
+    }
+    .dashboard-sidebar .nav-link {
+        color: rgba(255,255,255,0.8);
+        padding: 12px 25px;
+        border-radius: 0;
+        margin: 2px 0;
+        transition: var(--transition);
+        border-left: 3px solid transparent;
+    }
+    .dashboard-sidebar .nav-link:hover,
+    .dashboard-sidebar .nav-link.active {
+        background: rgba(255,255,255,0.1);
+        color: white;
+        border-left-color: var(--secondary-color);
+    }
+    .dashboard-sidebar .nav-link i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+    }
+    
+    .dashboard-content {
+        flex: 1;
+        padding: 25px 30px;
+        background: var(--light-bg);
+    }
+    .dashboard-content .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 25px;
+    }
+    .dashboard-content .page-header h4 {
+        color: var(--primary-color);
+        margin: 0;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px 25px;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+        border: 1px solid var(--border-color);
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+    }
+    .stat-card .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+    .stat-card .stat-icon.blue { background: rgba(34,58,102,0.1); color: var(--primary-color); }
+    .stat-card .stat-icon.green { background: rgba(40,167,69,0.1); color: var(--success); }
+    .stat-card .stat-icon.yellow { background: rgba(255,193,7,0.1); color: var(--warning); }
+    .stat-card .stat-icon.red { background: rgba(225,36,84,0.1); color: var(--secondary-color); }
+    .stat-card .stat-number { font-size: 28px; font-weight: 700; color: var(--primary-color); }
+    .stat-card .stat-label { font-size: 14px; color: var(--text-color); margin: 0; }
+    
+    .table-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+    }
+    .table-card .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 0 0 15px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .table-card .card-header h6 {
+        color: var(--primary-color);
+        margin: 0;
+    }
+    
+    .quick-action {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid var(--border-color);
+        transition: var(--transition);
+        cursor: pointer;
+        height: 100%;
+    }
+    .quick-action:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+    }
+    .quick-action .icon {
+        font-size: 35px;
+        color: var(--primary-color);
+        margin-bottom: 10px;
+    }
+    .quick-action .icon.green { color: var(--success); }
+    .quick-action .icon.red { color: var(--secondary-color); }
+    .quick-action .icon.orange { color: #fd7e14; }
+    .quick-action h6 { color: var(--text-dark); margin-bottom: 5px; }
+    .quick-action p { font-size: 13px; color: var(--text-color); margin: 0; }
+    
+    @media (max-width: 992px) {
+        .dashboard-sidebar { width: 220px; }
+        .dashboard-content { padding: 20px; }
+    }
+    @media (max-width: 768px) {
+        .dashboard-wrapper { flex-direction: column; }
+        .dashboard-sidebar {
+            width: 100%;
+            height: auto;
+            position: relative;
+            padding: 15px;
+        }
+        .dashboard-sidebar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 0 0 15px;
+        }
+        .dashboard-sidebar .user-info .avatar {
+            width: 50px;
+            height: 50px;
+            margin: 0;
+        }
+        .dashboard-sidebar .nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .dashboard-sidebar .nav-link {
+            padding: 8px 15px;
+            font-size: 13px;
+        }
+        .dashboard-content { padding: 15px; }
+        .stat-number { font-size: 22px; }
+    }
+</style>
+
+<div class="dashboard-wrapper">
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar">
+        <div class="user-info">
+            <img src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}/static/images/default-avatar.png{% endif %}" 
+                 alt="Avatar" class="avatar">
+            <div>
+                <h6>{{ user.first_name }} {{ user.last_name }}</h6>
+                <small>{{ user.user_type|title }}</small>
+            </div>
+        </div>
+        <nav class="nav flex-column">
+            <a class="nav-link active" href="/dashboard/staff/"><i class="icofont-dashboard"></i> Dashboard</a>
+            <a class="nav-link" href="/academics/courses/"><i class="icofont-book"></i> Courses</a>
+            <a class="nav-link" href="/academics/classes/"><i class="icofont-education"></i> Classes</a>
+            <a class="nav-link" href="/academics/assessments/"><i class="icofont-pencil-alt-2"></i> Assessments</a>
+            <a class="nav-link" href="/academics/results/"><i class="icofont-graduate"></i> Results</a>
+            <a class="nav-link" href="/academics/attendance/"><i class="icofont-attendance"></i> Attendance</a>
+            <a class="nav-link" href="/academics/timetables/"><i class="icofont-clock"></i> Timetable</a>
+        </nav>
+    </aside>
+
+    <!-- Content -->
+    <main class="dashboard-content">
+        <div class="page-header">
+            <div>
+                <h4><i class="icofont-dashboard text-color-2"></i> Staff Dashboard</h4>
+                <small class="text-muted">Welcome back, {{ user.first_name }}!</small>
+            </div>
+            <div>
+                <a href="/academics/assessments/create/" class="btn btn-main-2 btn-sm">
+                    <i class="icofont-plus"></i> Create Assessment
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3 col-6 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="stat-label">My Classes</p>
+                            <h4 class="stat-number" id="my-classes">0</h4>
+                        </div>
+                        <div class="stat-icon blue"><i class="icofont-education"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="stat-label">Students</p>
+                            <h4 class="stat-number" id="my-students">0</h4>
+                        </div>
+                        <div class="stat-icon green"><i class="icofont-graduate"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="stat-label">Assessments</p>
+                            <h4 class="stat-number" id="my-assessments">0</h4>
+                        </div>
+                        <div class="stat-icon yellow"><i class="icofont-pencil-alt-2"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="stat-label">Pending Results</p>
+                            <h4 class="stat-number" id="pending-results">0</h4>
+                        </div>
+                        <div class="stat-icon red"><i class="icofont-warning"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-md-3 col-6 mb-3">
+                <div class="quick-action" onclick="location.href='/academics/assessments/create/'">
+                    <div class="icon"><i class="icofont-pencil-alt-2"></i></div>
+                    <h6>Create Assessment</h6>
+                    <p>Add new assessment</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="quick-action" onclick="location.href='/academics/results/upload/'">
+                    <div class="icon green"><i class="icofont-graduate"></i></div>
+                    <h6>Upload Results</h6>
+                    <p>Add student results</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="quick-action" onclick="location.href='/academics/attendance/record/'">
+                    <div class="icon orange"><i class="icofont-attendance"></i></div>
+                    <h6>Record Attendance</h6>
+                    <p>Mark attendance</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="quick-action" onclick="location.href='/academics/timetables/'">
+                    <div class="icon red"><i class="icofont-clock"></i></div>
+                    <h6>View Timetable</h6>
+                    <p>Check schedule</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tables -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="table-card">
+                    <div class="card-header">
+                        <h6><i class="icofont-education text-color-2"></i> My Classes</h6>
+                        <a href="/academics/classes/" class="btn btn-sm btn-main">View All</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Class</th>
+                                    <th>Course</th>
+                                    <th>Students</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="my-classes-table">
+                                <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="table-card">
+                    <div class="card-header">
+                        <h6><i class="icofont-pencil-alt-2 text-color-2"></i> Recent Assessments</h6>
+                        <a href="/academics/assessments/" class="btn btn-sm btn-main">View All</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Assessment</th>
+                                    <th>Course</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-assessments">
+                                <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            window.location.href = '/login/'; // Redirect to login
+            return;
+        }
+
+        function fetchStaffData() {
+            // Get classes
+            fetch('/api/classes/', {
+                
+            })
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('my-classes-table');
+                if (data.results && data.results.length > 0) {
+                    document.getElementById('my-classes').textContent = data.count || 0;
+                    tbody.innerHTML = data.results.slice(0, 5).map(cls => `
+                        <tr>
+                            <td>${cls.name}</td>
+                            <td>${cls.course_name || 'N/A'}</td>
+                            <td>${cls.current_enrollment || 0}</td>
+                            <td><span class="badge badge-status ${cls.is_active ? 'active' : 'inactive'}">${cls.is_active ? 'Active' : 'Inactive'}</span></td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No classes assigned</td></tr>';
+                }
+            })
+            .catch(() => {
+                document.getElementById('my-classes').textContent = '0';
+            });
+
+            // Get assessments
+            fetch('/api/academics/assessments/', {
+                
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('my-assessments').textContent = data.count || 0;
+                const tbody = document.getElementById('recent-assessments');
+                if (data.results && data.results.length > 0) {
+                    tbody.innerHTML = data.results.slice(0, 5).map(ass => `
+                        <tr>
+                            <td>${ass.name}</td>
+                            <td>${ass.course_unit_name || 'N/A'}</td>
+                            <td>${ass.assessment_type}</td>
+                            <td><span class="badge badge-status ${ass.is_published ? 'active' : 'pending'}">${ass.is_published ? 'Published' : 'Draft'}</span></td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No assessments</td></tr>';
+                }
+            })
+            .catch(() => {
+                document.getElementById('my-assessments').textContent = '0';
+            });
+
+            // Get students count (fallback)
+            fetch('/api/students/', {
+                
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('my-students').textContent = data.count || 0;
+            })
+            .catch(() => {
+                document.getElementById('my-students').textContent = '0';
+            });
+
+            // Pending results (fallback)
+            document.getElementById('pending-results').textContent = '0';
+        }
+
+        fetchStaffData();
+    });
+</script>
+{% endblock %}

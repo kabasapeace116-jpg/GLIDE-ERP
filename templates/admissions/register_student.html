@@ -1,0 +1,768 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Register Student - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .register-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white-outline {
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        background: transparent;
+        padding: 8px 22px;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white-outline:hover { background: white; color: var(--primary-color); }
+
+    .form-container {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+
+    .form-section {
+        padding: 20px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .form-section:last-child { border-bottom: none; }
+    .form-section .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .form-section .section-title i { color: var(--secondary-color); font-size: 20px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+        font-weight: 600;
+        color: var(--text-dark);
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    .form-group label .required { color: #c62828; margin-left: 2px; }
+
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        padding: 10px 15px;
+        height: 42px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: #f8f9fc;
+    }
+    .form-control:focus {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 3px rgba(225,36,84,0.08);
+        background: white;
+    }
+    textarea.form-control { height: auto; min-height: 80px; resize: vertical; }
+    select.form-control {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236F8BA4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 15px center;
+    }
+
+    .btn-submit {
+        padding: 14px 50px;
+        font-weight: 700;
+        border-radius: 10px;
+        font-size: 16px;
+        background: var(--secondary-color);
+        color: white;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-submit:hover {
+        background: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        color: white;
+    }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .btn-cancel {
+        padding: 14px 30px;
+        font-weight: 700;
+        border-radius: 10px;
+        font-size: 16px;
+        background: #6c757d;
+        color: white;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-cancel:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        color: white;
+    }
+
+    .alert { border-radius: 10px; padding: 15px 20px; }
+
+    .image-preview {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--primary-color);
+        margin-top: 10px;
+        background: #f8f9fc;
+    }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .form-container { padding: 20px 15px; }
+        .form-section { padding: 15px 0; }
+        .btn-submit, .btn-cancel { padding: 12px 20px; font-size: 14px; width: 100%; margin-bottom: 10px; }
+        .image-preview { width: 80px; height: 80px; }
+    }
+</style>
+
+<div class="register-page">
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-user"></i> Register New Student</h3>
+                    <p class="subtitle">Add a new student to the system</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <a href="/students/" class="btn btn-white-outline">
+                        <i class="icofont-arrow-left"></i> Back to Students
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-container">
+            <div id="form-alert" class="alert alert-danger d-none">
+                <i class="icofont-warning mr-2"></i> <span id="alert-message"></span>
+            </div>
+            <div id="form-success" class="alert alert-success d-none">
+                <i class="icofont-check-circled mr-2"></i> <span id="success-message"></span>
+            </div>
+
+            <form id="register-form" enctype="multipart/form-data" novalidate>
+                <!-- Personal Information -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="icofont-user"></i> Personal Information
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>First Name <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Last Name <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Other Name</label>
+                                <input type="text" class="form-control" id="other_name" name="other_name">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Date of Birth <span class="required">*</span></label>
+                                <input type="date" class="form-control" id="dob" name="date_of_birth" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Gender <span class="required">*</span></label>
+                                <select class="form-control" id="gender" name="gender" required>
+                                    <option value="">Select</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Nationality</label>
+                                <input type="text" class="form-control" id="nationality" name="nationality" value="Ugandan">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>National ID</label>
+                                <input type="text" class="form-control" id="national_id" name="national_id" placeholder="e.g., CM1234567890">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Marital Status</label>
+                                <select class="form-control" id="marital_status" name="marital_status">
+                                    <option value="single">Single</option>
+                                    <option value="married">Married</option>
+                                    <option value="divorced">Divorced</option>
+                                    <option value="widowed">Widowed</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Religion</label>
+                                <input type="text" class="form-control" id="religion" name="religion" placeholder="e.g., Christian">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Profile Picture</label>
+                                <input type="file" class="form-control" id="profile_picture" name="profile_picture" accept="image/*" style="padding: 8px;">
+                                <small class="text-muted">Optional - JPG, PNG, JPEG</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <img id="profile_preview" src="/static/images/default-avatar.png" alt="Profile Preview" class="image-preview">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="icofont-phone"></i> Contact Information
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Phone Number <span class="required">*</span></label>
+                                <input type="tel" class="form-control" id="phone" name="phone" required placeholder="e.g., 0777123456">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Alternate Phone</label>
+                                <input type="tel" class="form-control" id="alt_phone" name="alternate_phone" placeholder="e.g., 0755123456">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Email Address <span class="required">*</span></label>
+                                <input type="email" class="form-control" id="email" name="email" required placeholder="student@example.com">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Physical Address <span class="required">*</span></label>
+                                <textarea class="form-control" id="address" name="address" rows="2" required placeholder="Enter full residential address"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>District</label>
+                                <input type="text" class="form-control" id="district" name="district" placeholder="e.g., Kampala">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>County</label>
+                                <input type="text" class="form-control" id="county" name="county" placeholder="e.g., Kampala Central">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Sub County</label>
+                                <input type="text" class="form-control" id="sub_county" name="sub_county" placeholder="e.g., Kampala">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Village/Cell</label>
+                                <input type="text" class="form-control" id="village" name="village" placeholder="e.g., Ntinda">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Academic Information -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="icofont-book"></i> Academic Information
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Course <span class="required">*</span></label>
+                                <select class="form-control" id="course" name="course" required>
+                                    <option value="">Select Course...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Class</label>
+                                <select class="form-control" id="class_select" name="current_class">
+                                    <option value="">Select Class...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Student Status</label>
+                                <select class="form-control" id="status" name="status">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="graduated">Graduated</option>
+                                    <option value="dropped">Dropped</option>
+                                    <option value="suspended">Suspended</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Sponsor Type</label>
+                                <select class="form-control" id="sponsor_type" name="sponsor_type">
+                                    <option value="">Select Sponsor...</option>
+                                    <option value="self">Self Sponsored</option>
+                                    <option value="parent">Parent/Guardian</option>
+                                    <option value="employer">Employer</option>
+                                    <option value="bursary">Bursary/Scholarship</option>
+                                    <option value="government">Government</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Enrollment Date</label>
+                                <input type="date" class="form-control" id="enrollment_date" name="enrollment_date">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Academic Background -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="icofont-graduate"></i> Academic Background
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Previous Academic Background</label>
+                                <textarea class="form-control" id="academic_bg" name="academic_background" rows="2" placeholder="Briefly describe previous academic qualifications"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parent/Guardian -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="icofont-users"></i> Parent/Guardian Information
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Relationship</label>
+                                <select class="form-control" id="parent_relationship" name="parent_relationship">
+                                    <option value="">Select...</option>
+                                    <option value="Father">Father</option>
+                                    <option value="Mother">Mother</option>
+                                    <option value="Guardian">Guardian</option>
+                                    <option value="Aunt">Aunt</option>
+                                    <option value="Uncle">Uncle</option>
+                                    <option value="Brother">Brother</option>
+                                    <option value="Sister">Sister</option>
+                                    <option value="Spouse">Spouse</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" class="form-control" id="parent_name" name="parent_name" placeholder="Full name">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="tel" class="form-control" id="parent_phone" name="parent_phone" placeholder="e.g., 0777123456">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Address</label>
+                                <textarea class="form-control" id="parent_address" name="parent_address" rows="2" placeholder="Full address"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Declaration -->
+                <div class="form-section" style="border-bottom: none;">
+                    <div class="section-title">
+                        <i class="icofont-check-circled"></i> Declaration
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="declaration_check" required>
+                        <label class="form-check-label" for="declaration_check" style="font-size: 14px;">
+                            I confirm that the information provided on this form is <strong>true and complete</strong> to the best of my knowledge.
+                        </label>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Signature <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="signature" name="signature" required placeholder="Type full name as signature">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Date <span class="required">*</span></label>
+                                <input type="date" class="form-control" id="declaration_date" name="declaration_date" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn-submit" id="submit_btn">
+                        <i class="icofont-save"></i> Register Student
+                    </button>
+                    <a href="/students/" class="btn-cancel">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // REGISTER STUDENT - COMPLETE FIXED
+    // ============================================
+
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('=== REGISTER STUDENT PAGE LOADED ===');
+        
+        if (!user || !user.id) {
+            alert('Please login first');
+            window.location.href = '/login/'; // Redirect to login
+            return;
+        }
+
+        console.log('✅ Token found, user is authenticated');
+        
+        // Set default dates
+        document.getElementById('declaration_date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('enrollment_date').value = new Date().toISOString().split('T')[0];
+
+        // Load courses and classes
+        loadCourses();
+        loadClasses();
+
+        // Profile picture preview
+        document.getElementById('profile_picture').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    document.getElementById('profile_preview').src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle form submission
+        const form = document.getElementById('register-form');
+        form.addEventListener('submit', function(e) {
+            console.log('=== FORM SUBMIT EVENT TRIGGERED ===');
+            e.preventDefault();
+            handleRegister(e);
+        });
+        
+        console.log('✅ Form submit event attached');
+    });
+
+    function loadCourses() {
+        console.log('Loading courses...');
+        fetch('/api/courses/', {
+            
+        })
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('course');
+            if (data.results) {
+                select.innerHTML = '<option value="">Select Course...</option>';
+                data.results.forEach(course => {
+                    const option = document.createElement('option');
+                    option.value = course.id;
+                    option.textContent = `${course.name} (${course.code})`;
+                    select.appendChild(option);
+                });
+                console.log(`✅ Loaded ${data.results.length} courses`);
+            }
+        })
+        .catch(error => console.error('❌ Error loading courses:', error));
+    }
+
+    function loadClasses() {
+        console.log('Loading classes...');
+        fetch('/api/classes/', {
+            
+        })
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('class_select');
+            if (data.results) {
+                select.innerHTML = '<option value="">Select Class...</option>';
+                data.results.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = `${cls.name} (${cls.code})`;
+                    select.appendChild(option);
+                });
+                console.log(`✅ Loaded ${data.results.length} classes`);
+            }
+        })
+        .catch(error => console.error('❌ Error loading classes:', error));
+    }
+
+    function handleRegister(event) {
+    event.preventDefault();
+    console.log('=== HANDLE REGISTER CALLED ===');
+
+    // Check declaration
+    const declarationCheck = document.getElementById('declaration_check');
+    if (!declarationCheck.checked) {
+        showAlert('Please confirm the declaration by checking the box.', 'danger');
+        return;
+    }
+
+    const btn = document.getElementById('submit_btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Registering...';
+
+    // Create FormData
+    const formData = new FormData();
+
+    // Personal Information
+    const firstName = document.getElementById('first_name').value.trim();
+    const lastName = document.getElementById('last_name').value.trim();
+    const otherName = document.getElementById('other_name').value.trim();
+    const dob = document.getElementById('dob').value;
+    const gender = document.getElementById('gender').value;
+    const nationality = document.getElementById('nationality').value || 'Ugandan';
+    const nationalId = document.getElementById('national_id').value || '';
+    const maritalStatus = document.getElementById('marital_status').value || 'single';
+    const religion = document.getElementById('religion').value || '';
+
+    // Contact Information
+    const phone = document.getElementById('phone').value.trim();
+    const altPhone = document.getElementById('alt_phone').value.trim() || '';
+    const email = document.getElementById('email').value.trim();
+    const address = document.getElementById('address').value.trim();
+    const district = document.getElementById('district').value || '';
+    const county = document.getElementById('county').value || '';
+    const subCounty = document.getElementById('sub_county').value || '';
+    const village = document.getElementById('village').value || '';
+
+    // Academic Information
+    const courseId = document.getElementById('course').value;
+    const classId = document.getElementById('class_select').value || '';
+    const status = document.getElementById('status').value || 'active';
+    const sponsorType = document.getElementById('sponsor_type').value || '';
+    const enrollmentDate = document.getElementById('enrollment_date').value || new Date().toISOString().split('T')[0];
+
+    // Academic Background
+    const academicBg = document.getElementById('academic_bg').value || '';
+
+    // Parent/Guardian
+    const parentRelationship = document.getElementById('parent_relationship').value || '';
+    const parentName = document.getElementById('parent_name').value || '';
+    const parentPhone = document.getElementById('parent_phone').value || '';
+    const parentAddress = document.getElementById('parent_address').value || '';
+
+    // Declaration
+    const signature = document.getElementById('signature').value.trim();
+    const declarationDate = document.getElementById('declaration_date').value;
+    const declarationAgreed = declarationCheck.checked;
+
+    console.log('Form data collected:');
+    console.log({ firstName, lastName, email, phone, courseId });
+
+    // Validate required fields
+    if (!firstName || !lastName || !dob || !gender || !phone || !email || !address || !courseId || !signature) {
+        showAlert('Please fill in all required fields (marked with *)', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="icofont-save"></i> Register Student';
+        return;
+    }
+
+    // Append to FormData
+    formData.append('first_name', firstName);
+    formData.append('last_name', lastName);
+    formData.append('other_name', otherName);
+    formData.append('date_of_birth', dob);
+    formData.append('gender', gender);
+    formData.append('nationality', nationality);
+    formData.append('national_id', nationalId);
+    formData.append('marital_status', maritalStatus);
+    formData.append('religion', religion);
+    formData.append('phone', phone);
+    formData.append('alternate_phone', altPhone);
+    formData.append('email', email);
+    formData.append('address', address);
+    formData.append('district', district);
+    formData.append('county', county);
+    formData.append('sub_county', subCounty);
+    formData.append('village', village);
+    formData.append('course', courseId);
+    formData.append('current_class', classId);
+    formData.append('status', status);
+    formData.append('sponsor_type', sponsorType);
+    formData.append('enrollment_date', enrollmentDate);
+    formData.append('academic_background', academicBg);
+    formData.append('parent_relationship', parentRelationship);
+    formData.append('parent_name', parentName);
+    formData.append('parent_phone', parentPhone);
+    formData.append('parent_address', parentAddress);
+    formData.append('signature', signature);
+    formData.append('declaration_date', declarationDate);
+    formData.append('declaration_agreed', declarationAgreed);
+
+    // Profile Picture
+    const profilePic = document.getElementById('profile_picture').files[0];
+    if (profilePic) {
+        formData.append('profile_picture', profilePic);
+    }
+
+    
+
+    console.log('✅ Form data ready, sending to API...');
+
+    // Submit to API
+    fetch('/api/students/', {
+        method: 'POST',
+        ,
+        body: formData
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            return response.text().then(text => {
+                console.log('Error response:', text);
+                let errorMsg = `HTTP ${response.status}`;
+                try {
+                    const data = JSON.parse(text);
+                    if (data.detail) errorMsg = data.detail;
+                    else if (data.error) errorMsg = data.error;
+                    else {
+                        errorMsg = Object.entries(data)
+                            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+                            .join('; ');
+                    }
+                } catch {
+                    errorMsg = text || errorMsg;
+                }
+                throw new Error(errorMsg);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Registration response:', data);
+        if (data.id) {
+            showSuccess(`✅ Student registered successfully! Registration Number: ${data.registration_number}`);
+            btn.innerHTML = '<i class="icofont-check"></i> Registered!';
+            
+            // Reset form
+            document.getElementById('register-form').reset();
+            document.getElementById('declaration_date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('enrollment_date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('profile_preview').src = '/static/images/default-avatar.png';
+            
+            setTimeout(() => {
+                window.location.href = '/students/';
+            }, 3000);
+        } else {
+            showAlert(data.detail || 'Registration failed. Please try again.', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-save"></i> Register Student';
+        }
+    })
+    .catch(error => {
+        console.error('Registration error:', error);
+        showAlert('❌ Error: ' + error.message, 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="icofont-save"></i> Register Student';
+    });
+}
+
+    function showAlert(message, type) {
+        const alertDiv = document.getElementById('form-alert');
+        const successDiv = document.getElementById('form-success');
+        const alertMsg = document.getElementById('alert-message');
+        successDiv.classList.add('d-none');
+        alertMsg.textContent = message;
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.classList.remove('d-none');
+        setTimeout(() => alertDiv.classList.add('d-none'), 5000);
+    }
+
+    function showSuccess(message) {
+        const alertDiv = document.getElementById('form-alert');
+        const successDiv = document.getElementById('form-success');
+        const successMsg = document.getElementById('success-message');
+        alertDiv.classList.add('d-none');
+        successMsg.textContent = message;
+        successDiv.className = 'alert alert-success';
+        successDiv.classList.remove('d-none');
+        setTimeout(() => successDiv.classList.add('d-none'), 5000);
+    }
+</script>
+{% endblock %}

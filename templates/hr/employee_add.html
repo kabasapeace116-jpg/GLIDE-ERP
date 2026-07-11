@@ -1,0 +1,529 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Add Employee - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .employee-add-page {
+        padding: 30px 0 60px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1a2f4e 100%);
+        padding: 30px 35px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 30px;
+    }
+    .page-header-custom h3 { color: white; margin: 0; font-weight: 700; }
+    .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
+    .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
+    .page-header-custom .btn-white-outline {
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        background: transparent;
+        padding: 8px 22px;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .page-header-custom .btn-white-outline:hover { background: white; color: var(--primary-color); }
+
+    .form-container {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+
+    .form-section {
+        padding: 20px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .form-section:last-child { border-bottom: none; }
+    .form-section .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .form-section .section-title i { color: var(--secondary-color); font-size: 20px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+        font-weight: 600;
+        color: var(--text-dark);
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    .form-group label .required { color: #c62828; margin-left: 2px; }
+
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        padding: 10px 15px;
+        height: 42px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: #f8f9fc;
+    }
+    .form-control:focus {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 3px rgba(225,36,84,0.08);
+        background: white;
+    }
+    textarea.form-control { height: auto; min-height: 80px; resize: vertical; }
+    select.form-control {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236F8BA4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 15px center;
+    }
+
+    .btn-submit {
+        padding: 14px 50px;
+        font-weight: 700;
+        border-radius: 10px;
+        font-size: 16px;
+        background: var(--secondary-color);
+        color: white;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-submit:hover {
+        background: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        color: white;
+    }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .btn-cancel {
+        padding: 14px 30px;
+        font-weight: 700;
+        border-radius: 10px;
+        font-size: 16px;
+        background: #6c757d;
+        color: white;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-cancel:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        color: white;
+    }
+
+    .alert { border-radius: 10px; padding: 15px 20px; }
+
+    .success-popup {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 20px 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        z-index: 9999;
+        display: none;
+        animation: slideIn 0.5s ease;
+        max-width: 400px;
+    }
+    .success-popup.show { display: block; }
+    .success-popup .close-btn {
+        position: absolute;
+        top: 5px;
+        right: 10px;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+    }
+
+    @keyframes slideIn {
+        from { transform: translateX(100px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    @media (max-width: 768px) {
+        .page-header-custom { padding: 20px; text-align: center; }
+        .form-container { padding: 20px 15px; }
+        .form-section { padding: 15px 0; }
+        .btn-submit, .btn-cancel { padding: 12px 20px; font-size: 14px; width: 100%; margin-bottom: 10px; }
+    }
+</style>
+
+<!-- Success Popup -->
+<div class="success-popup" id="successPopup">
+    <button class="close-btn" onclick="closePopup()">&times;</button>
+    <div id="popup-message">
+        <i class="icofont-check-circled" style="font-size: 24px; margin-right: 10px;"></i>
+        Employee added successfully!
+    </div>
+    <div style="margin-top: 10px; font-size: 13px; opacity: 0.9;">
+        <span id="popup-credentials"></span>
+    </div>
+</div>
+
+<div class="employee-add-page">
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header-custom">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="icofont-plus"></i> Add New Employee</h3>
+                    <p class="subtitle">Register a new employee in the system</p>
+                </div>
+                <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                    <a href="/hr/employees/" class="btn btn-white-outline">
+                        <i class="icofont-arrow-left"></i> Back to Employees
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-container">
+            <div id="form-alert" class="alert alert-danger d-none">
+                <i class="icofont-warning mr-2"></i> <span id="alert-message"></span>
+            </div>
+
+            <form id="employee-form" novalidate>
+                <!-- Account Information -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="icofont-user"></i> Account Information
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>First Name <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="first-name" required placeholder="First name">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Last Name <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="last-name" required placeholder="Last name">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Username</label>
+                                <input type="text" class="form-control" id="username" placeholder="Auto-generated">
+                                <small class="text-muted">Leave blank to auto-generate</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Email Address <span class="required">*</span></label>
+                                <input type="email" class="form-control" id="email" required placeholder="employee@glideafrica.org">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Phone Number <span class="required">*</span></label>
+                                <input type="tel" class="form-control" id="phone" required placeholder="e.g., 0777123456">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="text" class="form-control" id="password" placeholder="Leave blank to auto-generate">
+                                <small class="text-muted">Will be auto-generated if left blank</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>User Role <span class="required">*</span></label>
+                                <select class="form-control" id="user-role" required>
+                                    <option value="staff">Staff</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="registrar">Registrar</option>
+                                    <option value="finance">Finance</option>
+                                    <option value="hr">HR</option>
+                                    <option value="lecturer">Lecturer</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Employment Information -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="icofont-briefcase"></i> Employment Information
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Position <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="emp-position" required placeholder="e.g., HR Manager">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Department <span class="required">*</span></label>
+                                <select class="form-control" id="emp-department" required>
+                                    <option value="">Select Department</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Employment Type <span class="required">*</span></label>
+                                <select class="form-control" id="emp-type" required>
+                                    <option value="full_time">Full Time</option>
+                                    <option value="part_time">Part Time</option>
+                                    <option value="contract">Contract</option>
+                                    <option value="intern">Intern</option>
+                                    <option value="volunteer">Volunteer</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Status <span class="required">*</span></label>
+                                <select class="form-control" id="emp-status" required>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="on_leave">On Leave</option>
+                                    <option value="terminated">Terminated</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Employment Date <span class="required">*</span></label>
+                                <input type="date" class="form-control" id="emp-date" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Contract End Date</label>
+                                <input type="date" class="form-control" id="emp-contract-end">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Salary (UGX)</label>
+                                <input type="number" class="form-control" id="emp-salary" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>NSSF Number</label>
+                                <input type="text" class="form-control" id="emp-nssf" placeholder="NSSF number">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Bank Name</label>
+                                <input type="text" class="form-control" id="emp-bank" placeholder="Bank name">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Bank Account</label>
+                                <input type="text" class="form-control" id="emp-account" placeholder="Account number">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Emergency Contact</label>
+                                <input type="text" class="form-control" id="emp-emergency" placeholder="Contact name">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Emergency Phone</label>
+                                <input type="tel" class="form-control" id="emp-emergency-phone" placeholder="Phone number">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn-submit" id="submit-btn">
+                        <i class="icofont-save"></i> Add Employee
+                    </button>
+                    <a href="/hr/employees/" class="btn-cancel">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!user || !user.id) {
+            window.location.href = '/login/'; // Redirect to login
+            return;
+        }
+        
+        console.log('=== EMPLOYEE ADD PAGE LOADED ===');
+        loadDepartments();
+        document.getElementById('emp-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('employee-form').addEventListener('submit', handleSubmit);
+
+        // Auto-generate username
+        document.getElementById('first-name').addEventListener('input', generateUsername);
+        document.getElementById('last-name').addEventListener('input', generateUsername);
+    });
+
+    function generateUsername() {
+        const firstName = document.getElementById('first-name').value.trim().toLowerCase();
+        const lastName = document.getElementById('last-name').value.trim().toLowerCase();
+        if (firstName && lastName) {
+            document.getElementById('username').value = `${firstName}.${lastName}`;
+        }
+    }
+
+    function loadDepartments() {
+        fetch('/api/departments/', {  })
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('emp-department');
+            if (data.results) {
+                select.innerHTML = '<option value="">Select Department</option>';
+                data.results.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.textContent = d.name;
+                    select.appendChild(opt);
+                });
+            }
+        }).catch(error => console.error('Error loading departments:', error));
+    }
+
+    function handleSubmit(event) {
+        event.preventDefault();
+        console.log('=== HANDLE SUBMIT CALLED ===');
+
+        const data = {
+            first_name: document.getElementById('first-name').value.trim(),
+            last_name: document.getElementById('last-name').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            username: document.getElementById('username').value.trim(),
+            password: document.getElementById('password').value.trim(),
+            user_type: document.getElementById('user-role').value,
+            position: document.getElementById('emp-position').value.trim(),
+            department: document.getElementById('emp-department').value,
+            employment_type: document.getElementById('emp-type').value,
+            status: document.getElementById('emp-status').value,
+            employment_date: document.getElementById('emp-date').value,
+            contract_end_date: document.getElementById('emp-contract-end').value || null,
+            salary: parseFloat(document.getElementById('emp-salary').value) || 0,
+            nssf_number: document.getElementById('emp-nssf').value,
+            bank_name: document.getElementById('emp-bank').value,
+            bank_account: document.getElementById('emp-account').value,
+            emergency_contact: document.getElementById('emp-emergency').value,
+            emergency_phone: document.getElementById('emp-emergency-phone').value
+        };
+
+        console.log('Form data:', data);
+
+        const requiredFields = ['first_name', 'last_name', 'email', 'phone', 'position', 'department', 'employment_date', 'user_type'];
+        const missing = requiredFields.filter(f => !data[f]);
+        
+        if (missing.length > 0) {
+            showAlert(`Please fill in all required fields: ${missing.join(', ')}`);
+            return;
+        }
+
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Adding...';
+
+        fetch('/api/hr/employees/create_with_user/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.detail || err.error || 'Add failed');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Add response:', data);
+            if (data.id) {
+                // Show success popup with credentials
+                const popup = document.getElementById('successPopup');
+                document.getElementById('popup-message').innerHTML = `
+                    <i class="icofont-check-circled" style="font-size: 24px; margin-right: 10px;"></i>
+                    Employee added successfully!
+                `;
+                document.getElementById('popup-credentials').innerHTML = `
+                    <strong>Username:</strong> ${data.username}<br>
+                    <strong>Password:</strong> ${data.password}
+                `;
+                popup.classList.add('show');
+                
+                btn.innerHTML = '<i class="icofont-check"></i> Added!';
+                
+                // Reset form
+                document.getElementById('employee-form').reset();
+                document.getElementById('emp-date').value = new Date().toISOString().split('T')[0];
+                
+                setTimeout(() => {
+                    window.location.href = '/hr/employees/';
+                }, 5000);
+            } else {
+                showAlert(data.detail || 'Error adding employee');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="icofont-save"></i> Add Employee';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('❌ Error: ' + error.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-save"></i> Add Employee';
+        });
+    }
+
+    function showAlert(message) {
+        const alertDiv = document.getElementById('form-alert');
+        const alertMsg = document.getElementById('alert-message');
+        alertMsg.textContent = message;
+        alertDiv.classList.remove('d-none');
+        setTimeout(() => alertDiv.classList.add('d-none'), 5000);
+    }
+
+    function closePopup() {
+        document.getElementById('successPopup').classList.remove('show');
+    }
+</script>
+{% endblock %}

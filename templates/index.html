@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Home - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    /* ==================== HERO SECTION ==================== */
+    .hero-section {
+        background: linear-gradient(135deg, #f4f9fc 0%, #e8f0f5 100%);
+        padding: 80px 0;
+        min-height: 500px;
+        display: flex;
+        align-items: center;
+    }
+    .hero-section h1 {
+        font-size: 48px;
+        font-weight: 700;
+        color: var(--primary-color);
+        line-height: 1.2;
+    }
+    .hero-section .subtitle {
+        font-size: 20px;
+        color: var(--text-color);
+        margin: 20px 0;
+    }
+    .hero-section .hero-image {
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+    
+    /* ==================== STATS SECTION ==================== */
+    .stats-section {
+        background: var(--primary-color);
+        padding: 60px 0;
+        color: white;
+    }
+    .stats-section .stat-number {
+        font-size: 48px;
+        font-weight: 700;
+        display: block;
+    }
+    .stats-section .stat-label {
+        font-size: 16px;
+        opacity: 0.8;
+    }
+    
+    /* ==================== ABOUT SECTION ==================== */
+    .about-section {
+        padding: 80px 0;
+        background: white;
+    }
+    .about-section .about-image {
+        border-radius: 15px;
+        box-shadow: 0 5px 30px rgba(0,0,0,0.08);
+    }
+    
+    /* ==================== COURSES SECTION ==================== */
+    .courses-section {
+        padding: 80px 0;
+        background: var(--light-bg);
+    }
+    .course-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        transition: var(--transition);
+        height: 100%;
+        border: 1px solid var(--border-color);
+    }
+    .course-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    .course-card .course-icon {
+        font-size: 40px;
+        color: var(--primary-color);
+        margin-bottom: 15px;
+    }
+    .course-card h5 {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+    .course-card .course-duration {
+        font-size: 13px;
+        color: var(--text-color);
+    }
+    
+    /* ==================== TESTIMONIALS ==================== */
+    .testimonials-section {
+        padding: 80px 0;
+        background: white;
+    }
+    .testimonial-card {
+        background: var(--light-bg);
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+        transition: var(--transition);
+    }
+    .testimonial-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+    }
+    .testimonial-card .testimonial-image {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin: 0 auto 15px;
+        border: 3px solid var(--primary-color);
+    }
+    .testimonial-card .testimonial-text {
+        font-style: italic;
+        color: var(--text-color);
+    }
+    .testimonial-card .testimonial-name {
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-top: 10px;
+    }
+    
+    /* ==================== CTA SECTION ==================== */
+    .cta-section {
+        background: var(--secondary-color);
+        padding: 60px 0;
+        color: white;
+    }
+    .cta-section h2 {
+        color: white;
+    }
+    
+    /* ==================== RESPONSIVE ==================== */
+    @media (max-width: 768px) {
+        .hero-section h1 {
+            font-size: 32px;
+        }
+        .hero-section {
+            padding: 40px 0;
+        }
+        .stats-section .stat-number {
+            font-size: 32px;
+        }
+        .about-section {
+            padding: 40px 0;
+        }
+        .courses-section {
+            padding: 40px 0;
+        }
+        .testimonials-section {
+            padding: 40px 0;
+        }
+        .cta-section {
+            padding: 40px 0;
+        }
+    }
+</style>
+
+<!-- ==================== HERO SECTION ==================== -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1>Welcome to GLIDE Institute</h1>
+                <p class="subtitle">Empowering communities through skills development, training, research, and innovation.</p>
+                <div class="mt-4">
+                    <a href="/admissions/apply/" class="btn btn-main-2 btn-round-full mr-3">
+                        Apply Now <i class="icofont-simple-right ml-2"></i>
+                    </a>
+                    <a href="/about/" class="btn btn-solid-border btn-round-full">
+                        Learn More
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 mt-4 mt-lg-0">
+                <img src="/static/images/hero-image.jpg" alt="GLIDE Institute" class="hero-image img-fluid">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== STATS SECTION ==================== -->
+<section class="stats-section">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 col-6 mb-4 mb-md-0">
+                <span class="stat-number" id="students-count">0</span>
+                <span class="stat-label">Students</span>
+            </div>
+            <div class="col-md-3 col-6 mb-4 mb-md-0">
+                <span class="stat-number" id="courses-count">0</span>
+                <span class="stat-label">Courses</span>
+            </div>
+            <div class="col-md-3 col-6 mb-4 mb-md-0">
+                <span class="stat-number" id="graduates-count">0</span>
+                <span class="stat-label">Graduates</span>
+            </div>
+            <div class="col-md-3 col-6 mb-4 mb-md-0">
+                <span class="stat-number" id="staff-count">0</span>
+                <span class="stat-label">Staff Members</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== ABOUT SECTION ==================== -->
+<section class="about-section" id="about">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h2 class="text-color">About GLIDE Institute</h2>
+                <div class="divider mb-4"></div>
+                <p class="lead">GLIDE Institute of Science and Technology is an emerging industrial institute committed to building prosperous, smarter, and greener communities.</p>
+                <p>Our programmes are accredited and aligned with the National Council for Higher Education (NCHE) and relevant TVET frameworks in Uganda.</p>
+                <ul class="list-unstyled mt-3">
+                    <li class="mb-2"><i class="icofont-check-circled text-color-2 mr-2"></i> Skills Development & Training</li>
+                    <li class="mb-2"><i class="icofont-check-circled text-color-2 mr-2"></i> Research & Innovation</li>
+                    <li class="mb-2"><i class="icofont-check-circled text-color-2 mr-2"></i> Community Engagement</li>
+                </ul>
+                <a href="/about/" class="btn btn-main btn-round-full mt-3">Read More</a>
+            </div>
+            <div class="col-lg-6 mt-4 mt-lg-0">
+                <img src="/static/images/about.jpg" alt="About GLIDE" class="about-image img-fluid">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== COURSES SECTION ==================== -->
+<section class="courses-section" id="courses">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="text-color">Our Programmes</h2>
+            <div class="divider mx-auto"></div>
+            <p class="text-muted">Choose from a variety of programmes designed to equip you with practical skills</p>
+        </div>
+        <div class="row">
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="course-card text-center">
+                    <div class="course-icon"><i class="icofont-graduate"></i></div>
+                    <h5>Diploma</h5>
+                    <p class="small text-muted">2 Years</p>
+                    <p class="small">Advanced skills and knowledge</p>
+                    <a href="/academics/courses/?category=diploma" class="btn btn-sm btn-main-2">View Details</a>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="course-card text-center">
+                    <div class="course-icon"><i class="icofont-certificate"></i></div>
+                    <h5>Certificate</h5>
+                    <p class="small text-muted">2 Years</p>
+                    <p class="small">Foundation skills training</p>
+                    <a href="/academics/courses/?category=certificate" class="btn btn-sm btn-main-2">View Details</a>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="course-card text-center">
+                    <div class="course-icon"><i class="icofont-tools"></i></div>
+                    <h5>Occupational</h5>
+                    <p class="small text-muted">1-2 Years</p>
+                    <p class="small">Practical job skills</p>
+                    <a href="/academics/courses/?category=occupational" class="btn btn-sm btn-main-2">View Details</a>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="course-card text-center">
+                    <div class="course-icon"><i class="icofont-ui-clock"></i></div>
+                    <h5>Modular</h5>
+                    <p class="small text-muted">Flexible</p>
+                    <p class="small">Short-term specialized training</p>
+                    <a href="/academics/courses/?category=modular" class="btn btn-sm btn-main-2">View Details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== TESTIMONIALS ==================== -->
+<section class="testimonials-section" id="testimonials">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="text-color">What Our Students Say</h2>
+            <div class="divider mx-auto"></div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="testimonial-card">
+                    <img src="/static/images/testimonial-1.jpg" alt="Student" class="testimonial-image">
+                    <p class="testimonial-text">"GLIDE gave me the practical skills I needed to start my own business. The hands-on training was invaluable."</p>
+                    <p class="testimonial-name">- Sarah N.</p>
+                    <small class="text-muted">Certificate in Catering</small>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="testimonial-card">
+                    <img src="/static/images/testimonial-2.jpg" alt="Student" class="testimonial-image">
+                    <p class="testimonial-text">"The instructors at GLIDE are knowledgeable and supportive. I gained confidence in my technical abilities."</p>
+                    <p class="testimonial-name">- John M.</p>
+                    <small class="text-muted">Diploma in IT</small>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="testimonial-card">
+                    <img src="/static/images/testimonial-3.jpg" alt="Student" class="testimonial-image">
+                    <p class="testimonial-text">"I loved the practical approach to learning. The skills I gained have opened many doors for me."</p>
+                    <p class="testimonial-name">- Grace K.</p>
+                    <small class="text-muted">Occupational Certificate</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== CTA SECTION ==================== -->
+<section class="cta-section">
+    <div class="container text-center">
+        <h2>Ready to Start Your Journey?</h2>
+        <p class="mb-4">Join GLIDE Institute and transform your future with practical skills and knowledge.</p>
+        <a href="/admissions/apply/" class="btn btn-white btn-round-full">
+            Apply Now <i class="icofont-simple-right ml-2"></i>
+        </a>
+    </div>
+</section>
+
+<script>
+    // Animate statistics on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        function animateCounter(element, target, duration) {
+            let current = 0;
+            const increment = target / (duration / 20);
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                element.textContent = Math.floor(current);
+            }, 20);
+        }
+
+        // Fetch stats from API
+        fetch('/api/reports/student-statistics/')
+            .then(response => response.json())
+            .then(data => {
+                animateCounter(document.getElementById('students-count'), data.total_students || 0, 2000);
+                animateCounter(document.getElementById('graduates-count'), data.graduated_students || 0, 2000);
+            })
+            .catch(() => {
+                // Fallback
+                document.getElementById('students-count').textContent = '500+';
+                document.getElementById('graduates-count').textContent = '200+';
+            });
+
+        // Fetch courses count
+        fetch('/api/courses/')
+            .then(response => response.json())
+            .then(data => {
+                animateCounter(document.getElementById('courses-count'), data.count || 0, 2000);
+            })
+            .catch(() => {
+                document.getElementById('courses-count').textContent = '20+';
+            });
+
+        // Staff count fallback
+        document.getElementById('staff-count').textContent = '30+';
+    });
+</script>
+{% endblock %}

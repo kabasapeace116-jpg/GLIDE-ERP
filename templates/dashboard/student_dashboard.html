@@ -1,0 +1,1094 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Student Dashboard - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    /* ============================================
+       STUDENT DASHBOARD - REAL-TIME DATA
+       ============================================ */
+
+    .dashboard-wrapper {
+        padding: 25px 30px;
+        background: #f0f4f8;
+        min-height: 100vh;
+    }
+
+    /* ===== TOP BAR ===== */
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 25px;
+        background: white;
+        padding: 15px 25px;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    }
+    .top-bar .greeting h4 {
+        color: var(--primary-color);
+        margin: 0;
+        font-weight: 700;
+    }
+    .top-bar .greeting h4 i {
+        color: var(--secondary-color);
+        margin-right: 10px;
+    }
+    .top-bar .greeting small {
+        color: var(--text-color);
+        font-size: 14px;
+    }
+    .top-bar .top-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .top-bar .top-actions .date-time {
+        color: var(--text-color);
+        font-size: 14px;
+        background: var(--light-bg);
+        padding: 8px 16px;
+        border-radius: 10px;
+    }
+    .top-bar .top-actions .refresh-btn {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .top-bar .top-actions .refresh-btn:hover {
+        background: var(--secondary-color);
+        transform: translateY(-2px);
+    }
+    .top-bar .top-actions .refresh-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .top-bar .top-actions .notification-btn {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: var(--light-bg);
+        color: var(--primary-color);
+        font-size: 18px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .top-bar .top-actions .notification-btn:hover {
+        background: var(--primary-color);
+        color: white;
+    }
+    .top-bar .top-actions .notification-btn .dot {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 8px;
+        height: 8px;
+        background: var(--secondary-color);
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+
+    /* ===== PROFILE HEADER CARD ===== */
+    .profile-header-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+    }
+    .profile-header-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    }
+    .profile-header-card .profile-row {
+        display: flex;
+        align-items: center;
+        gap: 25px;
+        flex-wrap: wrap;
+    }
+    .profile-header-card .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--primary-color);
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+    .profile-header-card .profile-avatar:hover {
+        transform: scale(1.05);
+        border-color: var(--secondary-color);
+    }
+    .profile-header-card .profile-info h3 {
+        color: var(--primary-color);
+        margin: 0;
+        font-weight: 700;
+        font-size: 24px;
+    }
+    .profile-header-card .profile-info .reg-number {
+        color: var(--text-color);
+        font-size: 14px;
+        font-weight: 500;
+    }
+    .profile-header-card .profile-info .course-badge {
+        display: inline-block;
+        background: var(--light-bg);
+        padding: 4px 18px;
+        border-radius: 20px;
+        font-size: 13px;
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-top: 4px;
+    }
+    .profile-header-card .profile-status {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .profile-header-card .profile-status .status-badge {
+        padding: 6px 18px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .profile-header-card .profile-status .status-badge.active {
+        background: #e8f5e9;
+        color: #1b5e20;
+    }
+    .profile-header-card .profile-status .status-badge.inactive {
+        background: #ffebee;
+        color: #b71c1c;
+    }
+    .profile-header-card .profile-status .status-badge.graduated {
+        background: #e3f2fd;
+        color: #0d47a1;
+    }
+    .profile-header-card .profile-status .status-badge.suspended {
+        background: #fff3e0;
+        color: #e65100;
+    }
+
+    .profile-header-card .profile-stats {
+        display: flex;
+        gap: 30px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    }
+    .profile-header-card .profile-stats .stat-item {
+        display: flex;
+        flex-direction: column;
+    }
+    .profile-header-card .profile-stats .stat-item .number {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    .profile-header-card .profile-stats .stat-item .label {
+        font-size: 12px;
+        color: var(--text-color);
+        font-weight: 500;
+    }
+
+    /* ===== STATS GRID ===== */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 18px 22px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.04);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+    }
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    }
+    .stat-card .stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-bottom: 8px;
+    }
+    .stat-card .stat-icon.blue { background: rgba(34,58,102,0.1); color: var(--primary-color); }
+    .stat-card .stat-icon.green { background: rgba(40,167,69,0.1); color: #28a745; }
+    .stat-card .stat-icon.yellow { background: rgba(255,193,7,0.1); color: #ffc107; }
+    .stat-card .stat-icon.red { background: rgba(225,36,84,0.1); color: var(--secondary-color); }
+    .stat-card .stat-icon.purple { background: rgba(111,66,193,0.1); color: #6f42c1; }
+    .stat-card .stat-icon.orange { background: rgba(253,126,20,0.1); color: #fd7e14; }
+    .stat-card .stat-number {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin: 0;
+        line-height: 1.2;
+    }
+    .stat-card .stat-label {
+        font-size: 13px;
+        color: var(--text-color);
+        margin: 0;
+    }
+    .stat-card .stat-trend {
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 4px;
+        display: inline-block;
+    }
+    .stat-card .stat-trend.up { color: #28a745; }
+    .stat-card .stat-trend.down { color: #dc3545; }
+    .stat-card .stat-trend.neutral { color: var(--text-color); }
+
+    /* Card specific colors */
+    .stat-card.gpa::before { background: var(--primary-color); }
+    .stat-card.units::before { background: #28a745; }
+    .stat-card.attendance::before { background: #ffc107; }
+    .stat-card.completed::before { background: #6f42c1; }
+    .stat-card.finance::before { background: var(--secondary-color); }
+    .stat-card.upcoming::before { background: #fd7e14; }
+
+    /* ===== SECTION CARDS ===== */
+    .section-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px 25px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+        margin-bottom: 25px;
+    }
+    .section-card .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--light-bg);
+    }
+    .section-card .section-header h5 {
+        color: var(--primary-color);
+        margin: 0;
+        font-weight: 600;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .section-card .section-header h5 i { color: var(--secondary-color); }
+    .section-card .section-header .view-all {
+        font-size: 13px;
+        color: var(--secondary-color);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .section-card .section-header .view-all:hover { color: var(--primary-color); }
+
+    /* ===== RESULTS TABLE ===== */
+    .table-responsive { overflow-x: auto; }
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .table thead th {
+        background: var(--light-bg);
+        padding: 8px 12px;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid var(--border-color);
+    }
+    .table tbody td {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-dark);
+    }
+    .table tbody tr:hover { background: var(--light-bg); }
+    .table tbody tr:last-child td { border-bottom: none; }
+
+    /* Grade Badges */
+    .grade-badge {
+        display: inline-block;
+        padding: 3px 12px;
+        border-radius: 5px;
+        font-weight: 700;
+        font-size: 12px;
+        min-width: 35px;
+        text-align: center;
+    }
+    .grade-badge.A { background: #28a745; color: white; }
+    .grade-badge.Bplus { background: #17a2b8; color: white; }
+    .grade-badge.B { background: #5bc0de; color: white; }
+    .grade-badge.Cplus { background: #ffc107; color: #212529; }
+    .grade-badge.C { background: #fd7e14; color: white; }
+    .grade-badge.D { background: #6c757d; color: white; }
+    .grade-badge.F { background: #dc3545; color: white; }
+
+    .status-pass { color: #28a745; font-weight: 600; }
+    .status-fail { color: #dc3545; font-weight: 600; }
+
+    /* ===== EVENTS LIST ===== */
+    .events-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .events-list li {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+    .events-list li:last-child { border-bottom: none; }
+    .events-list li:hover { padding-left: 5px; }
+    .events-list .event-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    .events-list .event-icon.exam { background: rgba(225,36,84,0.1); color: var(--secondary-color); }
+    .events-list .event-icon.assignment { background: rgba(255,193,7,0.1); color: #ffc107; }
+    .events-list .event-icon.event { background: rgba(34,58,102,0.1); color: var(--primary-color); }
+    .events-list .event-icon.reminder { background: rgba(40,167,69,0.1); color: #28a745; }
+    .events-list .event-content { flex: 1; }
+    .events-list .event-content .title {
+        font-weight: 600;
+        color: var(--text-dark);
+        font-size: 14px;
+    }
+    .events-list .event-content .date {
+        font-size: 12px;
+        color: var(--text-color);
+    }
+    .events-list .event-badge {
+        font-size: 11px;
+        padding: 2px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+    .events-list .event-badge.urgent { background: rgba(225,36,84,0.1); color: var(--secondary-color); }
+    .events-list .event-badge.upcoming { background: rgba(34,58,102,0.1); color: var(--primary-color); }
+
+    /* ===== NOTIFICATION ===== */
+    .notification-toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 10px;
+        font-weight: 500;
+        z-index: 9999;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        animation: slideIn 0.5s ease;
+        max-width: 400px;
+    }
+    .notification-toast.success { background: #28a745; }
+    .notification-toast.error { background: #dc3545; }
+    .notification-toast.warning { background: #ffc107; color: #212529; }
+    .notification-toast.info { background: var(--primary-color); }
+    @keyframes slideIn {
+        from { transform: translateX(100px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+        text-align: center;
+        padding: 30px 20px;
+    }
+    .empty-state i {
+        font-size: 40px;
+        color: var(--text-color);
+        opacity: 0.3;
+        margin-bottom: 10px;
+    }
+    .empty-state p {
+        color: var(--text-color);
+        margin: 0;
+    }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-in { animation: fadeInUp 0.5s ease forwards; }
+    .animate-in.delay-1 { animation-delay: 0.1s; }
+    .animate-in.delay-2 { animation-delay: 0.2s; }
+    .animate-in.delay-3 { animation-delay: 0.3s; }
+    .animate-in.delay-4 { animation-delay: 0.4s; }
+    .animate-in.delay-5 { animation-delay: 0.5s; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 992px) {
+        .dashboard-wrapper { padding: 20px; }
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-wrapper { padding: 15px; }
+        .top-bar { padding: 12px 15px; flex-direction: column; align-items: stretch; }
+        .top-bar .top-actions { justify-content: space-between; }
+        .profile-header-card { padding: 20px; }
+        .profile-header-card .profile-row { flex-direction: column; text-align: center; }
+        .profile-header-card .profile-status { margin-left: 0; justify-content: center; }
+        .profile-header-card .profile-stats { justify-content: center; }
+        .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+        .stat-card { padding: 15px; }
+        .stat-card .stat-number { font-size: 20px; }
+        .section-card { padding: 15px; }
+        .section-card .section-header { flex-direction: column; align-items: stretch; gap: 10px; }
+        .section-card .section-header .view-all { text-align: right; }
+    }
+
+    @media (max-width: 480px) {
+        .stats-grid { grid-template-columns: 1fr; }
+        .profile-header-card .profile-avatar { width: 80px; height: 80px; }
+        .top-bar .top-actions { flex-direction: column; align-items: stretch; }
+        .top-bar .top-actions .btn-action { width: 100%; text-align: center; }
+    }
+</style>
+
+<div class="dashboard-wrapper">
+
+    <!-- ===== TOP BAR ===== -->
+    <div class="top-bar">
+        <div class="greeting">
+            <h4><i class="icofont-dashboard"></i> <span id="greeting-text">Welcome Back! 👋</span></h4>
+            <small id="greeting-name">Loading your dashboard...</small>
+        </div>
+        <div class="top-actions">
+            <span class="date-time" id="current-time"></span>
+            <button class="refresh-btn" id="refresh-btn" onclick="refreshDashboard()">
+                <i class="icofont-refresh"></i> Refresh
+            </button>
+            <button class="notification-btn" title="Notifications">
+                <i class="icofont-bell"></i>
+                <span class="dot"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== PROFILE HEADER CARD ===== -->
+    <div class="profile-header-card animate-in">
+        <div class="profile-row">
+            <img id="profile-avatar" src="/static/images/default-avatar.png" alt="Profile" class="profile-avatar">
+            <div class="profile-info">
+                <h3 id="profile-name">Student Name</h3>
+                <div class="reg-number" id="profile-reg">Registration Number</div>
+                <span class="course-badge" id="profile-course">Course Name</span>
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="number" id="stat-gpa-display">0.0</span>
+                        <span class="label">GPA</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="number" id="stat-units-display">0</span>
+                        <span class="label">Units Completed</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="number" id="stat-attendance-display">0%</span>
+                        <span class="label">Attendance</span>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-status">
+                <span class="status-badge active" id="profile-status">Active</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== STATS GRID ===== -->
+    <div class="stats-grid">
+        <div class="stat-card gpa animate-in delay-1" onclick="location.href='/academics/results/'">
+            <div class="stat-icon blue"><i class="icofont-graduate"></i></div>
+            <h4 class="stat-number" id="stat-gpa">0.0</h4>
+            <p class="stat-label">Current GPA</p>
+            <span class="stat-trend up" id="gpa-trend">↑ Good standing</span>
+        </div>
+        <div class="stat-card units animate-in delay-2" onclick="location.href='/academics/courses/'">
+            <div class="stat-icon green"><i class="icofont-book"></i></div>
+            <h4 class="stat-number" id="stat-courses">0</h4>
+            <p class="stat-label">Units Enrolled</p>
+            <span class="stat-trend neutral" id="units-trend">Active</span>
+        </div>
+        <div class="stat-card attendance animate-in delay-3" onclick="location.href='/academics/attendance/'">
+            <div class="stat-icon yellow"><i class="icofont-attendance"></i></div>
+            <h4 class="stat-number" id="stat-attendance">0%</h4>
+            <p class="stat-label">Attendance Rate</p>
+            <span class="stat-trend neutral" id="attendance-trend">Loading...</span>
+        </div>
+        <div class="stat-card completed animate-in delay-4" onclick="location.href='/academics/results/'">
+            <div class="stat-icon purple"><i class="icofont-check-circled"></i></div>
+            <h4 class="stat-number" id="stat-completed">0</h4>
+            <p class="stat-label">Completed Units</p>
+            <span class="stat-trend neutral" id="completed-trend">On track</span>
+        </div>
+        <div class="stat-card finance animate-in delay-5" onclick="location.href='/finance/clearance/'">
+            <div class="stat-icon red"><i class="icofont-wallet"></i></div>
+            <h4 class="stat-number" id="stat-finance">-</h4>
+            <p class="stat-label">Financial Status</p>
+            <span class="stat-trend neutral" id="finance-trend">Loading...</span>
+        </div>
+        <div class="stat-card upcoming animate-in delay-5" onclick="location.href='/academics/timetables/'">
+            <div class="stat-icon orange"><i class="icofont-calendar"></i></div>
+            <h4 class="stat-number" id="stat-upcoming">0</h4>
+            <p class="stat-label">Upcoming Deadlines</p>
+            <span class="stat-trend neutral" id="deadline-trend">Check schedule</span>
+        </div>
+    </div>
+
+    <!-- ===== RESULTS SECTION ===== -->
+    <div class="section-card animate-in delay-3">
+        <div class="section-header">
+            <h5><i class="icofont-graduate"></i> Recent Results</h5>
+            <a href="/academics/results/" class="view-all">View All →</a>
+        </div>
+        <div id="results-container">
+            <div class="empty-state">
+                <i class="icofont-spinner icofont-spin"></i>
+                <p>Loading results...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== BOTTOM ROW: EVENTS & ANNOUNCEMENTS ===== -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="section-card animate-in delay-4">
+                <div class="section-header">
+                    <h5><i class="icofont-clock"></i> Upcoming Events</h5>
+                    <span class="view-all">View All →</span>
+                </div>
+                <ul class="events-list" id="events-container">
+                    <li>
+                        <div class="empty-state" style="padding: 10px 0; width: 100%;">
+                            <p style="font-size: 14px;">Loading events...</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="section-card animate-in delay-5">
+                <div class="section-header">
+                    <h5><i class="icofont-news"></i> Announcements</h5>
+                    <span class="view-all">View All →</span>
+                </div>
+                <ul class="events-list" id="announcements-container">
+                    <li>
+                        <div class="empty-state" style="padding: 10px 0; width: 100%;">
+                            <p style="font-size: 14px;">Loading announcements...</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ============================================
+    // STUDENT DASHBOARD - FIXED (No JWT)
+    // ============================================
+
+    let refreshInterval = null;
+    let isRefreshing = false;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // ✅ Check for user in localStorage (session-based)
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            console.log('No user found, redirecting to login');
+            window.location.href = '/login/'; // Redirect to login
+            return;
+        }
+        
+        console.log('📊 Student Dashboard loaded');
+        console.log('👤 User:', user);
+        
+        // Check if user is actually a student
+        if (user.user_type !== 'student') {
+            const redirects = {
+                'super_admin': '/dashboard/admin/',
+                'admin': '/dashboard/admin/',
+                'registrar': '/dashboard/admin/',
+                'finance': '/dashboard/finance/',
+                'staff': '/dashboard/staff/',
+                'lecturer': '/dashboard/staff/',
+                'hr': '/dashboard/hr/'
+            };
+            window.location.href = redirects[user.user_type] || '/dashboard/';
+            return;
+        }
+
+        // Update greeting
+        const hour = new Date().getHours();
+        let greeting = 'Good Morning';
+        if (hour >= 12 && hour < 17) greeting = 'Good Afternoon';
+        else if (hour >= 17) greeting = 'Good Evening';
+        document.getElementById('greeting-text').textContent = `${greeting}! 👋`;
+        document.getElementById('greeting-name').textContent = `Welcome back, ${user.first_name || 'Student'}!`;
+
+        // Current time
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        updateClock();
+        setInterval(updateClock, 60000);
+
+        // Fetch student data
+        fetchStudentData();
+
+        // Auto-refresh every 60 seconds
+        refreshInterval = setInterval(() => {
+            console.log('🔄 Auto-refreshing dashboard...');
+            fetchStudentData();
+        }, 60000);
+    });
+
+    // ============================================
+    // REFRESH DASHBOARD
+    // ============================================
+    function refreshDashboard() {
+        if (isRefreshing) return;
+        
+        const btn = document.getElementById('refresh-btn');
+        isRefreshing = true;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Refreshing...';
+        
+        // Clear cache
+        localStorage.removeItem('student');
+        
+        // Fetch fresh data
+        fetchStudentData();
+        
+        setTimeout(() => {
+            isRefreshing = false;
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-refresh"></i> Refresh';
+            showNotification('Dashboard refreshed successfully!', 'success');
+        }, 2000);
+    }
+
+    // ============================================
+    // SHOW NOTIFICATION
+    // ============================================
+    function showNotification(message, type = 'info') {
+        const colors = {
+            success: '#28a745',
+            info: '#223a66',
+            warning: '#ffc107',
+            error: '#dc3545'
+        };
+        
+        const notification = document.createElement('div');
+        notification.className = `notification-toast ${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: ${colors[type] || '#223a66'};
+            color: ${type === 'warning' ? '#212529' : 'white'};
+            border-radius: 10px;
+            font-weight: 500;
+            z-index: 9999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            animation: slideIn 0.5s ease;
+            max-width: 400px;
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => notification.remove(), 500);
+        }, 4000);
+    }
+
+    // ============================================
+    // FETCH STUDENT DATA (No JWT)
+    // ============================================
+    function fetchStudentData() {
+        console.log('📡 Fetching student data...');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (!user || !user.id) {
+            console.error('❌ No user found');
+            window.location.href = '/login/'; // Redirect to login
+            return;
+        }
+        
+        // Try to get student by user ID
+        fetch(`/api/students/?user=${user.id}`)
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            console.log('📊 Student data:', data);
+            if (data.results && data.results.length > 0) {
+                const student = data.results[0];
+                localStorage.setItem('student', JSON.stringify(student));
+                updateUI(student);
+                fetchStudentStats(student.id);
+                fetchStudentResults(student.id);
+                fetchStudentAttendance(student.id);
+                fetchFinancialStatus(student.id);
+                return;
+            }
+            // Try my_profile endpoint
+            return fetch('/api/students/my_profile/');
+        })
+        .then(response => {
+            if (response && response.ok) return response.json();
+            return null;
+        })
+        .then(data => {
+            if (data && data.id) {
+                localStorage.setItem('student', JSON.stringify(data));
+                updateUI(data);
+                fetchStudentStats(data.id);
+                fetchStudentResults(data.id);
+                fetchStudentAttendance(data.id);
+                fetchFinancialStatus(data.id);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error fetching student data:', error);
+            const container = document.querySelector('#results-container');
+            if (container) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="icofont-warning" style="color: #dc3545;"></i>
+                        <p style="color: #dc3545;">Unable to load student data. Please contact administration.</p>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    // ============================================
+    // UPDATE UI
+    // ============================================
+    function updateUI(student) {
+        console.log('🔄 Updating UI with student data:', student);
+        
+        const defaultAvatar = '/static/images/default-avatar.png';
+        const avatarSrc = student.profile_picture || defaultAvatar;
+        
+        document.getElementById('profile-avatar').src = avatarSrc;
+        document.getElementById('profile-name').textContent = `${student.first_name} ${student.last_name}`;
+        document.getElementById('profile-reg').textContent = student.registration_number || 'N/A';
+        document.getElementById('profile-course').textContent = student.course_name || 'Course Name';
+        
+        // Status
+        const statusEl = document.getElementById('profile-status');
+        const statusText = student.status || 'active';
+        statusEl.textContent = statusText.charAt(0).toUpperCase() + statusText.slice(1);
+        statusEl.className = `status-badge ${statusText}`;
+        
+        // Stats in profile
+        document.getElementById('stat-gpa-display').textContent = '0.0';
+        document.getElementById('stat-units-display').textContent = '0';
+        document.getElementById('stat-attendance-display').textContent = '0%';
+    }
+
+    // ============================================
+    // FETCH STUDENT STATS (No JWT)
+    // ============================================
+    function fetchStudentStats(studentId) {
+        fetch(`/api/academics/student-progress/?student=${studentId}`)
+        .then(response => response.json())
+        .then(data => {
+            const results = data.results || [];
+            const completed = results.filter(r => r.is_completed).length;
+            const total = results.length;
+            document.getElementById('stat-courses').textContent = total;
+            document.getElementById('stat-completed').textContent = completed;
+            
+            // Calculate GPA
+            const gradePoints = { 'A': 5, 'B+': 4.5, 'B': 4, 'C+': 3.5, 'C': 3, 'D': 2, 'F': 0 };
+            let totalPoints = 0;
+            let gradedUnits = 0;
+            results.forEach(r => {
+                if (r.grade && gradePoints[r.grade] !== undefined) {
+                    totalPoints += gradePoints[r.grade];
+                    gradedUnits++;
+                }
+            });
+            const gpa = gradedUnits > 0 ? (totalPoints / gradedUnits).toFixed(2) : '0.00';
+            document.getElementById('stat-gpa').textContent = gpa;
+            document.getElementById('stat-gpa-display').textContent = gpa;
+            document.getElementById('stat-units-display').textContent = completed;
+            
+            // Update trends
+            document.getElementById('gpa-trend').textContent = gpa >= 3.5 ? '🌟 Excellent' : gpa >= 2.5 ? '👍 Good' : '📚 Keep going';
+            document.getElementById('gpa-trend').className = `stat-trend ${gpa >= 2.5 ? 'up' : 'neutral'}`;
+            document.getElementById('completed-trend').textContent = `${completed} of ${total} completed`;
+        })
+        .catch(error => console.error('Error fetching stats:', error));
+    }
+
+    // ============================================
+    // FETCH STUDENT RESULTS (No JWT)
+    // ============================================
+    function fetchStudentResults(studentId) {
+        fetch(`/api/academics/results/student_results/?student_id=${studentId}`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('results-container');
+            const results = data.results || data || [];
+            
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="icofont-graduate"></i>
+                        <p>No results available yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const gradeClass = (grade) => {
+                const map = { 'A': 'A', 'B+': 'Bplus', 'B': 'B', 'C+': 'Cplus', 'C': 'C', 'D': 'D', 'F': 'F' };
+                return map[grade] || 'P';
+            };
+
+            const statusClass = (grade) => {
+                return (grade === 'F' || grade === 'D') ? 'status-fail' : 'status-pass';
+            };
+
+            container.innerHTML = `
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Course Unit</th>
+                                <th>Assessment</th>
+                                <th>Score</th>
+                                <th>Grade</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${results.slice(0, 5).map(r => `
+                                <tr>
+                                    <td>${r.course_unit_name || r.course_unit || 'N/A'}</td>
+                                    <td>${r.assessment || 'N/A'}</td>
+                                    <td>${r.score || 0}</td>
+                                    <td><span class="grade-badge ${gradeClass(r.grade)}">${r.grade || 'P'}</span></td>
+                                    <td class="${statusClass(r.grade)}">${r.grade === 'F' ? '🔄 Retake' : '✅ Pass'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                ${results.length > 5 ? `<div style="text-align:center;margin-top:10px;font-size:13px;color:var(--text-color);">Showing 5 of ${results.length} results</div>` : ''}
+            `;
+        })
+        .catch(error => {
+            console.error('Error fetching results:', error);
+            document.getElementById('results-container').innerHTML = `
+                <div class="empty-state">
+                    <i class="icofont-warning"></i>
+                    <p>Unable to load results</p>
+                </div>
+            `;
+        });
+    }
+
+    // ============================================
+    // FETCH STUDENT ATTENDANCE (No JWT)
+    // ============================================
+    function fetchStudentAttendance(studentId) {
+        fetch(`/api/academics/attendance/student_attendance/?student_id=${studentId}`)
+        .then(response => response.json())
+        .then(data => {
+            const rate = data.attendance_rate || '0%';
+            document.getElementById('stat-attendance').textContent = rate;
+            document.getElementById('stat-attendance-display').textContent = rate;
+            
+            const trend = document.getElementById('attendance-trend');
+            const rateNum = parseInt(rate);
+            if (rateNum >= 80) {
+                trend.textContent = '🌟 Excellent!';
+                trend.className = 'stat-trend up';
+            } else if (rateNum >= 60) {
+                trend.textContent = '👍 Good standing';
+                trend.className = 'stat-trend neutral';
+            } else {
+                trend.textContent = '⚠️ Needs improvement';
+                trend.className = 'stat-trend down';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching attendance:', error);
+            document.getElementById('stat-attendance').textContent = '0%';
+        });
+    }
+
+    // ============================================
+    // FETCH FINANCIAL STATUS (No JWT)
+    // ============================================
+    function fetchFinancialStatus(studentId) {
+        fetch(`/api/finance/clearance/clearance_status/?student_id=${studentId}`)
+        .then(response => response.json())
+        .then(data => {
+            const statusEl = document.getElementById('stat-finance');
+            const financeTrend = document.getElementById('finance-trend');
+            
+            if (data.is_cleared) {
+                statusEl.textContent = '✅ Cleared';
+                statusEl.style.color = '#28a745';
+                financeTrend.textContent = '✅ All fees paid';
+                financeTrend.className = 'stat-trend up';
+            } else {
+                statusEl.textContent = '⚠️ Pending';
+                statusEl.style.color = '#ffc107';
+                financeTrend.textContent = '⏳ Outstanding balance';
+                financeTrend.className = 'stat-trend down';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching finance status:', error);
+            document.getElementById('stat-finance').textContent = 'N/A';
+        });
+    }
+
+    // ============================================
+    // FETCH EVENTS & ANNOUNCEMENTS
+    // ============================================
+    function fetchEvents() {
+        // In production, fetch from API
+        const events = [
+            { title: 'Final Examination - IT101', date: 'December 15, 2024', type: 'exam', badge: 'urgent' },
+            { title: 'Project Submission - ME202', date: 'December 20, 2024', type: 'assignment', badge: 'upcoming' },
+            { title: 'Semester Break Begins', date: 'December 22, 2024', type: 'event', badge: 'upcoming' }
+        ];
+        
+        const container = document.getElementById('events-container');
+        const iconMap = {
+            'exam': 'exam',
+            'assignment': 'assignment',
+            'event': 'event',
+            'reminder': 'reminder'
+        };
+        
+        if (container) {
+            container.innerHTML = events.map(e => `
+                <li>
+                    <div class="event-icon ${e.type}"><i class="icofont-${iconMap[e.type] || 'calendar'}"></i></div>
+                    <div class="event-content">
+                        <div class="title">${e.title}</div>
+                        <div class="date">${e.date}</div>
+                    </div>
+                    <span class="event-badge ${e.badge}">${e.badge}</span>
+                </li>
+            `).join('');
+        }
+    }
+
+    function fetchAnnouncements() {
+        // In production, fetch from API
+        const announcements = [
+            { title: 'Registration for Next Semester', date: 'Opens January 5, 2025' },
+            { title: 'Scholarship Applications', date: 'Deadline: January 15, 2025' },
+            { title: 'Graduation Ceremony', date: 'February 28, 2025' }
+        ];
+        
+        const container = document.getElementById('announcements-container');
+        if (container) {
+            container.innerHTML = announcements.map(a => `
+                <li>
+                    <div class="event-icon reminder"><i class="icofont-bullhorn"></i></div>
+                    <div class="event-content">
+                        <div class="title">${a.title}</div>
+                        <div class="date">${a.date}</div>
+                    </div>
+                </li>
+            `).join('');
+        }
+    }
+
+    // Load events and announcements
+    fetchEvents();
+    fetchAnnouncements();
+
+    // ============================================
+    // LOGOUT
+    // ============================================
+    function handleLogout() {
+        if (confirm('Are you sure you want to logout?')) {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/login/'; // Redirect to login
+        }
+    }
+</script>
+{% endblock %}
