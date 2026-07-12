@@ -1,7 +1,8 @@
 """
-GLIDE Institute - Complete Database Seed Script
+GLIDE Institute - Complete Database Seed Script (UNIFIED)
 This script wipes all data and creates fresh seed data with everything.
 Run with: python manage.py shell < seed_full.py
+Or during deployment: python manage.py shell -c "exec(open('seed_full.py').read())"
 """
 
 import os
@@ -10,6 +11,8 @@ import django
 from datetime import date, timedelta, datetime
 from decimal import Decimal
 import random
+from django.db import transaction, models
+from django.contrib.auth.hashers import make_password
 
 # Setup Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'glide_sms.settings')
@@ -17,9 +20,9 @@ django.setup()
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.contrib.auth.hashers import make_password
-
-from core.models import User, Department, Course, CourseCategory, Class, Student, StudentApplication
+from core.models import (
+    User, Department, Course, CourseCategory, Class, Student, StudentApplication
+)
 from admissions.models import AcademicYear, Semester, AdmissionBatch, AdmittedStudent
 from academics.models import CourseUnit, Assessment, Result, StudentCourseProgress, AttendanceRecord, Timetable
 from finance.models import FeeStructure, Invoice, Payment, FinancialClearance
@@ -27,13 +30,56 @@ from hr.models import Employee, LeaveRequest, Attendance as HRAttendance
 
 User = get_user_model()
 
-print("="*70)
-print("GLIDE INSTITUTE - COMPLETE DATABASE WIPE & RESEED")
-print("="*70)
+# ============================================
+# CONFIGURATION
+# ============================================
+STUDENT_COUNT = 50
+ACADEMIC_YEAR = "2024/2025"
+SEMESTER = "semester1"
+
+# ============================================
+# HELPER FUNCTIONS
+# ============================================
+def random_date(start_date, end_date):
+    """Generate a random date between start and end"""
+    delta = end_date - start_date
+    random_days = random.randint(0, delta.days)
+    return start_date + timedelta(days=random_days)
+
+def random_phone():
+    """Generate a random Ugandan phone number"""
+    return f"077{random.randint(100000, 999999)}"
+
+def random_grade():
+    """Generate a random grade with weighted distribution"""
+    weights = ['A'] * 15 + ['B+'] * 20 + ['B'] * 25 + ['C+'] * 20 + ['C'] * 15 + ['D'] * 4 + ['F'] * 1
+    return random.choice(weights)
+
+def grade_to_score(grade):
+    """Convert grade to a score"""
+    mapping = {
+        'A': random.randint(80, 100),
+        'B+': random.randint(75, 79),
+        'B': random.randint(70, 74),
+        'C+': random.randint(65, 69),
+        'C': random.randint(55, 64),
+        'D': random.randint(40, 54),
+        'F': random.randint(0, 39)
+    }
+    return mapping.get(grade, random.randint(50, 70))
+
+def create_password():
+    """Generate a random password"""
+    chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
+    return ''.join(random.choice(chars) for _ in range(12))
 
 # ============================================
 # 1. WIPE ALL DATA
 # ============================================
+print("="*70)
+print("GLIDE INSTITUTE - COMPLETE DATABASE WIPE & RESEED")
+print("="*70)
+
 print("\n🗑️ Wiping existing data...")
 
 with transaction.atomic():
@@ -87,12 +133,9 @@ users_data = [
     
     # HR
     {'username': 'hr', 'email': 'hr@glideafrica.org', 'password': 'HR@2024', 'first_name': 'HR', 'last_name': 'Manager', 'user_type': 'hr', 'is_superuser': False, 'is_staff': True},
-    
-    # Students (will be linked to Student model later)
-    {'username': 'student', 'email': 'student@glideafrica.org', 'password': 'Student@2024', 'first_name': 'John', 'last_name': 'Doe', 'user_type': 'student', 'is_superuser': False, 'is_staff': False},
 ]
 
-users_created = []
+users_created = {}
 for user_data in users_data:
     try:
         if user_data['is_superuser']:
@@ -114,7 +157,7 @@ for user_data in users_data:
         user.user_type = user_data['user_type']
         user.is_staff = user_data['is_staff']
         user.save()
-        users_created.append(user_data['username'])
+        users_created[user.username] = user
         print(f"  ✅ {user_data['username']} ({user_data['user_type']})")
     except Exception as e:
         print(f"  ❌ Failed to create {user_data['username']}: {e}")
@@ -152,7 +195,6 @@ categories_data = [
     {'name': 'Certificate', 'category_type': 'certificate'},
     {'name': 'Occupational', 'category_type': 'occupational'},
     {'name': 'Modular', 'category_type': 'modular'},
-    {'name': 'Driving', 'category_type': 'driving'},
 ]
 
 categories = {}
@@ -185,6 +227,7 @@ courses_data = [
     {'name': 'Tailoring and Garment Design', 'code': 'TGD', 'category_type': 'occupational', 'department_code': 'BUS', 'duration': '2_years', 'tuition_fee': 1000000, 'application_fee': 30000},
 ]
 
+courses = {}
 for course_data in courses_data:
     category = categories.get(course_data['category_type'])
     dept = departments.get(course_data['department_code'])
@@ -200,10 +243,66 @@ for course_data in courses_data:
         application_fee=course_data['application_fee'],
         is_active=True
     )
+    courses[course.code] = course
     print(f"  ✅ {course.name} ({course.code})")
 
 # ============================================
-# 6. CREATE COURSE UNITS
+# 6. CREATE CLASSES
+# ============================================
+print("\n🏫 Creating classes...")
+
+classes = {}
+for course_code, course in courses.items():
+    class_obj = Class.objects.create(
+        name=f"{course.name} - Year 1",
+        code=f"CLS-{course_code}-2024",
+        course=course,
+        academic_year=ACADEMIC_YEAR,
+        semester=SEMESTER,
+        start_date=date(2024, 8, 1),
+        end_date=date(2024, 12, 15),
+        capacity=50,
+        current_enrollment=0,
+        is_active=True
+    )
+    classes[course_code] = class_obj
+    print(f"  ✅ {class_obj.name}")
+
+# ============================================
+# 7. CREATE ACADEMIC YEAR & SEMESTER
+# ============================================
+print("\n📅 Creating academic years and semesters...")
+
+academic_year = AcademicYear.objects.create(
+    name=ACADEMIC_YEAR,
+    start_date=date(2024, 8, 1),
+    end_date=date(2025, 7, 31),
+    is_current=True
+)
+print(f"  ✅ {academic_year.name}")
+
+semester1 = Semester.objects.create(
+    academic_year=academic_year,
+    name='semester1',
+    start_date=date(2024, 8, 1),
+    end_date=date(2024, 12, 15),
+    is_current=True,
+    registration_deadline=date(2024, 8, 15)
+)
+print(f"  ✅ {semester1.get_name_display()}")
+
+semester2 = Semester.objects.create(
+    academic_year=academic_year,
+    name='semester2',
+    start_date=date(2025, 1, 15),
+    end_date=date(2025, 5, 30),
+    is_current=False,
+    registration_deadline=date(2025, 1, 30)
+)
+print(f"  ✅ {semester2.get_name_display()}")
+
+# ============================================
+# 8. CREATE COURSE UNITS
 # ============================================
 print("\n📚 Creating course units...")
 
@@ -240,7 +339,7 @@ unit_data = {
 }
 
 for course_code, units in unit_data.items():
-    course = Course.objects.filter(code=course_code).first()
+    course = courses.get(course_code)
     if course:
         for name, code, credits in units:
             unit = CourseUnit.objects.create(
@@ -253,89 +352,34 @@ for course_code, units in unit_data.items():
             print(f"  ✅ {code} - {name}")
 
 # ============================================
-# 7. CREATE ACADEMIC YEAR & SEMESTERS
-# ============================================
-print("\n📅 Creating academic years and semesters...")
-
-academic_year = AcademicYear.objects.create(
-    name='2024/2025',
-    start_date=date(2024, 8, 1),
-    end_date=date(2025, 7, 31),
-    is_current=True
-)
-print(f"  ✅ {academic_year.name}")
-
-semester1 = Semester.objects.create(
-    academic_year=academic_year,
-    name='semester1',
-    start_date=date(2024, 8, 1),
-    end_date=date(2024, 12, 15),
-    is_current=True,
-    registration_deadline=date(2024, 8, 15)
-)
-print(f"  ✅ {semester1.get_name_display()}")
-
-semester2 = Semester.objects.create(
-    academic_year=academic_year,
-    name='semester2',
-    start_date=date(2025, 1, 15),
-    end_date=date(2025, 5, 30),
-    is_current=False,
-    registration_deadline=date(2025, 1, 30)
-)
-print(f"  ✅ {semester2.get_name_display()}")
-
-# ============================================
-# 8. CREATE CLASSES
-# ============================================
-print("\n🏫 Creating classes...")
-
-course_objects = Course.objects.all()
-classes = {}
-for course in course_objects:
-    class_obj = Class.objects.create(
-        name=f"{course.name} - Year 1",
-        code=f"CLS-{course.code}-2024",
-        course=course,
-        academic_year=academic_year.name,
-        semester=semester1.name,
-        start_date=date(2024, 8, 1),
-        end_date=date(2024, 12, 15),
-        capacity=50,
-        current_enrollment=0,
-        is_active=True
-    )
-    classes[course.code] = class_obj
-    print(f"  ✅ {class_obj.name}")
-
-# ============================================
 # 9. CREATE FEE STRUCTURES
 # ============================================
 print("\n💰 Creating fee structures...")
 
 fee_types = ['tuition', 'application', 'exam', 'library', 'activity']
-for course in Course.objects.all():
+for course in courses.values():
     for fee_type in fee_types:
         amount = course.tuition_fee if fee_type == 'tuition' else random.randint(30000, 150000)
         FeeStructure.objects.create(
             course=course,
             fee_type=fee_type,
             amount=amount,
-            academic_year=academic_year.name,
+            academic_year=ACADEMIC_YEAR,
             is_required=True,
             is_active=True
         )
     print(f"  ✅ Fee structures for {course.name}")
 
 # ============================================
-# 10. CREATE STUDENTS (50 students with random data)
+# 10. CREATE STUDENTS
 # ============================================
-print("\n👨‍🎓 Creating 50 students...")
+print(f"\n👨‍🎓 Creating {STUDENT_COUNT} students...")
 
 first_names = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Mary', 'James', 'Patricia', 'Robert', 'Jennifer',
                'William', 'Linda', 'Richard', 'Elizabeth', 'Joseph', 'Susan', 'Thomas', 'Jessica', 'Charles', 'Margaret',
                'Christopher', 'Lisa', 'Daniel', 'Nancy', 'Matthew', 'Helen', 'Anthony', 'Sandra', 'Donald', 'Donna',
-               'Mark', 'Carol', 'Paul', 'Ruth', 'Steven', 'Sharon', 'Andrew', 'Michelle', 'Joshua', 'Laura']
+               'Mark', 'Carol', 'Paul', 'Ruth', 'Steven', 'Sharon', 'Andrew', 'Michelle', 'Joshua', 'Laura',
+               'Kenneth', 'Kimberly', 'Kevin', 'Deborah', 'Brian', 'Amy', 'George', 'Angela', 'Timothy', 'Pamela']
 
 last_names = ['Mukasa', 'Nabatanzi', 'Ssali', 'Nakintu', 'Lubega', 'Nalubega', 'Kato', 'Nansubuga', 'Ssenyonga', 'Nakato',
               'Lule', 'Nabukenya', 'Muwonge', 'Namatovu', 'Kalema', 'Nakayiwa', 'Ssekandi', 'Nambi', 'Mugisha', 'Nakayenze',
@@ -343,90 +387,81 @@ last_names = ['Mukasa', 'Nabatanzi', 'Ssali', 'Nakintu', 'Lubega', 'Nalubega', '
 
 gender_options = ['male', 'female']
 status_options = ['active', 'active', 'active', 'active', 'active', 'graduated', 'inactive', 'suspended']
-course_list = list(Course.objects.all())
-
-def random_date(start, end):
-    delta = end - start
-    random_days = random.randint(0, delta.days)
-    return start + timedelta(days=random_days)
-
-def random_phone():
-    return f"077{random.randint(100000, 999999)}"
+course_list = list(courses.items())
 
 students_created = []
-for i in range(50):
-    first_name = random.choice(first_names)
-    last_name = random.choice(last_names)
-    username = f"{first_name.lower()}.{last_name.lower()}{random.randint(10, 99)}"
-    email = f"{username}@glide.edu"
-    gender = random.choice(gender_options)
-    dob = random_date(date(1995, 1, 1), date(2005, 12, 31))
-    course = random.choice(course_list)
-    
-    # Create user
-    user = User.objects.create_user(
-        username=username,
-        email=email,
-        password='Student@2024',
-        first_name=first_name,
-        last_name=last_name,
-        user_type='student',
-        phone=random_phone()
-    )
-    
-    # Create student
-    student = Student.objects.create(
-        user=user,
-        first_name=first_name,
-        last_name=last_name,
-        date_of_birth=dob,
-        gender=gender,
-        nationality='Ugandan',
-        marital_status=random.choice(['single', 'single', 'single', 'married']),
-        course=course,
-        status=random.choice(status_options),
-        phone=random_phone(),
-        email=email,
-        address=f"{random.randint(1, 100)} Kampala Road",
-        district=random.choice(['Kampala', 'Wakiso', 'Mukono', 'Jinja', 'Butaleja', 'Tororo', 'Mbale']),
-        village=random.choice(['Kampala', 'Ntinda', 'Bukoto', 'Naguru', 'Muyenga', 'Kiwatule'])
-    )
-    students_created.append(student)
-    
-    # Assign to class
-    class_obj = classes.get(course.code)
-    if class_obj:
-        student.current_class = class_obj
-        class_obj.current_enrollment += 1
-        class_obj.save()
-        student.save()
-    
-    print(f"  ✅ {i+1}. {student.registration_number} - {student.full_name} ({course.name})")
-
-# ============================================
-# 11. CREATE ADMISSIONS & APPLICATIONS
-# ============================================
-print("\n📋 Creating admissions and applications...")
-
-# Create applications for some students
-for i, student in enumerate(students_created[:20]):
-    app = StudentApplication.objects.create(
-        application_id=f"APP/2024/{i+100:04d}",
-        first_name=student.first_name,
-        last_name=student.last_name,
-        email=student.email,
-        phone=student.phone,
-        course_type=student.course.category.category_type,
-        program_applied=student.course.name,
-        status=random.choice(['admitted', 'pending', 'reviewing', 'admitted', 'admitted']),
-        application_date=random_date(date(2024, 6, 1), date(2024, 7, 31)),
-        declaration_agreed=True,
-        declaration_signature=f"{student.first_name} {student.last_name}",
-        declaration_date=random_date(date(2024, 6, 1), date(2024, 7, 31))
-    )
-    
-    # Create admission record
-    if app.status == 'admitted':
+for i in range(STUDENT_COUNT):
+    try:
+        first_name = random.choice(first_names)
+        last_name = random.choice(last_names)
+        username = f"{first_name.lower()}.{last_name.lower()}{random.randint(10, 99)}"
+        email = f"{username}@glide.edu"
+        gender = random.choice(gender_options)
+        dob = random_date(date(1995, 1, 1), date(2005, 12, 31))
+        course_code, course = random.choice(course_list)
+        class_obj = classes.get(course_code)
+        
+        # Create user
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password='Student@2024',
+            first_name=first_name,
+            last_name=last_name,
+            user_type='student',
+            phone=random_phone()
+        )
+        
+        # Create student
+        student = Student.objects.create(
+            user=user,
+            first_name=first_name,
+            last_name=last_name,
+            date_of_birth=dob,
+            gender=gender,
+            nationality='Ugandan',
+            marital_status=random.choice(['single', 'single', 'single', 'married']),
+            course=course,
+            current_class=class_obj,
+            status=random.choice(status_options),
+            phone=random_phone(),
+            email=email,
+            address=f"{random.randint(1, 100)} Kampala Road",
+            district=random.choice(['Kampala', 'Wakiso', 'Mukono', 'Jinja', 'Butaleja', 'Tororo', 'Mbale']),
+            village=random.choice(['Kampala', 'Ntinda', 'Bukoto', 'Naguru', 'Muyenga', 'Kiwatule']),
+            parent_name=f"{random.choice(['Mr.', 'Mrs.'])} {random.choice(last_names)}",
+            parent_phone=random_phone()
+        )
+        
+        # Update class enrollment
+        if class_obj:
+            class_obj.current_enrollment += 1
+            class_obj.save()
+        
+        students_created.append(student)
+        print(f"  ✅ {i+1}. {student.registration_number} - {student.full_name} ({course.name})")
+        
+        # ============================================
+        # 11. CREATE APPLICATION
+        # ============================================
+        app = StudentApplication.objects.create(
+            application_id=f"APP/2024/{i+1:04d}",
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=random_phone(),
+            course_type=course.category.category_type if course.category else 'diploma',
+            program_applied=course.name,
+            status='admitted',
+            application_date=random_date(date(2024, 6, 1), date(2024, 7, 31)),
+            declaration_agreed=True,
+            declaration_signature=f"{first_name} {last_name}",
+            declaration_date=random_date(date(2024, 6, 1), date(2024, 7, 31))
+        )
+        
+        # ============================================
+        # 12. CREATE ADMISSION
+        # ============================================
         AdmittedStudent.objects.create(
             application=app,
             student=student,
@@ -434,267 +469,161 @@ for i, student in enumerate(students_created[:20]):
             confirmed_enrollment=True,
             confirmed_enrollment_date=random_date(date(2024, 8, 1), date(2024, 8, 15))
         )
-    print(f"  ✅ {app.application_id} - {app.first_name} {app.last_name}")
-
-# ============================================
-# 12. CREATE ASSESSMENTS & RESULTS
-# ============================================
-print("\n📝 Creating assessments and results...")
-
-def random_grade():
-    weights = ['A'] * 15 + ['B+'] * 20 + ['B'] * 25 + ['C+'] * 20 + ['C'] * 15 + ['D'] * 4 + ['F'] * 1
-    return random.choice(weights)
-
-def grade_to_score(grade):
-    mapping = {
-        'A': random.randint(80, 100),
-        'B+': random.randint(75, 79),
-        'B': random.randint(70, 74),
-        'C+': random.randint(65, 69),
-        'C': random.randint(55, 64),
-        'D': random.randint(40, 54),
-        'F': random.randint(0, 39)
-    }
-    return mapping.get(grade, random.randint(50, 70))
-
-assessments_created = 0
-results_created = 0
-for student in students_created[:30]:  # 30 students with results
-    units = CourseUnit.objects.filter(course=student.course)
-    for unit in units[:4]:  # 4 units per student
-        # Create assessment
-        assessment = Assessment.objects.create(
-            name=f"{unit.name} - Final Exam",
-            course_unit=unit,
-            class_obj=student.current_class,
-            assessment_type='final',
-            max_score=100,
-            weight=50,
-            date=random_date(date(2024, 11, 1), date(2024, 12, 10)),
-            duration_minutes=120,
-            semester=semester1,
-            is_published=True,
-            is_closed=True
-        )
-        assessments_created += 1
         
-        grade = random_grade()
-        score = grade_to_score(grade)
-        is_passed = grade != 'F'
-        
-        # Create result
-        Result.objects.create(
-            student=student,
-            course_unit=unit,
-            assessment=assessment,
-            score=score,
-            grade=grade,
-            semester=semester1,
-            is_published=True,
-            published_date=random_date(date(2024, 12, 1), date(2024, 12, 15))
-        )
-        results_created += 1
-        
-        # Create course progress
-        StudentCourseProgress.objects.create(
-            student=student,
-            course_unit=unit,
-            semester=semester1,
-            score=score,
-            grade=grade,
-            is_completed=True,
-            is_retake=False,
-            is_passed=is_passed
-        )
-        
-    # Also create results for second semester for some students
-    if random.random() > 0.5:
-        for unit in units[:2]:
-            assessment = Assessment.objects.create(
-                name=f"{unit.name} - Midterm Exam",
+        # ============================================
+        # 13. CREATE ACADEMIC PROGRESS & RESULTS
+        # ============================================
+        course_units = CourseUnit.objects.filter(course=course)
+        for unit in course_units:
+            grade = random_grade()
+            score = grade_to_score(grade)
+            is_passed = grade != 'F'
+            
+            StudentCourseProgress.objects.create(
+                student=student,
                 course_unit=unit,
-                class_obj=student.current_class,
-                assessment_type='midterm',
+                semester=semester1,
+                score=score,
+                grade=grade,
+                is_completed=True,
+                is_retake=False,
+                is_passed=is_passed
+            )
+            
+            assessment = Assessment.objects.create(
+                name=f"{unit.name} - Final Exam",
+                course_unit=unit,
+                class_obj=class_obj,
+                assessment_type='final',
                 max_score=100,
-                weight=30,
-                date=random_date(date(2025, 2, 1), date(2025, 3, 15)),
-                duration_minutes=90,
-                semester=semester2,
+                weight=50,
+                date=random_date(date(2024, 11, 1), date(2024, 12, 10)),
+                duration_minutes=120,
+                semester=semester1,
                 is_published=True,
                 is_closed=True
             )
-            assessments_created += 1
             
-            grade = random_grade()
-            score = grade_to_score(grade)
             Result.objects.create(
                 student=student,
                 course_unit=unit,
                 assessment=assessment,
                 score=score,
                 grade=grade,
-                semester=semester2,
+                semester=semester1,
                 is_published=True,
-                published_date=random_date(date(2025, 3, 1), date(2025, 3, 30))
+                published_date=random_date(date(2024, 12, 1), date(2024, 12, 15))
             )
-            results_created += 1
-
-print(f"  ✅ Created {assessments_created} assessments and {results_created} results")
-
-# ============================================
-# 13. CREATE ATTENDANCE RECORDS
-# ============================================
-print("\n📊 Creating attendance records...")
-
-attendance_statuses = ['present'] * 70 + ['absent'] * 10 + ['late'] * 15 + ['excused'] * 5
-attendance_created = 0
-
-for student in students_created[:35]:
-    start_date = date(2024, 8, 15)
-    end_date = date(2024, 11, 30)
-    current_date = start_date
-    
-    while current_date <= end_date:
-        if current_date.weekday() < 5:  # Monday to Friday
-            units = CourseUnit.objects.filter(course=student.course)[:3]
-            for unit in units:
-                status = random.choice(attendance_statuses)
-                AttendanceRecord.objects.create(
-                    student=student,
-                    class_obj=student.current_class,
-                    course_unit=unit,
-                    date=current_date,
-                    status=status,
-                    time_in=random.choice([None, '08:00', '08:15', '08:30', '09:00']),
-                    time_out=random.choice([None, '16:00', '16:30', '17:00'])
-                )
-                attendance_created += 1
-        current_date += timedelta(days=1)
-    
-    print(f"  ✅ Attendance for {student.full_name}")
-
-print(f"  ✅ Total attendance records: {attendance_created}")
-
-# ============================================
-# 14. CREATE FINANCIAL RECORDS
-# ============================================
-print("\n💰 Creating financial records...")
-
-invoices_created = 0
-payments_created = 0
-clearance_created = 0
-
-for student in students_created:
-    fee_structures = FeeStructure.objects.filter(course=student.course, academic_year=academic_year.name)
-    total_fee = sum(f.amount for f in fee_structures)
-    
-    # Create invoice
-    invoice = Invoice.objects.create(
-        student=student,
-        semester=semester1,
-        invoice_number=f"INV/{academic_year.name[:4]}/{student.id:04d}",
-        issue_date=random_date(date(2024, 8, 1), date(2024, 8, 10)),
-        due_date=random_date(date(2024, 9, 1), date(2024, 9, 30)),
-        total_amount=total_fee,
-        status='fully_paid' if random.random() > 0.2 else 'partially_paid'
-    )
-    invoices_created += 1
-    
-    # Create payments (70% fully paid, 30% partially paid)
-    if random.random() < 0.7:
-        # Fully paid
-        payment_amount = total_fee
-        payment_date = random_date(date(2024, 8, 15), date(2024, 9, 15))
-        Payment.objects.create(
-            invoice=invoice,
+        
+        # ============================================
+        # 14. CREATE ATTENDANCE
+        # ============================================
+        start_date = date(2024, 8, 15)
+        end_date = date(2024, 11, 30)
+        current_date = start_date
+        attendance_statuses = ['present'] * 70 + ['absent'] * 10 + ['late'] * 15 + ['excused'] * 5
+        
+        while current_date <= end_date:
+            if current_date.weekday() < 5:
+                for unit in course_units[:3]:
+                    AttendanceRecord.objects.create(
+                        student=student,
+                        class_obj=class_obj,
+                        course_unit=unit,
+                        date=current_date,
+                        status=random.choice(attendance_statuses),
+                        time_in=random.choice([None, '08:00', '08:15', '08:30', '09:00']),
+                        time_out=random.choice([None, '16:00', '16:30', '17:00'])
+                    )
+            current_date += timedelta(days=1)
+        
+        # ============================================
+        # 15. CREATE FINANCIAL RECORDS
+        # ============================================
+        fee_structures = FeeStructure.objects.filter(course=course, academic_year=ACADEMIC_YEAR)
+        total_fee = sum(f.amount for f in fee_structures)
+        
+        invoice = Invoice.objects.create(
             student=student,
-            amount=payment_amount,
-            payment_date=payment_date,
-            payment_method=random.choice(['cash', 'bank', 'mobile']),
-            receipt_number=f"REC/{payment_date.year}/{random.randint(1000, 9999)}"
+            semester=semester1,
+            invoice_number=f"INV/{ACADEMIC_YEAR[:4]}/{student.id:04d}",
+            issue_date=random_date(date(2024, 8, 1), date(2024, 8, 10)),
+            due_date=random_date(date(2024, 9, 1), date(2024, 9, 30)),
+            total_amount=total_fee,
+            status='fully_paid' if random.random() > 0.2 else 'partially_paid'
         )
-        invoice.amount_paid = payment_amount
-        invoice.balance = 0
-        invoice.status = 'fully_paid'
-        invoice.save()
-        payments_created += 1
-    else:
-        # Partially paid
-        payment_amount = total_fee * Decimal(random.uniform(0.3, 0.7))
-        payment_date = random_date(date(2024, 8, 15), date(2024, 9, 30))
-        Payment.objects.create(
-            invoice=invoice,
-            student=student,
-            amount=payment_amount,
-            payment_date=payment_date,
-            payment_method=random.choice(['cash', 'bank', 'mobile']),
-            receipt_number=f"REC/{payment_date.year}/{random.randint(1000, 9999)}"
-        )
-        invoice.amount_paid = payment_amount
-        invoice.balance = total_fee - payment_amount
-        invoice.status = 'partially_paid'
-        invoice.save()
-        payments_created += 1
-    
-    # Create financial clearance (80% cleared)
-    if random.random() < 0.8:
+        
+        if random.random() < 0.7:
+            payment_amount = total_fee
+            payment_date = random_date(date(2024, 8, 15), date(2024, 9, 15))
+            Payment.objects.create(
+                invoice=invoice,
+                student=student,
+                amount=payment_amount,
+                payment_date=payment_date,
+                payment_method=random.choice(['cash', 'bank', 'mobile']),
+                receipt_number=f"REC/{payment_date.year}/{random.randint(1000, 9999)}",
+                recorded_by=None
+            )
+            invoice.amount_paid = payment_amount
+            invoice.balance = 0
+            invoice.status = 'fully_paid'
+            invoice.save()
+            
+        elif random.random() < 0.9:
+            payment_amount = total_fee * Decimal(random.uniform(0.3, 0.7))
+            payment_date = random_date(date(2024, 8, 15), date(2024, 9, 30))
+            Payment.objects.create(
+                invoice=invoice,
+                student=student,
+                amount=payment_amount,
+                payment_date=payment_date,
+                payment_method=random.choice(['cash', 'bank', 'mobile']),
+                receipt_number=f"REC/{payment_date.year}/{random.randint(1000, 9999)}",
+                recorded_by=None
+            )
+            invoice.amount_paid = payment_amount
+            invoice.balance = total_fee - payment_amount
+            invoice.status = 'partially_paid'
+            invoice.save()
+        
         FinancialClearance.objects.create(
             student=student,
             semester=semester1,
-            is_cleared=True,
-            clearance_date=random_date(date(2024, 9, 1), date(2024, 10, 15)),
-            notes="Cleared - All fees paid"
+            is_cleared=True if random.random() < 0.8 else False,
+            clearance_date=random_date(date(2024, 9, 1), date(2024, 10, 15)) if random.random() < 0.8 else None,
+            notes="Cleared - All fees paid" if random.random() < 0.8 else "Pending payment"
         )
-        clearance_created += 1
-    else:
-        FinancialClearance.objects.create(
-            student=student,
-            semester=semester1,
-            is_cleared=False,
-            notes="Pending payment"
-        )
-        clearance_created += 1
-
-print(f"  ✅ Created {invoices_created} invoices, {payments_created} payments, {clearance_created} clearances")
+        
+    except Exception as e:
+        print(f"  ❌ Failed to create student: {e}")
 
 # ============================================
-# 15. CREATE EMPLOYEES (for staff users)
+# 16. CREATE EMPLOYEES
 # ============================================
 print("\n👤 Creating employees...")
 
 employee_roles = ['admin', 'staff', 'lecturer', 'registrar', 'finance', 'hr']
 for user in User.objects.filter(user_type__in=employee_roles):
-    emp = Employee.objects.create(
+    Employee.objects.create(
         user=user,
-        employee_number=f"EMP/{academic_year.name[:4]}/{user.id:04d}",
+        employee_number=f"EMP/{ACADEMIC_YEAR[:4]}/{user.id:04d}",
         position=f"{user.user_type.title()} Officer",
         employment_type='full_time',
         employment_date=date(2024, 1, 1),
         status='active',
         salary=random.randint(1000000, 5000000)
     )
-    print(f"  ✅ {emp.employee_number} - {user.username}")
+    print(f"  ✅ Employee created for {user.username}")
 
 # ============================================
-# 16. CREATE TIMETABLE ENTRIES
+# 17. CREATE TIMETABLE
 # ============================================
 print("\n⏰ Creating timetables...")
 
 days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
-times = [
-    ('08:00', '09:00'),
-    ('09:00', '10:00'),
-    ('10:00', '11:00'),
-    ('11:00', '12:00'),
-    ('14:00', '15:00'),
-    ('15:00', '16:00'),
-]
+times = [('08:00', '09:00'), ('09:00', '10:00'), ('10:00', '11:00'), ('11:00', '12:00'), ('14:00', '15:00'), ('15:00', '16:00')]
 
-lecturer_users = User.objects.filter(user_type='lecturer')
-if not lecturer_users:
-    lecturer_users = User.objects.all()[:3]
-
-timetable_created = 0
 for class_obj in classes.values():
     units = CourseUnit.objects.filter(course=class_obj.course)[:4]
     for i, unit in enumerate(units):
@@ -704,7 +633,7 @@ for class_obj in classes.values():
             Timetable.objects.create(
                 class_obj=class_obj,
                 course_unit=unit,
-                lecturer=random.choice(lecturer_users) if lecturer_users else None,
+                lecturer=User.objects.filter(user_type='lecturer').first(),
                 day_of_week=day,
                 start_time=start_time,
                 end_time=end_time,
@@ -712,12 +641,10 @@ for class_obj in classes.values():
                 semester=semester1,
                 is_active=True
             )
-            timetable_created += 1
-
-print(f"  ✅ Created {timetable_created} timetable entries")
+            print(f"  ✅ Timetable entry for {unit.name}")
 
 # ============================================
-# 17. FINAL SUMMARY
+# 18. FINAL SUMMARY
 # ============================================
 print("\n" + "="*70)
 print("✅ SEED DATA COMPLETE!")
@@ -731,8 +658,6 @@ print(f"  • Courses: {Course.objects.count()}")
 print(f"  • Course Units: {CourseUnit.objects.count()}")
 print(f"  • Classes: {Class.objects.count()}")
 print(f"  • Students: {Student.objects.count()}")
-print(f"  • Student Applications: {StudentApplication.objects.count()}")
-print(f"  • Admitted Students: {AdmittedStudent.objects.count()}")
 print(f"  • Results: {Result.objects.count()}")
 print(f"  • Attendance Records: {AttendanceRecord.objects.count()}")
 print(f"  • Invoices: {Invoice.objects.count()}")
@@ -753,5 +678,5 @@ print("  hr / HR@2024              → HR")
 print("  student / Student@2024    → Student")
 print("-"*40)
 
-print("\n✅ Ready to use! Login at: http://127.0.0.1:8000/login/")
+print("\n✅ Ready to use!")
 print("="*70)
