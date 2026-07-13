@@ -38,6 +38,18 @@
         border-color: var(--primary-color);
         outline: none;
     }
+    .filter-bar .btn-reset {
+        height: 40px;
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 0 20px;
+        background: transparent;
+        color: var(--text-color);
+        border: 1px solid #e8ecf1;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    .filter-bar .btn-reset:hover { border-color: var(--secondary-color); color: var(--secondary-color); }
     
     .course-card {
         background: white;
@@ -101,14 +113,21 @@
         flex-wrap: wrap;
     }
     
+    .pagination-custom {
+        display: flex; gap: 6px; justify-content: center; margin-top: 25px; flex-wrap: wrap;
+    }
+    .pagination-custom .page-item .page-link {
+        border-radius: 8px; color: var(--text-color); border: 1px solid #e8ecf1;
+        padding: 8px 14px; font-weight: 500; transition: all 0.3s ease; background: white;
+    }
+    .pagination-custom .page-item .page-link:hover { background: var(--light-bg); border-color: var(--secondary-color); color: var(--secondary-color); }
+    .pagination-custom .page-item.active .page-link { background: var(--primary-color); border-color: var(--primary-color); color: white; }
+
     @media (max-width: 768px) {
         .filter-bar {
             padding: 15px;
         }
-        .filter-bar .filter-group {
-            flex-direction: column;
-            gap: 10px;
-        }
+        .filter-bar .row > div { margin-bottom: 10px; }
         .filter-bar .filter-group select,
         .filter-bar .filter-group input {
             width: 100%;
@@ -138,42 +157,42 @@
 <section class="section">
     <div class="container">
         <div class="filter-bar">
-    <div class="row align-items-end">
-        <div class="col-md-4">
-            <label class="text-sm font-weight-bold">Search</label>
-            <input type="text" id="search-input" class="form-control form-control-sm" 
-                   placeholder="Course name or code..." onkeyup="debounceCourseFilter()">
+            <div class="row align-items-end">
+                <div class="col-md-4">
+                    <label class="text-sm font-weight-bold">Search</label>
+                    <input type="text" id="search-input" class="form-control form-control-sm" 
+                           placeholder="Course name or code..." onkeyup="debounceCourseFilter()">
+                </div>
+                <div class="col-md-3">
+                    <label class="text-sm font-weight-bold">Category</label>
+                    <select id="category-filter" class="form-control form-control-sm" onchange="loadCourses(1)">
+                        <option value="">All Categories</option>
+                        <option value="diploma">Diploma</option>
+                        <option value="certificate">Certificate</option>
+                        <option value="occupational">Occupational</option>
+                        <option value="modular">Modular</option>
+                        <option value="driving">Driving</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="text-sm font-weight-bold">Duration</label>
+                    <select id="duration-filter" class="form-control form-control-sm" onchange="loadCourses(1)">
+                        <option value="">All Durations</option>
+                        <option value="1_month">1 Month</option>
+                        <option value="2_weeks">2 Weeks</option>
+                        <option value="1_week">1 Week</option>
+                        <option value="1_year">1 Year</option>
+                        <option value="2_years">2 Years</option>
+                        <option value="3_years">3 Years</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-reset btn-sm btn-block" onclick="resetCourseFilters()">
+                        <i class="icofont-refresh"></i> Reset
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="col-md-3">
-            <label class="text-sm font-weight-bold">Category</label>
-            <select id="category-filter" class="form-control form-control-sm" onchange="loadCourses(1)">
-                <option value="">All Categories</option>
-                <option value="diploma">Diploma</option>
-                <option value="certificate">Certificate</option>
-                <option value="occupational">Occupational</option>
-                <option value="modular">Modular</option>
-                <option value="driving">Driving</option>
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="text-sm font-weight-bold">Duration</label>
-            <select id="duration-filter" class="form-control form-control-sm" onchange="loadCourses(1)">
-                <option value="">All Durations</option>
-                <option value="1_month">1 Month</option>
-                <option value="2_weeks">2 Weeks</option>
-                <option value="1_week">1 Week</option>
-                <option value="1_year">1 Year</option>
-                <option value="2_years">2 Years</option>
-                <option value="3_years">3 Years</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <button class="btn btn-main btn-sm btn-block" onclick="resetCourseFilters()">
-                <i class="icofont-refresh"></i> Reset
-            </button>
-        </div>
-    </div>
-</div>
 
         <!-- Courses Grid -->
         <div id="courses-container">
@@ -191,91 +210,112 @@
 </section>
 
 <script>
-    let currentPage = 1;
-    let totalPages = 1;
+    // ============================================
+    // GET CSRF TOKEN
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+        return cookieValue;
+    }
 
     // ============================================
-// COURSES FILTERS - FIXED
-// ============================================
-
-let courseFilterTimeout;
-
-function debounceCourseFilter() {
-    clearTimeout(courseFilterTimeout);
-    courseFilterTimeout = setTimeout(() => {
-        loadCourses(1);
-    }, 500);
-}
-
-function loadCourses(page = 1) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!user || !user.id) {
-        window.location.href = '/login/'; // Redirect to login
-        return;
+    // SESSION CHECK
+    // ============================================
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            console.log('No user in localStorage');
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
     }
 
-    const search = document.getElementById('search-input').value.trim();
-    const category = document.getElementById('category-filter').value;
-    const duration = document.getElementById('duration-filter').value;
-
-    console.log('Filtering courses:', { search, category, duration, page });
-
-    let url = `/api/courses/?page=${page}`;
-    let params = [];
-    
-    if (search) {
-        params.push(`search=${encodeURIComponent(search)}`);
-    }
-    if (category && category !== '') {
-        params.push(`category__category_type=${category}`);
-    }
-    if (duration && duration !== '') {
-        params.push(`duration=${duration}`);
-    }
-    
-    // Add ordering
-    params.push(`ordering=name`);
-    
-    if (params.length > 0) {
-        url += '&' + params.join('&');
-    }
-
-    console.log('Fetching URL:', url);
-
-    fetch(url, {
-        
-    })
-    .then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    // ============================================
+    // HANDLE RESPONSE
+    // ============================================
+    function handleResponse(response) {
+        if (response.status === 403) {
+            console.log('403 Forbidden - returning empty data');
+            return Promise.resolve({ results: [], count: 0 });
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         return response.json();
-    })
-    .then(data => {
-        console.log('Filtered courses:', data);
-        renderCourses(data);
-    })
-    .catch(error => {
-        console.error('Error loading courses:', error);
-        document.getElementById('courses-container').innerHTML = `
-            <div class="text-center py-5">
-                <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
-                <p class="mt-2 text-danger">Error loading courses: ${error.message}</p>
-                <button class="btn btn-sm btn-main mt-2" onclick="loadCourses(1)">Retry</button>
-            </div>
-        `;
-    });
-}
+    }
 
-function resetCourseFilters() {
-    document.getElementById('search-input').value = '';
-    document.getElementById('category-filter').value = '';
-    document.getElementById('duration-filter').value = '';
-    loadCourses(1);
-}
+    let currentPage = 1;
+    let totalPages = 1;
+    let courseFilterTimeout;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!checkSession()) return;
+        loadCourses(1);
+    });
+
+    function debounceCourseFilter() {
+        clearTimeout(courseFilterTimeout);
+        courseFilterTimeout = setTimeout(() => {
+            loadCourses(1);
+        }, 500);
+    }
+
+    function loadCourses(page = 1) {
+        if (!checkSession()) return;
+
+        const search = document.getElementById('search-input').value.trim();
+        const category = document.getElementById('category-filter').value;
+        const duration = document.getElementById('duration-filter').value;
+
+        let url = `/api/courses/?page=${page}`;
+        let params = [];
+        
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        if (category) params.push(`category__category_type=${category}`);
+        if (duration) params.push(`duration=${duration}`);
+        params.push(`ordering=name`);
+        
+        if (params.length > 0) url += '&' + params.join('&');
+
+        fetch(url, { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => {
+            renderCourses(data);
+        })
+        .catch(error => {
+            console.error('Error loading courses:', error);
+            document.getElementById('courses-container').innerHTML = `
+                <div class="text-center py-5">
+                    <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                    <p class="mt-2 text-danger">Error loading courses: ${error.message}</p>
+                    <button class="btn btn-sm btn-main mt-2" onclick="loadCourses(1)">Retry</button>
+                </div>
+            `;
+        });
+    }
+
+    function resetCourseFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('category-filter').value = '';
+        document.getElementById('duration-filter').value = '';
+        loadCourses(1);
+    }
 
     function renderCourses(data) {
         const container = document.getElementById('courses-container');
+        const results = data.results || [];
         
-        if (!data.results || data.results.length === 0) {
+        if (!results.length) {
             container.innerHTML = `
                 <div class="text-center py-5">
                     <i class="icofont-book" style="font-size: 40px; color: var(--text-color);"></i>
@@ -288,7 +328,7 @@ function resetCourseFilters() {
 
         container.innerHTML = `
             <div class="row">
-                ${data.results.map(course => `
+                ${results.map(course => `
                     <div class="col-md-6 col-lg-4 mb-4">
                         <div class="course-card">
                             <span class="course-badge ${course.category?.category_type || 'certificate'}">
@@ -297,7 +337,7 @@ function resetCourseFilters() {
                             <h5>${course.name}</h5>
                             <div class="course-code">${course.code}</div>
                             <div class="course-meta">
-                                <span class="meta-item"><strong>Duration:</strong> ${course.duration.replace('_', ' ')}</span>
+                                <span class="meta-item"><strong>Duration:</strong> ${course.duration?.replace('_', ' ') || 'N/A'}</span>
                                 <span class="meta-item"><strong>Department:</strong> ${course.department_name || 'N/A'}</span>
                                 <span class="meta-item"><strong>Tuition:</strong> UGX ${(course.tuition_fee || 0).toLocaleString()}</span>
                             </div>
@@ -314,8 +354,7 @@ function resetCourseFilters() {
             </div>
         `;
 
-        // Pagination
-        totalPages = Math.ceil(data.count / 20) || 1;
+        totalPages = Math.ceil((data.count || 0) / 20) || 1;
         currentPage = data.current_page || 1;
         renderPagination();
     }
@@ -337,8 +376,6 @@ function resetCourseFilters() {
                 html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
             } else if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 2) {
                 html += `<li class="page-item"><a class="page-link" href="#" onclick="loadCourses(${i})">${i}</a></li>`;
-            } else if (i === currentPage - 3 || i === currentPage + 3) {
-                html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
             }
         }
         
@@ -348,21 +385,5 @@ function resetCourseFilters() {
         
         container.innerHTML = html;
     }
-
-    function filterCourses() {
-        loadCourses(1);
-    }
-
-    function resetFilters() {
-        document.getElementById('search-input').value = '';
-        document.getElementById('category-filter').value = '';
-        document.getElementById('duration-filter').value = '';
-        loadCourses(1);
-    }
-
-    // Load courses on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        loadCourses(1);
-    });
 </script>
 {% endblock %}
