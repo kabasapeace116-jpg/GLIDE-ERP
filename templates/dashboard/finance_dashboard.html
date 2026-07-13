@@ -5,10 +5,8 @@
 
 {% block content %}
 <style>
-    /* ===== COMPLETE STYLES ===== */
     .dashboard-wrapper { display: flex; min-height: 100vh; background: #f0f4f8; }
     
-    /* Sidebar */
     .dashboard-sidebar {
         width: 280px;
         background: linear-gradient(180deg, var(--primary-color) 0%, #1a2f4e 100%);
@@ -83,14 +81,12 @@
     }
     .sidebar-footer .logout-btn:hover { color: white; background: rgba(255,255,255,0.08); }
 
-    /* Main Content */
     .dashboard-content {
         flex: 1;
         padding: 25px 30px;
         overflow-y: auto;
     }
 
-    /* Top Bar */
     .top-bar {
         display: flex;
         justify-content: space-between;
@@ -129,7 +125,6 @@
     .top-bar .top-actions .btn-action.warning { background: #ffc107; color: #212529; }
     .top-bar .top-actions .btn-action.warning:hover { background: #e0a800; transform: translateY(-2px); }
 
-    /* Stats Grid */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -165,7 +160,6 @@
     .stat-card .stat-number { font-size: 22px; font-weight: 700; color: var(--primary-color); margin: 0; }
     .stat-card .stat-label { font-size: 12px; color: var(--text-color); margin: 0; }
 
-    /* Section Cards */
     .section-card {
         background: white;
         border-radius: 15px;
@@ -203,7 +197,6 @@
     .section-card .section-header .view-all:hover { color: var(--primary-color); }
     .section-card .section-header .btn-sm { padding: 4px 12px; font-size: 12px; border-radius: 6px; }
 
-    /* Tables */
     .table-responsive { overflow-x: auto; }
     .table {
         width: 100%;
@@ -246,12 +239,10 @@
     .badge-status.cleared { background: #e8f5e9; color: #1b5e20; }
     .badge-status.not_cleared { background: #ffebee; color: #b71c1c; }
 
-    /* Modal */
     .modal-content { border-radius: 15px; }
     .modal-header { border-radius: 15px 15px 0 0; }
     .modal-footer { border-radius: 0 0 15px 15px; }
 
-    /* Responsive */
     @media (max-width: 992px) {
         .dashboard-sidebar { width: 240px; }
         .dashboard-content { padding: 20px; }
@@ -291,15 +282,11 @@
         .top-bar .top-actions .btn-action { width: 100%; }
     }
 
-    /* Loading Spinner */
     .spinner-container { text-align: center; padding: 30px; }
     .spinner-container .spinner-border { width: 30px; height: 30px; }
 </style>
 
 <div class="dashboard-wrapper">
-    
-
-    <!-- Main Content -->
     <main class="dashboard-content">
         <!-- Top Bar -->
         <div class="top-bar">
@@ -598,36 +585,39 @@
 
 <script>
     // ============================================
-    // GET CSRF TOKEN FROM COOKIE
+    // GET CSRF TOKEN
     // ============================================
     function getCSRFToken() {
         let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, 10) === 'csrftoken=') {
-                    cookieValue = decodeURIComponent(cookie.substring(10));
-                    break;
-                }
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
             }
         }
         return cookieValue;
     }
 
     // ============================================
-    // GLOBAL VARIABLES
+    // SESSION CHECK
     // ============================================
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            console.log('Session expired, redirecting to login');
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-    // ============================================
-    // DOCUMENT READY
-    // ============================================
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) {
-            window.location.href = '/login/';
-            return;
-        }
+        if (!checkSession()) return;
 
         // Current time
         function updateClock() {
@@ -638,18 +628,13 @@
         updateClock();
         setInterval(updateClock, 60000);
 
-        // Load all data
         loadAllData();
         loadDropdowns();
-
-        // Auto-refresh every 60 seconds
         setInterval(loadAllData, 60000);
     });
 
-    // ============================================
-    // LOAD ALL DATA
-    // ============================================
     function loadAllData() {
+        if (!checkSession()) return;
         loadStats();
         loadFeeStructures();
         loadInvoices();
@@ -657,46 +642,40 @@
         loadClearance();
     }
 
-    // ============================================
-    // LOAD STATS
-    // ============================================
     function loadStats() {
-        // Revenue and financial summary
-        fetch('/api/reports/financial-summary/')
-        .then(r => r.json())
+        if (!checkSession()) return;
+        
+        fetch('/api/reports/financial-summary/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             document.getElementById('total-revenue').textContent = 'UGX ' + (data.total_payments || 0).toLocaleString();
             document.getElementById('outstanding-balance').textContent = 'UGX ' + (data.outstanding_balance || 0).toLocaleString();
         })
         .catch(() => {});
 
-        // Invoices count
-        fetch('/api/finance/invoices/')
-        .then(r => r.json())
+        fetch('/api/finance/invoices/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             document.getElementById('total-invoices').textContent = data.count || 0;
         })
         .catch(() => {});
 
-        // Payments count
-        fetch('/api/finance/payments/')
-        .then(r => r.json())
+        fetch('/api/finance/payments/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             document.getElementById('total-payments').textContent = data.count || 0;
         })
         .catch(() => {});
 
-        // Fee structures count
-        fetch('/api/finance/fee-structures/')
-        .then(r => r.json())
+        fetch('/api/finance/fee-structures/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             document.getElementById('total-fees').textContent = data.count || 0;
         })
         .catch(() => {});
 
-        // Clearance stats
-        fetch('/api/finance/clearance/')
-        .then(r => r.json())
+        fetch('/api/finance/clearance/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const results = data.results || [];
             const cleared = results.filter(c => c.is_cleared).length;
@@ -705,12 +684,11 @@
         .catch(() => {});
     }
 
-    // ============================================
-    // LOAD FEE STRUCTURES
-    // ============================================
     function loadFeeStructures() {
-        fetch('/api/finance/fee-structures/')
-        .then(r => r.json())
+        if (!checkSession()) return;
+        
+        fetch('/api/finance/fee-structures/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const results = data.results || [];
             const tbody = document.getElementById('fee-table');
@@ -737,12 +715,11 @@
         });
     }
 
-    // ============================================
-    // LOAD INVOICES
-    // ============================================
     function loadInvoices() {
-        fetch('/api/finance/invoices/?ordering=-created_at')
-        .then(r => r.json())
+        if (!checkSession()) return;
+        
+        fetch('/api/finance/invoices/?ordering=-created_at', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const results = data.results || [];
             const tbody = document.getElementById('invoice-table');
@@ -767,12 +744,11 @@
         });
     }
 
-    // ============================================
-    // LOAD PAYMENTS
-    // ============================================
     function loadPayments() {
-        fetch('/api/finance/payments/?ordering=-payment_date')
-        .then(r => r.json())
+        if (!checkSession()) return;
+        
+        fetch('/api/finance/payments/?ordering=-payment_date', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const results = data.results || [];
             const tbody = document.getElementById('payment-table');
@@ -782,10 +758,10 @@
             }
             tbody.innerHTML = results.slice(0, 5).map(p => `
                 <tr>
-                    <td><strong>${p.payment_number || 'N/A'}</strong></td>
+                    <td><strong>${p.payment_number}</strong></td>
                     <td>${p.student_name || 'N/A'}</td>
                     <td>UGX ${(p.amount || 0).toLocaleString()}</td>
-                    <td><span class="badge badge-info">${p.payment_method || 'N/A'}</span></td>
+                    <td><span class="badge badge-info">${p.payment_method}</span></td>
                     <td>${p.payment_date ? new Date(p.payment_date).toLocaleDateString() : 'N/A'}</td>
                     <td><button class="btn btn-sm btn-outline-primary" onclick="viewPayment('${p.id}')"><i class="icofont-eye"></i></button></td>
                 </tr>
@@ -796,12 +772,11 @@
         });
     }
 
-    // ============================================
-    // LOAD CLEARANCE
-    // ============================================
     function loadClearance() {
-        fetch('/api/finance/clearance/')
-        .then(r => r.json())
+        if (!checkSession()) return;
+        
+        fetch('/api/finance/clearance/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const results = data.results || [];
             const tbody = document.getElementById('clearance-table');
@@ -829,18 +804,17 @@
         });
     }
 
-    // ============================================
-    // LOAD DROPDOWNS
-    // ============================================
     function loadDropdowns() {
+        if (!checkSession()) return;
         loadStudents();
         loadSemesters();
         loadCourses();
     }
 
     function loadStudents() {
-        fetch('/api/students/')
-        .then(r => r.json())
+        if (!checkSession()) return;
+        fetch('/api/students/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             ['payment-student', 'invoice-student'].forEach(id => {
                 const select = document.getElementById(id);
@@ -859,8 +833,9 @@
     }
 
     function loadSemesters() {
-        fetch('/api/admissions/semesters/')
-        .then(r => r.json())
+        if (!checkSession()) return;
+        fetch('/api/admissions/semesters/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const select = document.getElementById('invoice-semester');
             if (select && data.results) {
@@ -868,7 +843,7 @@
                 data.results.forEach(s => {
                     const opt = document.createElement('option');
                     opt.value = s.id;
-                    opt.textContent = `${s.name} - ${s.academic_year_name || 'N/A'}`;
+                    opt.textContent = `${s.name} - ${s.academic_year_name}`;
                     select.appendChild(opt);
                 });
             }
@@ -877,8 +852,9 @@
     }
 
     function loadCourses() {
-        fetch('/api/courses/')
-        .then(r => r.json())
+        if (!checkSession()) return;
+        fetch('/api/courses/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const select = document.getElementById('fee-course');
             if (select && data.results) {
@@ -895,16 +871,29 @@
     }
 
     // ============================================
-    // STUDENT CHANGE - LOAD INVOICES FOR PAYMENT
+    // HANDLE RESPONSE - CRITICAL
     // ============================================
+    function handleResponse(response) {
+        if (response.status === 403) {
+            console.log('403 Forbidden - Session may have expired');
+            localStorage.clear();
+            window.location.href = '/login/';
+            throw new Error('Session expired');
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
+
     document.getElementById('payment-student')?.addEventListener('change', function() {
         const studentId = this.value;
         const select = document.getElementById('payment-invoice');
         select.innerHTML = '<option value="">Select Invoice</option>';
         if (!studentId) return;
 
-        fetch(`/api/finance/invoices/?student=${studentId}`)
-        .then(r => r.json())
+        fetch(`/api/finance/invoices/?student=${studentId}`, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             if (data.results) {
                 data.results.forEach(inv => {
@@ -927,6 +916,8 @@
     }
 
     function saveFee() {
+        if (!checkSession()) return;
+        
         const data = {
             course: document.getElementById('fee-course').value,
             fee_type: document.getElementById('fee-type').value,
@@ -954,12 +945,10 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
+            credentials: 'include',
             body: JSON.stringify(data)
         })
-        .then(r => {
-            if (!r.ok) throw new Error('Failed to save fee');
-            return r.json();
-        })
+        .then(handleResponse)
         .then(() => {
             $('#addFeeModal').modal('hide');
             loadAllData();
@@ -979,14 +968,16 @@
     }
 
     function deleteFee(id) {
+        if (!checkSession()) return;
         if (!confirm('Delete this fee structure?')) return;
+        
         const csrfToken = getCSRFToken();
         fetch(`/api/finance/fee-structures/${id}/`, {
             method: 'DELETE',
-            headers: {
-                'X-CSRFToken': csrfToken
-            }
+            headers: { 'X-CSRFToken': csrfToken },
+            credentials: 'include'
         })
+        .then(handleResponse)
         .then(() => { loadAllData(); alert('Fee deleted!'); })
         .catch(() => alert('Error deleting fee'));
     }
@@ -1000,6 +991,8 @@
     }
 
     function generateInvoice() {
+        if (!checkSession()) return;
+        
         const studentId = document.getElementById('invoice-student').value;
         const semesterId = document.getElementById('invoice-semester').value;
         
@@ -1022,12 +1015,13 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
+            credentials: 'include',
             body: JSON.stringify({
                 student_id: parseInt(studentId),
                 semester_id: parseInt(semesterId)
             })
         })
-        .then(response => response.json())
+        .then(handleResponse)
         .then(data => {
             if (data.success) {
                 $('#generateInvoiceModal').modal('hide');
@@ -1051,6 +1045,10 @@
         window.location.href = `/finance/invoices/${id}/`;
     }
 
+    function viewPayment(id) {
+        window.location.href = `/finance/payments/${id}/`;
+    }
+
     // ============================================
     // PAYMENT FUNCTIONS
     // ============================================
@@ -1060,6 +1058,8 @@
     }
 
     function recordPayment() {
+        if (!checkSession()) return;
+        
         const data = {
             student: document.getElementById('payment-student').value,
             invoice: document.getElementById('payment-invoice').value || null,
@@ -1087,12 +1087,10 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
+            credentials: 'include',
             body: JSON.stringify(data)
         })
-        .then(r => {
-            if (!r.ok) throw new Error('Failed to record payment');
-            return r.json();
-        })
+        .then(handleResponse)
         .then(() => {
             $('#recordPaymentModal').modal('hide');
             loadAllData();
@@ -1107,15 +1105,13 @@
         });
     }
 
-    function viewPayment(id) {
-        window.location.href = `/finance/payments/${id}/`;
-    }
-
     // ============================================
     // CLEARANCE FUNCTIONS
     // ============================================
     function clearStudent(id) {
+        if (!checkSession()) return;
         if (!confirm('Clear this student?')) return;
+        
         const csrfToken = getCSRFToken();
         fetch(`/api/finance/clearance/${id}/`, {
             method: 'PATCH',
@@ -1123,14 +1119,18 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
+            credentials: 'include',
             body: JSON.stringify({ is_cleared: true, clearance_date: new Date().toISOString().split('T')[0] })
         })
+        .then(handleResponse)
         .then(() => { loadAllData(); alert('Student cleared!'); })
         .catch(() => alert('Error clearing student'));
     }
 
     function reverseClearance(id) {
+        if (!checkSession()) return;
         if (!confirm('Reverse clearance?')) return;
+        
         const csrfToken = getCSRFToken();
         fetch(`/api/finance/clearance/${id}/`, {
             method: 'PATCH',
@@ -1138,16 +1138,20 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
+            credentials: 'include',
             body: JSON.stringify({ is_cleared: false, clearance_date: null })
         })
+        .then(handleResponse)
         .then(() => { loadAllData(); alert('Clearance reversed!'); })
         .catch(() => alert('Error reversing clearance'));
     }
 
     function bulkClearance() {
+        if (!checkSession()) return;
         if (!confirm('Clear ALL pending students?')) return;
-        fetch('/api/finance/clearance/?is_cleared=false')
-        .then(r => r.json())
+        
+        fetch('/api/finance/clearance/?is_cleared=false', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const pending = data.results || [];
             if (!pending.length) { alert('No pending clearances.'); return; }
@@ -1160,6 +1164,7 @@
                         'Content-Type': 'application/json',
                         'X-CSRFToken': csrfToken
                     },
+                    credentials: 'include',
                     body: JSON.stringify({ is_cleared: true, clearance_date: new Date().toISOString().split('T')[0] })
                 })
             );
@@ -1168,9 +1173,6 @@
         .catch(() => alert('Error during bulk clearance'));
     }
 
-    // ============================================
-    // LOGOUT
-    // ============================================
     function handleLogout() {
         if (confirm('Logout?')) {
             localStorage.clear();
