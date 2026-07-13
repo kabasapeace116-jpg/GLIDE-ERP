@@ -234,7 +234,7 @@
             <!-- Form (hidden until data loads) -->
             <form id="student-form" novalidate style="display: none;">
                 <input type="hidden" id="student-id">
-                        <input type="hidden" id="user-id" value="">
+                <input type="hidden" id="user-id" value="">
 
                 <!-- Personal Information -->
                 <div class="form-section">
@@ -525,8 +525,8 @@
                 <!-- Submit Buttons -->
                 <div class="text-center mt-4">
                     <button type="submit" class="btn-submit" id="submit-btn">
-    <i class="icofont-save"></i> Update Student
-</button>
+                        <i class="icofont-save"></i> Update Student
+                    </button>
                     <a href="/students/" class="btn-cancel">Cancel</a>
                 </div>
             </form>
@@ -535,6 +535,24 @@
 </div>
 
 <script>
+    // ============================================
+    // GET CSRF TOKEN FROM COOKIE
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === 'csrftoken=') {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     let studentId = null;
 
@@ -542,43 +560,26 @@
         console.log('=== STUDENT EDIT PAGE LOADED ===');
         
         if (!user || !user.id) {
-            console.log('No token found, redirecting to login');
-            window.location.href = '/login/'; // Redirect to login
+            console.log('No user found, redirecting to login');
+            window.location.href = '/login/';
             return;
         }
 
-        // Get student ID from URL - IMPROVED VERSION
+        // Get student ID from URL
         const path = window.location.pathname;
         console.log('Full path:', path);
         
-        // Try multiple ways to get the ID
         let id = null;
-        
-        // Method 1: Look for pattern /students/ID/edit/
         const match = path.match(/\/students\/(\d+)\/edit\//);
         if (match) {
             id = match[1];
-            console.log('Method 1 (regex) found ID:', id);
+            console.log('Found ID:', id);
         }
         
-        // Method 2: If Method 1 fails, try parts
-        if (!id) {
-            const parts = path.split('/');
-            console.log('URL parts:', parts);
-            for (let i = parts.length - 1; i >= 0; i--) {
-                if (parts[i] === 'edit' && i > 0) {
-                    id = parts[i - 1];
-                    console.log('Method 2 (parts) found ID:', id);
-                    break;
-                }
-            }
-        }
-        
-        // Method 3: If still no ID, try parts[parts.length - 2]
         if (!id) {
             const parts = path.split('/');
             id = parts[parts.length - 2];
-            console.log('Method 3 (last) found ID:', id);
+            console.log('Fallback ID:', id);
         }
         
         console.log('Extracted student ID:', id);
@@ -588,12 +589,6 @@
             console.log('Student ID set to:', studentId);
             document.getElementById('student-id-display').textContent = `Editing Student #${studentId}`;
             document.getElementById('student-id').value = studentId;
-            document.getElementById('loading-state').innerHTML = `
-                <div class="loading-spinner">
-                    <div class="spinner"></div>
-                    <p>Loading student data...</p>
-                </div>
-            `;
             loadStudent(studentId);
         } else {
             console.error('Invalid student ID:', id);
@@ -608,14 +603,11 @@
             document.getElementById('student-form').style.display = 'none';
         }
 
-        // Load dropdowns
         loadCourses();
         loadClasses();
 
-        // Set default date
         document.getElementById('declaration-date').value = new Date().toISOString().split('T')[0];
 
-        // Profile picture preview
         document.getElementById('profile-picture').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -627,26 +619,19 @@
             }
         });
 
-        // Handle form submission - FIXED
         const form = document.getElementById('student-form');
-        console.log('Form element:', form);
-        
         form.addEventListener('submit', function(e) {
             console.log('=== FORM SUBMIT EVENT TRIGGERED ===');
             e.preventDefault();
             console.log('Form submission prevented, calling handleSubmit...');
             handleSubmit(e);
         });
-        
-        console.log('Form submit event attached');
     });
 
     function loadStudent(id) {
         console.log('Loading student with ID:', id);
         
-        fetch(`/api/students/${id}/`, {
-            
-        })
+        fetch(`/api/students/${id}/`)
         .then(response => {
             console.log('Response status:', response.status);
             if (!response.ok) {
@@ -656,7 +641,6 @@
         })
         .then(data => {
             console.log('Student data loaded:', data);
-            // Hide loading, show form
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('student-form').style.display = 'block';
             populateForm(data);
@@ -676,66 +660,55 @@
     }
 
     function populateForm(data) {
-    console.log('Populating form with:', data);
-    
-    try {
-        // Store the user ID for later use
-        document.getElementById('user-id').value = data.user || '';
+        console.log('Populating form with:', data);
         
-        // Personal Information
-        document.getElementById('first-name').value = data.first_name || '';
-        document.getElementById('last-name').value = data.last_name || '';
-        document.getElementById('other-name').value = data.other_name || '';
-        document.getElementById('dob').value = data.date_of_birth || '';
-        document.getElementById('gender').value = data.gender || '';
-        document.getElementById('nationality').value = data.nationality || 'Ugandan';
-        document.getElementById('national-id').value = data.national_id || '';
-        document.getElementById('marital-status').value = data.marital_status || 'single';
-        document.getElementById('religion').value = data.religion || '';
+        try {
+            document.getElementById('user-id').value = data.user || '';
+            document.getElementById('first-name').value = data.first_name || '';
+            document.getElementById('last-name').value = data.last_name || '';
+            document.getElementById('other-name').value = data.other_name || '';
+            document.getElementById('dob').value = data.date_of_birth || '';
+            document.getElementById('gender').value = data.gender || '';
+            document.getElementById('nationality').value = data.nationality || 'Ugandan';
+            document.getElementById('national-id').value = data.national_id || '';
+            document.getElementById('marital-status').value = data.marital_status || 'single';
+            document.getElementById('religion').value = data.religion || '';
 
-        // Profile picture
-        if (data.profile_picture) {
-            document.getElementById('profile-preview').src = data.profile_picture;
+            if (data.profile_picture) {
+                document.getElementById('profile-preview').src = data.profile_picture;
+            }
+
+            document.getElementById('phone').value = data.phone || '';
+            document.getElementById('alt-phone').value = data.alternate_phone || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('address').value = data.address || '';
+            document.getElementById('district').value = data.district || '';
+            document.getElementById('county').value = data.county || '';
+            document.getElementById('sub-county').value = data.sub_county || '';
+            document.getElementById('village').value = data.village || '';
+
+            document.getElementById('course').value = data.course || '';
+            document.getElementById('class-select').value = data.current_class || '';
+            document.getElementById('reg-number').value = data.registration_number || '';
+            document.getElementById('status').value = data.status || 'active';
+            document.getElementById('sponsor-type').value = data.sponsor_type || '';
+
+            document.getElementById('parent-relationship').value = data.parent_relationship || '';
+            document.getElementById('parent-name').value = data.parent_name || '';
+            document.getElementById('parent-phone').value = data.parent_phone || '';
+            document.getElementById('parent-address').value = data.parent_address || '';
+
+            document.getElementById('signature').value = data.first_name + ' ' + data.last_name;
+            document.getElementById('declaration-check').checked = true;
+            
+            console.log('Form populated successfully');
+        } catch (error) {
+            console.error('Error populating form:', error);
         }
-
-        // Contact Information
-        document.getElementById('phone').value = data.phone || '';
-        document.getElementById('alt-phone').value = data.alternate_phone || '';
-        document.getElementById('email').value = data.email || '';
-        document.getElementById('address').value = data.address || '';
-        document.getElementById('district').value = data.district || '';
-        document.getElementById('county').value = data.county || '';
-        document.getElementById('sub-county').value = data.sub_county || '';
-        document.getElementById('village').value = data.village || '';
-
-        // Academic Information
-        document.getElementById('course').value = data.course || '';
-        document.getElementById('class-select').value = data.current_class || '';
-        document.getElementById('reg-number').value = data.registration_number || '';
-        document.getElementById('status').value = data.status || 'active';
-        document.getElementById('sponsor-type').value = data.sponsor_type || '';
-
-        // Parent/Guardian
-        document.getElementById('parent-relationship').value = data.parent_relationship || '';
-        document.getElementById('parent-name').value = data.parent_name || '';
-        document.getElementById('parent-phone').value = data.parent_phone || '';
-        document.getElementById('parent-address').value = data.parent_address || '';
-
-        // Declaration
-        document.getElementById('signature').value = data.first_name + ' ' + data.last_name;
-        document.getElementById('declaration-check').checked = true;
-        
-        console.log('Form populated successfully');
-        console.log('User ID set to:', data.user);
-    } catch (error) {
-        console.error('Error populating form:', error);
     }
-}
 
     function loadCourses() {
-        fetch('/api/courses/', {
-            
-        })
+        fetch('/api/courses/')
         .then(response => response.json())
         .then(data => {
             const select = document.getElementById('course');
@@ -754,9 +727,7 @@
     }
 
     function loadClasses() {
-        fetch('/api/classes/', {
-            
-        })
+        fetch('/api/classes/')
         .then(response => response.json())
         .then(data => {
             const select = document.getElementById('class-select');
@@ -774,144 +745,140 @@
         .catch(error => console.error('Error loading classes:', error));
     }
 
-    
     function handleSubmit(event) {
-    console.log('=== HANDLE SUBMIT CALLED ===');
-    console.log('Student ID:', studentId);
-    
-    if (event) {
-        event.preventDefault();
-        console.log('Event prevented');
-    }
-
-    // Get the registration number from the form
-    const registrationNumber = document.getElementById('reg-number').value.trim();
-    
-    // Get the user ID from the form or use the one from the loaded data
-    // The user ID is stored in the student data when loaded
-    const userId = document.getElementById('user-id') ? 
-        parseInt(document.getElementById('user-id').value) : 
-        studentId; // Fallback
-
-    // Collect form data with proper type conversion
-    const data = {
-        // === REQUIRED FIELDS ===
-        user: userId,  // Use the correct user ID
-        registration_number: registrationNumber || `GLIDE/2026/TEMP/${studentId}`,
-        first_name: document.getElementById('first-name').value.trim(),
-        last_name: document.getElementById('last-name').value.trim(),
-        other_name: document.getElementById('other-name').value.trim() || '',
-        date_of_birth: document.getElementById('dob').value,
-        gender: document.getElementById('gender').value,
-        nationality: document.getElementById('nationality').value || 'Ugandan',
-        national_id: document.getElementById('national-id').value || '',
-        marital_status: document.getElementById('marital-status').value || 'single',
-        religion: document.getElementById('religion').value || '',
-        phone: document.getElementById('phone').value.trim(),
-        alternate_phone: document.getElementById('alt-phone').value.trim() || '',
-        email: document.getElementById('email').value.trim(),
-        address: document.getElementById('address').value.trim(),
-        district: document.getElementById('district').value || '',
-        county: document.getElementById('county').value || '',
-        sub_county: document.getElementById('sub-county').value || '',
-        village: document.getElementById('village').value || '',
-        course: parseInt(document.getElementById('course').value) || null,
-        current_class: document.getElementById('class-select').value ? parseInt(document.getElementById('class-select').value) : null,
-        status: document.getElementById('status').value || 'active',
-        sponsor_type: document.getElementById('sponsor-type').value || '',
-        parent_name: document.getElementById('parent-name').value || '',
-        parent_phone: document.getElementById('parent-phone').value || '',
-        parent_address: document.getElementById('parent-address').value || '',
-        signature: document.getElementById('signature').value.trim(),
-        declaration_date: document.getElementById('declaration-date').value,
-        declaration_agreed: document.getElementById('declaration-check').checked || false
-    };
-
-    console.log('Form data collected (with type conversion):', data);
-
-    // Validate required fields
-    const requiredFields = ['first_name', 'last_name', 'date_of_birth', 'gender', 'phone', 'email', 'address', 'course', 'signature'];
-    const missingFields = requiredFields.filter(field => !data[field]);
-    
-    if (missingFields.length > 0) {
-        console.log('Missing required fields:', missingFields);
-        showAlert(`Please fill in all required fields: ${missingFields.join(', ')}`, 'danger');
-        return;
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.email)) {
-        showAlert('Please enter a valid email address', 'danger');
-        return;
-    }
-
-    console.log('Validation passed, sending update request...');
-
-    const btn = document.getElementById('submit-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Updating...';
-
-    console.log('Sending PUT request to:', `/api/students/${studentId}/`);
-    console.log('With data:', JSON.stringify(data, null, 2));
-
-    fetch(`/api/students/${studentId}/`, {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.text().then(text => {
-            console.log('Response body:', text);
-            try {
-                return { status: response.status, data: JSON.parse(text) };
-            } catch {
-                return { status: response.status, data: { error: text } };
-            }
-        });
-    })
-    .then(result => {
-        console.log('Parsed result:', result);
+        console.log('=== HANDLE SUBMIT CALLED ===');
+        console.log('Student ID:', studentId);
         
-        if (result.status === 200 || result.status === 201) {
-            showSuccess('Student updated successfully!');
-            btn.innerHTML = '<i class="icofont-check"></i> Updated!';
-            setTimeout(() => {
-                window.location.href = `/students/${studentId}/`;
-            }, 1500);
-        } else {
-            let errorMsg = 'Invalid data';
-            if (result.data) {
-                if (typeof result.data === 'string') {
-                    errorMsg = result.data;
-                } else if (result.data.detail) {
-                    errorMsg = result.data.detail;
-                } else if (result.data.error) {
-                    errorMsg = result.data.error;
-                } else if (result.data.message) {
-                    errorMsg = result.data.message;
-                } else {
-                    const fieldErrors = Object.entries(result.data)
-                        .filter(([key, val]) => key !== 'non_field_errors')
-                        .map(([key, val]) => `${key}: ${val}`)
-                        .join('; ');
-                    if (fieldErrors) errorMsg = fieldErrors;
+        if (event) {
+            event.preventDefault();
+            console.log('Event prevented');
+        }
+
+        const registrationNumber = document.getElementById('reg-number').value.trim();
+        const userId = document.getElementById('user-id') ? 
+            parseInt(document.getElementById('user-id').value) : 
+            studentId;
+
+        const data = {
+            user: userId,
+            registration_number: registrationNumber || `GLIDE/2026/TEMP/${studentId}`,
+            first_name: document.getElementById('first-name').value.trim(),
+            last_name: document.getElementById('last-name').value.trim(),
+            other_name: document.getElementById('other-name').value.trim() || '',
+            date_of_birth: document.getElementById('dob').value,
+            gender: document.getElementById('gender').value,
+            nationality: document.getElementById('nationality').value || 'Ugandan',
+            national_id: document.getElementById('national-id').value || '',
+            marital_status: document.getElementById('marital-status').value || 'single',
+            religion: document.getElementById('religion').value || '',
+            phone: document.getElementById('phone').value.trim(),
+            alternate_phone: document.getElementById('alt-phone').value.trim() || '',
+            email: document.getElementById('email').value.trim(),
+            address: document.getElementById('address').value.trim(),
+            district: document.getElementById('district').value || '',
+            county: document.getElementById('county').value || '',
+            sub_county: document.getElementById('sub-county').value || '',
+            village: document.getElementById('village').value || '',
+            course: parseInt(document.getElementById('course').value) || null,
+            current_class: document.getElementById('class-select').value ? parseInt(document.getElementById('class-select').value) : null,
+            status: document.getElementById('status').value || 'active',
+            sponsor_type: document.getElementById('sponsor-type').value || '',
+            parent_name: document.getElementById('parent-name').value || '',
+            parent_phone: document.getElementById('parent-phone').value || '',
+            parent_address: document.getElementById('parent-address').value || '',
+            signature: document.getElementById('signature').value.trim(),
+            declaration_date: document.getElementById('declaration-date').value,
+            declaration_agreed: document.getElementById('declaration-check').checked || false
+        };
+
+        console.log('Form data collected:', data);
+
+        const requiredFields = ['first_name', 'last_name', 'date_of_birth', 'gender', 'phone', 'email', 'address', 'course', 'signature'];
+        const missingFields = requiredFields.filter(field => !data[field]);
+        
+        if (missingFields.length > 0) {
+            console.log('Missing required fields:', missingFields);
+            showAlert(`Please fill in all required fields: ${missingFields.join(', ')}`, 'danger');
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(data.email)) {
+            showAlert('Please enter a valid email address', 'danger');
+            return;
+        }
+
+        console.log('Validation passed, sending update request...');
+
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Updating...';
+
+        // ✅ Get CSRF token
+        const csrfToken = getCSRFToken();
+        console.log('CSRF Token found:', csrfToken ? 'Yes' : 'No');
+
+        console.log('Sending PUT request to:', `/api/students/${studentId}/`);
+
+        fetch(`/api/students/${studentId}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken  // ✅ Add CSRF token here
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.text().then(text => {
+                console.log('Response body:', text);
+                try {
+                    return { status: response.status, data: JSON.parse(text) };
+                } catch {
+                    return { status: response.status, data: { error: text } };
                 }
+            });
+        })
+        .then(result => {
+            console.log('Parsed result:', result);
+            
+            if (result.status === 200 || result.status === 201) {
+                showSuccess('Student updated successfully!');
+                btn.innerHTML = '<i class="icofont-check"></i> Updated!';
+                setTimeout(() => {
+                    window.location.href = `/students/${studentId}/`;
+                }, 1500);
+            } else {
+                let errorMsg = 'Invalid data';
+                if (result.data) {
+                    if (typeof result.data === 'string') {
+                        errorMsg = result.data;
+                    } else if (result.data.detail) {
+                        errorMsg = result.data.detail;
+                    } else if (result.data.error) {
+                        errorMsg = result.data.error;
+                    } else if (result.data.message) {
+                        errorMsg = result.data.message;
+                    } else {
+                        const fieldErrors = Object.entries(result.data)
+                            .filter(([key, val]) => key !== 'non_field_errors')
+                            .map(([key, val]) => `${key}: ${val}`)
+                            .join('; ');
+                        if (fieldErrors) errorMsg = fieldErrors;
+                    }
+                }
+                showAlert('Error: ' + errorMsg, 'danger');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="icofont-save"></i> Update Student';
             }
-            showAlert('Error: ' + errorMsg, 'danger');
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            showAlert('Connection error: ' + error.message, 'danger');
             btn.disabled = false;
             btn.innerHTML = '<i class="icofont-save"></i> Update Student';
-        }
-    })
-    .catch(error => {
-        console.error('Fetch error:', error);
-        showAlert('Connection error: ' + error.message, 'danger');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="icofont-save"></i> Update Student';
-    });
-}
+        });
+    }
 
     function showAlert(message, type) {
         const alertDiv = document.getElementById('form-alert');
