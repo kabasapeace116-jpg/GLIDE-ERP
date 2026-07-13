@@ -791,16 +791,59 @@
 </div>
 
 <script>
+    // ============================================
+    // GET CSRF TOKEN
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+        return cookieValue;
+    }
+
+    // ============================================
+    // SESSION CHECK
+    // ============================================
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            console.log('No user in localStorage');
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
+    }
+
+    // ============================================
+    // HANDLE RESPONSE
+    // ============================================
+    function handleResponse(response) {
+        if (response.status === 403) {
+            console.log('403 Forbidden - Session may have expired');
+            localStorage.clear();
+            window.location.href = '/login/';
+            throw new Error('Session expired');
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     let currentPage = 1;
     let totalPages = 1;
     let filterTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) {
-            window.location.href = '/login/'; // Redirect to login
-            return;
-        }
+        if (!checkSession()) return;
         loadUsers();
         setInterval(loadUsers, 60000);
     });
@@ -819,6 +862,8 @@
     // LOAD USERS
     // ============================================
     function loadUsers(page = 1) {
+        if (!checkSession()) return;
+
         const search = document.getElementById('search-input').value.trim();
         const role = document.getElementById('role-filter').value;
         const status = document.getElementById('status-filter').value;
@@ -831,13 +876,10 @@
         params.push(`ordering=-date_joined`);
         if (params.length) url += '&' + params.join('&');
 
-        fetch(url, {
-            
-        })
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return response.json();
-        })
+        console.log('Fetching URL:', url);
+
+        fetch(url, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             renderUsers(data);
             updateStats(data);
@@ -875,113 +917,111 @@
     }
 
     function renderUsers(data) {
-    const results = data.results || [];
-    const container = document.getElementById('users-container');
+        const results = data.results || [];
+        const container = document.getElementById('users-container');
 
-    if (!results.length) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="icofont-users"></i>
-                <h5>No Users Found</h5>
-                <p>No users match your search criteria. Try adjusting your filters or add a new user.</p>
-                <button class="btn btn-main-2 btn-sm mt-3" onclick="openAddUserModal()">
-                    <i class="icofont-plus"></i> Add User
-                </button>
-            </div>
-        `;
-        document.getElementById('pagination-links').innerHTML = '';
-        return;
-    }
+        if (!results.length) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="icofont-users"></i>
+                    <h5>No Users Found</h5>
+                    <p>No users match your search criteria. Try adjusting your filters or add a new user.</p>
+                    <button class="btn btn-main-2 btn-sm mt-3" onclick="openAddUserModal()">
+                        <i class="icofont-plus"></i> Add User
+                    </button>
+                </div>
+            `;
+            document.getElementById('pagination-links').innerHTML = '';
+            return;
+        }
 
-    const roleIcons = {
-        'super_admin': '⭐',
-        'admin': '🛡️',
-        'registrar': '📋',
-        'finance': '💰',
-        'hr': '👥',
-        'staff': '👔',
-        'lecturer': '📚',
-        'student': '🎓'
-    };
+        const roleIcons = {
+            'super_admin': '⭐',
+            'admin': '🛡️',
+            'registrar': '📋',
+            'finance': '💰',
+            'hr': '👥',
+            'staff': '👔',
+            'lecturer': '📚',
+            'student': '🎓'
+        };
 
-    // Get default avatar URL with cache buster to prevent loading issues
-    const defaultAvatar = '/static/images/default-avatar.png';
+        const defaultAvatar = '/static/images/default-avatar.png';
 
-    container.innerHTML = results.map(u => `
-        <div class="user-card animate-in">
-            <div class="user-top">
-                <div class="user-info">
-                    <img src="${u.profile_picture || defaultAvatar}" 
-                         alt="Avatar" 
-                         class="user-avatar" 
-                         onerror="this.onerror=null; this.src='${defaultAvatar}';">
-                    <div>
-                        <div class="user-name">
-                            ${u.first_name} ${u.last_name}
-                            <small>@${u.username}</small>
-                        </div>
-                        <div class="user-email">
-                            <i class="icofont-email"></i> ${u.email || 'No email'}
-                        </div>
-                        <div class="user-badges">
-                            <span class="badge-role ${u.user_type}">${roleIcons[u.user_type] || ''} ${u.user_type.replace('_', ' ').toUpperCase()}</span>
-                            <span class="badge-status ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span>
-                            ${u.is_staff ? '<span class="badge badge-info" style="font-size:10px;">Staff</span>' : ''}
+        container.innerHTML = results.map(u => `
+            <div class="user-card animate-in">
+                <div class="user-top">
+                    <div class="user-info">
+                        <img src="${u.profile_picture || defaultAvatar}" 
+                             alt="Avatar" 
+                             class="user-avatar" 
+                             onerror="this.onerror=null; this.src='${defaultAvatar}';">
+                        <div>
+                            <div class="user-name">
+                                ${u.first_name} ${u.last_name}
+                                <small>@${u.username}</small>
+                            </div>
+                            <div class="user-email">
+                                <i class="icofont-email"></i> ${u.email || 'No email'}
+                            </div>
+                            <div class="user-badges">
+                                <span class="badge-role ${u.user_type}">${roleIcons[u.user_type] || ''} ${u.user_type.replace('_', ' ').toUpperCase()}</span>
+                                <span class="badge-status ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span>
+                                ${u.is_staff ? '<span class="badge badge-info" style="font-size:10px;">Staff</span>' : ''}
+                            </div>
                         </div>
                     </div>
+                    <div>
+                        <span style="font-size:12px; color:var(--text-color);">
+                            Joined: ${u.date_joined ? new Date(u.date_joined).toLocaleDateString() : 'N/A'}
+                        </span>
+                    </div>
                 </div>
-                <div>
-                    <span style="font-size:12px; color:var(--text-color);">
-                        Joined: ${u.date_joined ? new Date(u.date_joined).toLocaleDateString() : 'N/A'}
-                    </span>
+
+                <div class="user-details-grid">
+                    <div class="detail-item">
+                        <span class="label">Phone</span>
+                        <span class="value">${u.phone || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Superuser</span>
+                        <span class="value">${u.is_superuser ? '✅ Yes' : '❌ No'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Last Login</span>
+                        <span class="value">${u.last_login ? new Date(u.last_login).toLocaleString() : 'Never'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">User ID</span>
+                        <span class="value" style="font-family: monospace; font-size: 12px;">#${u.id}</span>
+                    </div>
+                </div>
+
+                <div class="user-actions">
+                    <button class="btn btn-edit" onclick="viewUser('${u.id}')">
+                        <i class="icofont-eye"></i> View
+                    </button>
+                    <button class="btn btn-edit" onclick="editUser('${u.id}')">
+                        <i class="icofont-edit"></i> Edit
+                    </button>
+                    <button class="btn btn-toggle ${u.is_active ? '' : 'activate'}" onclick="toggleUser('${u.id}')">
+                        <i class="icofont-${u.is_active ? 'pause' : 'play'}"></i> 
+                        ${u.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button class="btn btn-reset" onclick="resetPassword('${u.id}')">
+                        <i class="icofont-key"></i> Reset Password
+                    </button>
+                    <button class="btn btn-delete" onclick="deleteUser('${u.id}')">
+                        <i class="icofont-trash"></i> Delete
+                    </button>
                 </div>
             </div>
+        `).join('');
 
-            <div class="user-details-grid">
-                <div class="detail-item">
-                    <span class="label">Phone</span>
-                    <span class="value">${u.phone || 'N/A'}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="label">Superuser</span>
-                    <span class="value">${u.is_superuser ? '✅ Yes' : '❌ No'}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="label">Last Login</span>
-                    <span class="value">${u.last_login ? new Date(u.last_login).toLocaleString() : 'Never'}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="label">User ID</span>
-                    <span class="value" style="font-family: monospace; font-size: 12px;">#${u.id}</span>
-                </div>
-            </div>
-
-            <div class="user-actions">
-                <button class="btn btn-edit" onclick="viewUser('${u.id}')">
-                    <i class="icofont-eye"></i> View
-                </button>
-                <button class="btn btn-edit" onclick="editUser('${u.id}')">
-                    <i class="icofont-edit"></i> Edit
-                </button>
-                <button class="btn btn-toggle ${u.is_active ? '' : 'activate'}" onclick="toggleUser('${u.id}')">
-                    <i class="icofont-${u.is_active ? 'pause' : 'play'}"></i> 
-                    ${u.is_active ? 'Deactivate' : 'Activate'}
-                </button>
-                <button class="btn btn-reset" onclick="resetPassword('${u.id}')">
-                    <i class="icofont-key"></i> Reset Password
-                </button>
-                <button class="btn btn-delete" onclick="deleteUser('${u.id}')">
-                    <i class="icofont-trash"></i> Delete
-                </button>
-            </div>
-        </div>
-    `).join('');
-
-    // Pagination
-    totalPages = Math.ceil(data.count / 20) || 1;
-    currentPage = data.current_page || 1;
-    renderPagination();
-}
+        totalPages = Math.ceil((data.count || 0) / 20) || 1;
+        currentPage = data.current_page || 1;
+        renderPagination();
+    }
 
     // ============================================
     // RENDER PAGINATION
@@ -1026,6 +1066,8 @@
     // VIEW USER DETAILS
     // ============================================
     function viewUser(id) {
+        if (!checkSession()) return;
+        
         const modalContent = document.getElementById('view-user-content');
         modalContent.innerHTML = `
             <div class="text-center py-4">
@@ -1035,10 +1077,8 @@
         `;
         $('#viewUserModal').modal('show');
 
-        fetch(`/api/users/${id}/`, {
-            
-        })
-        .then(response => response.json())
+        fetch(`/api/users/${id}/`, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const roleIcons = {
                 'super_admin': '⭐',
@@ -1089,6 +1129,7 @@
     // OPEN ADD USER MODAL
     // ============================================
     function openAddUserModal() {
+        if (!checkSession()) return;
         document.getElementById('modal-title').innerHTML = '<i class="icofont-plus"></i> Add User';
         document.getElementById('edit-user-id').value = '';
         document.getElementById('user-first-name').value = '';
@@ -1108,10 +1149,9 @@
     // EDIT USER
     // ============================================
     function editUser(id) {
-        fetch(`/api/users/${id}/`, {
-            
-        })
-        .then(response => response.json())
+        if (!checkSession()) return;
+        fetch(`/api/users/${id}/`, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             document.getElementById('modal-title').innerHTML = '<i class="icofont-edit"></i> Edit User';
             document.getElementById('edit-user-id').value = data.id;
@@ -1132,127 +1172,146 @@
         });
     }
 
+    // ============================================
+    // SAVE USER - FIXED WITH CSRF
+    // ============================================
     function saveUser() {
-    const id = document.getElementById('edit-user-id').value;
-    const alertDiv = document.getElementById('modal-alert');
-    const alertMsg = document.getElementById('modal-alert-message');
-    alertDiv.classList.add('d-none');
+        if (!checkSession()) return;
 
-    const data = {
-        username: document.getElementById('user-username').value.trim(),
-        email: document.getElementById('user-email').value.trim(),
-        first_name: document.getElementById('user-first-name').value.trim(),
-        last_name: document.getElementById('user-last-name').value.trim(),
-        user_type: document.getElementById('user-role').value,
-        is_active: document.getElementById('user-active').checked,
-        is_staff: document.getElementById('user-staff').checked,
-        is_superuser: false
-    };
+        const id = document.getElementById('edit-user-id').value;
+        const alertDiv = document.getElementById('modal-alert');
+        const alertMsg = document.getElementById('modal-alert-message');
+        alertDiv.classList.add('d-none');
 
-    if (!data.username || !data.email || !data.first_name || !data.last_name || !data.user_type) {
-        alertMsg.textContent = 'Please fill in all required fields';
-        alertDiv.classList.remove('d-none');
-        return;
-    }
+        const data = {
+            username: document.getElementById('user-username').value.trim(),
+            email: document.getElementById('user-email').value.trim(),
+            first_name: document.getElementById('user-first-name').value.trim(),
+            last_name: document.getElementById('user-last-name').value.trim(),
+            user_type: document.getElementById('user-role').value,
+            is_active: document.getElementById('user-active').checked,
+            is_staff: document.getElementById('user-staff').checked,
+            is_superuser: false
+        };
 
-    // For new users only
-    if (!id) {
-        const password = document.getElementById('user-password').value.trim();
-        if (password) {
-            if (password.length < 8) {
-                alertMsg.textContent = 'Password must be at least 8 characters';
-                alertDiv.classList.remove('d-none');
-                return;
-            }
-            data.password = password;
-        } else {
-            // Auto-generate password
-            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-            let generated = '';
-            for (let i = 0; i < 12; i++) {
-                generated += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            data.password = generated;
+        if (!data.username || !data.email || !data.first_name || !data.last_name || !data.user_type) {
+            alertMsg.textContent = 'Please fill in all required fields';
+            alertDiv.classList.remove('d-none');
+            return;
         }
-    }
 
-    const btn = document.querySelector('#userModal .btn-main');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Saving...';
-
-    const method = id ? 'PUT' : 'POST';
-    const url = id ? `/api/users/${id}/` : '/api/users/';
-
-    console.log('Sending data:', data);
-
-    fetch(url, {
-        method: method,
-        headers: {'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        if (!response.ok) {
-            return response.text().then(text => {
-                console.log('Error response:', text);
-                let errorMsg = `HTTP ${response.status}`;
-                try {
-                    const json = JSON.parse(text);
-                    errorMsg = Object.entries(json)
-                        .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
-                        .join('; ');
-                } catch {
-                    errorMsg = text || errorMsg;
+        // For new users only
+        if (!id) {
+            const password = document.getElementById('user-password').value.trim();
+            if (password) {
+                if (password.length < 8) {
+                    alertMsg.textContent = 'Password must be at least 8 characters';
+                    alertDiv.classList.remove('d-none');
+                    return;
                 }
-                throw new Error(errorMsg);
-            });
+                data.password = password;
+            } else {
+                // Auto-generate password
+                const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+                let generated = '';
+                for (let i = 0; i < 12; i++) {
+                    generated += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                data.password = generated;
+            }
         }
-        return response.json();
-    })
-    .then(data => {
-        console.log('User saved:', data);
-        $('#userModal').modal('hide');
-        loadUsers(currentPage);
-        btn.disabled = false;
-        btn.innerHTML = '<i class="icofont-save"></i> Save User';
-        
-        if (!id && data.password) {
-            alert(`✅ User created successfully!\n\nUsername: ${data.username}\nPassword: ${data.password}\n\nPlease share these credentials with the user.`);
-        } else if (!id) {
-            alert(`✅ User created successfully!\nUsername: ${data.username}`);
-        } else {
-            alert('✅ User updated successfully!');
-        }
-    })
-    .catch(error => {
-        console.error('Error saving user:', error);
-        alertMsg.textContent = 'Error: ' + error.message;
-        alertDiv.classList.remove('d-none');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="icofont-save"></i> Save User';
-    });
-}
+
+        const btn = document.querySelector('#userModal .btn-main');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Saving...';
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/api/users/${id}/` : '/api/users/';
+
+        // ✅ GET CSRF TOKEN
+        const csrfToken = getCSRFToken();
+        console.log('CSRF Token:', csrfToken);
+        console.log('Sending data:', data);
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken  // ✅ CSRF Token added
+            },
+            credentials: 'include',  // ✅ Include cookies
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (response.status === 403) {
+                throw new Error('CSRF token expired. Please refresh the page and try again.');
+            }
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.log('Error response:', text);
+                    let errorMsg = `HTTP ${response.status}`;
+                    try {
+                        const json = JSON.parse(text);
+                        errorMsg = Object.entries(json)
+                            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+                            .join('; ');
+                    } catch {
+                        errorMsg = text || errorMsg;
+                    }
+                    throw new Error(errorMsg);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('User saved:', data);
+            $('#userModal').modal('hide');
+            loadUsers(currentPage);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-save"></i> Save User';
+            
+            if (!id && data.password) {
+                alert(`✅ User created successfully!\n\nUsername: ${data.username}\nPassword: ${data.password}\n\nPlease share these credentials with the user.`);
+            } else if (!id) {
+                alert(`✅ User created successfully!\nUsername: ${data.username}`);
+            } else {
+                alert('✅ User updated successfully!');
+            }
+        })
+        .catch(error => {
+            console.error('Error saving user:', error);
+            alertMsg.textContent = 'Error: ' + error.message;
+            alertDiv.classList.remove('d-none');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-save"></i> Save User';
+        });
+    }
 
 
     // ============================================
     // TOGGLE USER STATUS
     // ============================================
     function toggleUser(id) {
+        if (!checkSession()) return;
         if (!confirm('Are you sure you want to change this user\'s status?')) return;
-        fetch(`/api/users/${id}/`, {
-            
-        })
-        .then(response => response.json())
+        
+        const csrfToken = getCSRFToken();
+        fetch(`/api/users/${id}/`, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             data.is_active = !data.is_active;
             return fetch(`/api/users/${id}/`, {
                 method: 'PUT',
-                headers: {'Content-Type': 'application/json'
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
                 },
+                credentials: 'include',
                 body: JSON.stringify(data)
             });
         })
+        .then(handleResponse)
         .then(() => {
             loadUsers(currentPage);
             alert('✅ User status toggled successfully!');
@@ -1266,21 +1325,27 @@
     // RESET PASSWORD
     // ============================================
     function resetPassword(id) {
+        if (!checkSession()) return;
         if (!confirm('Reset password for this user?')) return;
+        
         const newPassword = `GLIDE${Math.random().toString(36).slice(-6)}`;
-        fetch(`/api/users/${id}/`, {
-            
-        })
-        .then(response => response.json())
+        const csrfToken = getCSRFToken();
+        
+        fetch(`/api/users/${id}/`, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             data.password = newPassword;
             return fetch(`/api/users/${id}/`, {
                 method: 'PUT',
-                headers: {'Content-Type': 'application/json'
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
                 },
+                credentials: 'include',
                 body: JSON.stringify(data)
             });
         })
+        .then(handleResponse)
         .then(() => {
             loadUsers(currentPage);
             alert(`✅ Password reset successfully!\n\nNew Password: ${newPassword}\n\nPlease share this with the user.`);
@@ -1294,11 +1359,16 @@
     // DELETE USER
     // ============================================
     function deleteUser(id) {
+        if (!checkSession()) return;
         if (!confirm('⚠️ Are you sure you want to delete this user? This action cannot be undone.')) return;
+        
+        const csrfToken = getCSRFToken();
         fetch(`/api/users/${id}/`, {
             method: 'DELETE',
-            
+            headers: { 'X-CSRFToken': csrfToken },
+            credentials: 'include'
         })
+        .then(handleResponse)
         .then(() => {
             loadUsers(currentPage);
             alert('✅ User deleted successfully!');
