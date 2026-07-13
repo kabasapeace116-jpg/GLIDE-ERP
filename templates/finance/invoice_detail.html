@@ -60,9 +60,6 @@
     .detail-grid .detail-item .value {
         font-size: 15px; color: var(--text-dark); font-weight: 500; margin-top: 2px;
     }
-    .detail-grid .detail-item .value .highlight {
-        color: var(--secondary-color); font-weight: 600;
-    }
 
     .amount-box {
         background: var(--light-bg); border-radius: 12px; padding: 15px 20px;
@@ -160,6 +157,7 @@
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
+                <div id="payment-alert" class="alert alert-danger d-none"></div>
                 <div class="form-group">
                     <label>Amount (UGX) <span class="text-danger">*</span></label>
                     <input type="number" id="payment-amount" class="form-control" placeholder="Enter amount">
@@ -189,11 +187,30 @@
 </div>
 
 <script>
+    // ============================================
+    // GET CSRF TOKEN
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+        return cookieValue;
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     let invoiceId = null;
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        if (!user || !user.id) {
+            window.location.href = '/login/';
+            return;
+        }
 
         const path = window.location.pathname;
         const parts = path.split('/');
@@ -212,15 +229,17 @@
     });
 
     function loadInvoice(id) {
-        fetch(`/api/finance/invoices/${id}/`, {
-            
+        fetch(`/api/finance/invoices/${id}/`)
+        .then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
         })
-        .then(r => r.json())
         .then(data => {
             renderInvoice(data);
             document.getElementById('invoice-id-display').textContent = `Invoice: ${data.invoice_number}`;
         })
         .catch(error => {
+            console.error('Error loading invoice:', error);
             document.getElementById('invoice-container').innerHTML = `
                 <div class="detail-section text-center py-5">
                     <h4 class="text-danger"><i class="icofont-warning"></i> Error Loading Invoice</h4>
@@ -233,7 +252,6 @@
 
     function renderInvoice(data) {
         const container = document.getElementById('invoice-container');
-
         const paidPercent = data.total_amount > 0 ? Math.round((data.amount_paid / data.total_amount) * 100) : 0;
 
         container.innerHTML = `
@@ -287,11 +305,11 @@
                     </div>
                     <div class="detail-item">
                         <span class="label">Registration Number</span>
-                        <span class="value">${data.student || 'N/A'}</span>
+                        <span class="value">${data.student_registration || 'N/A'}</span>
                     </div>
                     <div class="detail-item">
                         <span class="label">Semester</span>
-                        <span class="value">${data.semester || 'N/A'}</span>
+                        <span class="value">${data.semester_name || 'N/A'}</span>
                     </div>
                     <div class="detail-item">
                         <span class="label">Due Date</span>
@@ -322,9 +340,7 @@
     }
 
     function loadPaymentHistory(invoiceId) {
-        fetch(`/api/finance/payments/?invoice=${invoiceId}`, {
-            
-        })
+        fetch(`/api/finance/payments/?invoice=${invoiceId}`)
         .then(r => r.json())
         .then(data => {
             const container = document.getElementById('payment-history');
@@ -373,6 +389,7 @@
         document.getElementById('payment-amount').value = '';
         document.getElementById('payment-method').value = 'cash';
         document.getElementById('payment-ref').value = '';
+        document.getElementById('payment-alert').classList.add('d-none');
         $('#paymentModal').modal('show');
     }
 
@@ -380,15 +397,25 @@
         const amount = parseFloat(document.getElementById('payment-amount').value);
         const method = document.getElementById('payment-method').value;
         const ref = document.getElementById('payment-ref').value;
+        const alertDiv = document.getElementById('payment-alert');
 
         if (!amount || amount <= 0) {
-            alert('Please enter a valid amount');
+            alertDiv.textContent = 'Please enter a valid amount';
+            alertDiv.classList.remove('d-none');
             return;
         }
+        alertDiv.classList.add('d-none');
+
+        const csrfToken = getCSRFToken();
+        const btn = document.querySelector('#paymentModal .btn-warning');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Recording...';
 
         fetch(`/api/finance/invoices/${invoiceId}/mark_paid/`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
                 amount: amount,
@@ -396,7 +423,10 @@
                 reference_number: ref
             })
         })
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) throw new Error('Failed to record payment');
+            return r.json();
+        })
         .then(data => {
             if (data.success) {
                 $('#paymentModal').modal('hide');
@@ -408,6 +438,10 @@
         })
         .catch(error => {
             alert('❌ Error recording payment: ' + error.message);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-save"></i> Record Payment';
         });
     }
 </script>
