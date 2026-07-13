@@ -46,6 +46,12 @@
         border-color: var(--secondary-color); box-shadow: 0 0 0 3px rgba(225,36,84,0.08);
         background: white;
     }
+    .filter-bar .btn-reset {
+        height: 38px; border-radius: 8px; font-weight: 600; padding: 0 20px;
+        background: transparent; color: var(--text-color); border: 1px solid #e8ecf1;
+        transition: all 0.3s ease; width: 100%;
+    }
+    .filter-bar .btn-reset:hover { border-color: var(--secondary-color); color: var(--secondary-color); }
 
     .stats-grid {
         display: grid;
@@ -122,7 +128,7 @@
             <div class="row align-items-end">
                 <div class="col-md-3">
                     <label class="filter-label">Search</label>
-                    <input type="text" id="search-input" class="form-control" placeholder="Student or payment #..." onkeyup="loadPayments()">
+                    <input type="text" id="search-input" class="form-control" placeholder="Student or payment #..." onkeyup="debouncePayments()">
                 </div>
                 <div class="col-md-3">
                     <label class="filter-label">Payment Method</label>
@@ -166,6 +172,7 @@
                 <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
+                <div id="payment-alert" class="alert alert-danger d-none"></div>
                 <div class="form-group">
                     <label>Student <span class="text-danger">*</span></label>
                     <select id="payment-student" class="form-control">
@@ -219,20 +226,41 @@
 </div>
 
 <script>
+    // ============================================
+    // GET CSRF TOKEN
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+        return cookieValue;
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let paymentTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        if (!user || !user.id) {
+            window.location.href = '/login/';
+            return;
+        }
         loadStudents();
         loadPayments();
     });
 
     function loadStudents() {
-        fetch('/api/students/', {  })
+        fetch('/api/students/')
         .then(r => r.json())
         .then(data => {
             const select = document.getElementById('payment-student');
-            if (data.results) {
+            if (select && data.results) {
+                select.innerHTML = '<option value="">Select Student</option>';
                 data.results.forEach(s => {
                     const opt = document.createElement('option');
                     opt.value = s.id;
@@ -249,9 +277,7 @@
         select.innerHTML = '<option value="">Select Invoice</option>';
         if (!studentId) return;
 
-        fetch(`/api/finance/invoices/?student=${studentId}`, {
-            
-        })
+        fetch(`/api/finance/invoices/?student=${studentId}`)
         .then(r => r.json())
         .then(data => {
             if (data.results) {
@@ -265,52 +291,53 @@
         }).catch(() => {});
     });
 
+    function debouncePayments() {
+        clearTimeout(paymentTimeout);
+        paymentTimeout = setTimeout(() => {
+            loadPayments();
+        }, 500);
+    }
+
     function loadPayments() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const search = document.getElementById('search-input').value.trim();
-    const method = document.getElementById('method-filter').value;
-    const dateFrom = document.getElementById('date-from').value;
-    const dateTo = document.getElementById('date-to').value;
+        const search = document.getElementById('search-input').value.trim();
+        const method = document.getElementById('method-filter').value;
+        const dateFrom = document.getElementById('date-from').value;
+        const dateTo = document.getElementById('date-to').value;
 
-    console.log('Filtering payments:', { search, method, dateFrom, dateTo });
+        let url = '/api/finance/payments/';
+        let params = [];
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        if (method) params.push(`payment_method=${method}`);
+        if (dateFrom) params.push(`payment_date__gte=${dateFrom}`);
+        if (dateTo) params.push(`payment_date__lte=${dateTo}`);
+        params.push(`ordering=-payment_date`);
+        
+        if (params.length) url += '?' + params.join('&');
 
-    let url = '/api/finance/payments/';
-    let params = [];
-    if (search) params.push(`search=${encodeURIComponent(search)}`);
-    if (method) params.push(`payment_method=${method}`);
-    if (dateFrom) params.push(`payment_date__gte=${dateFrom}`);
-    if (dateTo) params.push(`payment_date__lte=${dateTo}`);
-    params.push(`ordering=-payment_date`);
-    
-    if (params.length) url += '?' + params.join('&');
-
-    console.log('Fetching URL:', url);
-
-    fetch(url, {  })
-    .then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Filtered payments:', data);
-        renderPayments(data);
-    })
-    .catch(error => {
-        console.error('Error loading payments:', error);
-        document.getElementById('payments-container').innerHTML = `
-            <div class="text-center py-5">
-                <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
-                <p class="mt-2 text-danger">Error loading payments: ${error.message}</p>
-            </div>
-        `;
-    });
-}
+        fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            renderPayments(data);
+        })
+        .catch(error => {
+            console.error('Error loading payments:', error);
+            document.getElementById('payments-container').innerHTML = `
+                <div class="text-center py-5">
+                    <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                    <p class="mt-2 text-danger">Error loading payments: ${error.message}</p>
+                    <button class="btn btn-sm btn-main mt-2" onclick="loadPayments()">Retry</button>
+                </div>
+            `;
+        });
+    }
 
     function renderPayments(data) {
         const results = data.results || [];
         const container = document.getElementById('payments-container');
 
-        // Stats
         document.getElementById('total-payments').textContent = data.count || 0;
         const total = results.reduce((s, p) => s + parseFloat(p.amount || 0), 0);
         document.getElementById('total-amount').textContent = 'UGX ' + total.toLocaleString();
@@ -355,6 +382,7 @@
         document.getElementById('payment-bank').value = '';
         document.getElementById('payment-receipt').value = '';
         document.getElementById('payment-notes').value = '';
+        document.getElementById('payment-alert').classList.add('d-none');
         $('#paymentModal').modal('show');
     }
 
@@ -370,22 +398,51 @@
             notes: document.getElementById('payment-notes').value
         };
 
+        const alertDiv = document.getElementById('payment-alert');
         if (!data.student || !data.amount || !data.payment_method) {
-            alert('Please fill in all required fields');
+            alertDiv.textContent = 'Please fill in all required fields';
+            alertDiv.classList.remove('d-none');
             return;
         }
+        alertDiv.classList.add('d-none');
+
+        const csrfToken = getCSRFToken();
+        const btn = document.querySelector('#paymentModal .btn-main');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Recording...';
 
         fetch('/api/finance/payments/', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
             body: JSON.stringify(data)
         })
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) throw new Error('Failed to record payment');
+            return r.json();
+        })
         .then(() => {
             $('#paymentModal').modal('hide');
             loadPayments();
             alert('Payment recorded successfully!');
-        }).catch(() => alert('Error recording payment'));
+        })
+        .catch(error => {
+            alert('Error recording payment: ' + error.message);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-save"></i> Record Payment';
+        });
+    }
+
+    function resetFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('method-filter').value = '';
+        document.getElementById('date-from').value = '';
+        document.getElementById('date-to').value = '';
+        loadPayments();
     }
 </script>
 {% endblock %}
