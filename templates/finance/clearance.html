@@ -46,6 +46,12 @@
         border-color: var(--secondary-color); box-shadow: 0 0 0 3px rgba(225,36,84,0.08);
         background: white;
     }
+    .filter-bar .btn-reset {
+        height: 38px; border-radius: 8px; font-weight: 600; padding: 0 20px;
+        background: transparent; color: var(--text-color); border: 1px solid #e8ecf1;
+        transition: all 0.3s ease; width: 100%;
+    }
+    .filter-bar .btn-reset:hover { border-color: var(--secondary-color); color: var(--secondary-color); }
 
     .stats-grid {
         display: grid;
@@ -146,7 +152,7 @@
             <div class="row align-items-end">
                 <div class="col-md-3">
                     <label class="filter-label">Search</label>
-                    <input type="text" id="search-input" class="form-control" placeholder="Name or Reg No..." onkeyup="loadClearance()">
+                    <input type="text" id="search-input" class="form-control" placeholder="Name or Reg No..." onkeyup="debounceClearance()">
                 </div>
                 <div class="col-md-3">
                     <label class="filter-label">Status</label>
@@ -179,16 +185,36 @@
 </div>
 
 <script>
+    // ============================================
+    // GET CSRF TOKEN
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+        return cookieValue;
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let clearanceTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        if (!user || !user.id) {
+            window.location.href = '/login/';
+            return;
+        }
         loadSemesters();
         loadClearance();
     });
 
     function loadSemesters() {
-        fetch('/api/admissions/semesters/', {  })
+        fetch('/api/admissions/semesters/')
         .then(r => r.json())
         .then(data => {
             const select = document.getElementById('semester-filter');
@@ -203,44 +229,46 @@
         }).catch(() => {});
     }
 
+    function debounceClearance() {
+        clearTimeout(clearanceTimeout);
+        clearanceTimeout = setTimeout(() => {
+            loadClearance();
+        }, 500);
+    }
+
     function loadClearance() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const search = document.getElementById('search-input').value.trim();
-    const status = document.getElementById('status-filter').value;
-    const semester = document.getElementById('semester-filter').value;
+        const search = document.getElementById('search-input').value.trim();
+        const status = document.getElementById('status-filter').value;
+        const semester = document.getElementById('semester-filter').value;
 
-    console.log('Filtering clearance:', { search, status, semester });
+        let url = '/api/finance/clearance/';
+        let params = [];
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        if (status) params.push(`is_cleared=${status === 'cleared'}`);
+        if (semester) params.push(`semester=${semester}`);
+        params.push(`ordering=-created_at`);
+        
+        if (params.length) url += '?' + params.join('&');
 
-    let url = '/api/finance/clearance/';
-    let params = [];
-    if (search) params.push(`search=${encodeURIComponent(search)}`);
-    if (status) params.push(`is_cleared=${status === 'cleared'}`);
-    if (semester) params.push(`semester=${semester}`);
-    params.push(`ordering=-created_at`);
-    
-    if (params.length) url += '?' + params.join('&');
-
-    console.log('Fetching URL:', url);
-
-    fetch(url, {  })
-    .then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Filtered clearance:', data);
-        renderClearance(data);
-    })
-    .catch(error => {
-        console.error('Error loading clearance:', error);
-        document.getElementById('clearance-container').innerHTML = `
-            <div class="text-center py-5">
-                <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
-                <p class="mt-2 text-danger">Error loading clearance: ${error.message}</p>
-            </div>
-        `;
-    });
-}
+        fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            renderClearance(data);
+        })
+        .catch(error => {
+            console.error('Error loading clearance:', error);
+            document.getElementById('clearance-container').innerHTML = `
+                <div class="text-center py-5">
+                    <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                    <p class="mt-2 text-danger">Error loading clearance: ${error.message}</p>
+                    <button class="btn btn-sm btn-main mt-2" onclick="loadClearance()">Retry</button>
+                </div>
+            `;
+        });
+    }
 
     function renderClearance(data) {
         const results = data.results || [];
@@ -268,7 +296,7 @@
                 <div class="clearance-header">
                     <div>
                         <div class="student-name">${c.student_name || 'N/A'}</div>
-                        <div class="student-reg">${c.student || 'N/A'}</div>
+                        <div class="student-reg">${c.student_registration || 'N/A'}</div>
                     </div>
                     <span class="clearance-status ${c.is_cleared ? 'cleared' : 'pending'}">
                         <i class="icofont-${c.is_cleared ? 'check-circled' : 'warning'}"></i>
@@ -276,7 +304,7 @@
                     </span>
                 </div>
                 <div class="clearance-details">
-                    <span><strong>Semester:</strong> ${c.semester || 'N/A'}</span>
+                    <span><strong>Semester:</strong> ${c.semester_name || 'N/A'}</span>
                     ${c.clearance_date ? `<span><strong>Cleared On:</strong> ${new Date(c.clearance_date).toLocaleDateString()}</span>` : ''}
                     ${c.cleared_by ? `<span><strong>Cleared By:</strong> ${c.cleared_by}</span>` : ''}
                     ${c.notes ? `<span><strong>Notes:</strong> ${c.notes}</span>` : ''}
@@ -304,9 +332,12 @@
 
     function clearStudent(id) {
         if (!confirm('Are you sure you want to clear this student?')) return;
+        const csrfToken = getCSRFToken();
         fetch(`/api/finance/clearance/${id}/`, {
             method: 'PATCH',
-            headers: {'Content-Type': 'application/json'
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
                 is_cleared: true,
@@ -319,9 +350,12 @@
 
     function reverseClearance(id) {
         if (!confirm('Are you sure you want to reverse this clearance?')) return;
+        const csrfToken = getCSRFToken();
         fetch(`/api/finance/clearance/${id}/`, {
             method: 'PATCH',
-            headers: {'Content-Type': 'application/json'
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
                 is_cleared: false,
@@ -335,10 +369,7 @@
     function bulkClearance() {
         if (!confirm('Clear ALL pending students? This action cannot be undone.')) return;
         
-        // Get all pending clearances
-        fetch('/api/finance/clearance/?is_cleared=false', {
-            
-        })
+        fetch('/api/finance/clearance/?is_cleared=false')
         .then(r => r.json())
         .then(data => {
             const pending = data.results || [];
@@ -347,10 +378,13 @@
                 return;
             }
             
+            const csrfToken = getCSRFToken();
             const promises = pending.map(c => 
                 fetch(`/api/finance/clearance/${c.id}/`, {
                     method: 'PATCH',
-                    headers: {'Content-Type': 'application/json'
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
                     },
                     body: JSON.stringify({
                         is_cleared: true,
