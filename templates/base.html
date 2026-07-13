@@ -724,6 +724,21 @@ function isAuthenticated() {
     return !!(user && user.id);
 }
 
+function getCSRFToken() {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 // ============================================
 // SHOW NOTIFICATION
 // ============================================
@@ -863,36 +878,67 @@ function renderNavigation() {
 }
 
 // ============================================
-// LOGOUT FUNCTION
+// LOGOUT FUNCTION - FIXED
 // ============================================
 function handleLogout() {
     if (confirm('Are you sure you want to logout?')) {
-        localStorage.removeItem('user');
-        localStorage.removeItem('student');
-        sessionStorage.clear();
-        renderNavigation();
-        window.location.href = '/login/';
+        // Show loading state
+        const logoutBtn = document.querySelector('.nav-link[onclick*="handleLogout"]');
+        if (logoutBtn) {
+            logoutBtn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Logging out...';
+        }
+        
+        // Call server logout
+        fetch('/api/auth/logout/', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .catch(() => {
+            // Continue with logout even if server fails
+        })
+        .finally(() => {
+            // Clear all local storage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Clear cookies
+            document.cookie.split(";").forEach(function(c) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+            
+            // Force navigation to login
+            window.location.href = '/login/';
+        });
     }
 }
 
 // ============================================
-// INITIALIZE - FIXED (No redirect on 404)
+// INITIALIZE - FIXED
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
     renderNavigation();
     
     const user = getCurrentUser();
-    const isLoginPage = window.location.pathname === '/login/';
-    const isLogoutPage = window.location.pathname === '/logout/';
+    const currentPath = window.location.pathname;
+    const isLoginPage = currentPath === '/login/';
+    const isLogoutPage = currentPath === '/logout/';
+    const isFinancePage = currentPath.includes('/dashboard/finance/');
     
-    if (isLoginPage || isLogoutPage) {
-        console.log('On login/logout page, skipping session check');
+    // ✅ On login page, skip session check to prevent redirect loops
+    if (isLoginPage) {
+        console.log('On login page - skipping session check');
         return;
     }
     
-    // ✅ Check if this is a finance page - be more lenient
-    const isFinancePage = window.location.pathname.includes('/dashboard/finance/');
+    if (isLogoutPage) {
+        console.log('On logout page - skipping session check');
+        return;
+    }
     
+    // ✅ Only verify session if user exists in localStorage
     if (user && user.id) {
         console.log('Verifying session for user:', user.username);
         
@@ -904,9 +950,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => {
             console.log('Session check response status:', response.status);
-            // ✅ Don't redirect on 404 - just use localStorage data
             if (response.status === 404) {
-                console.log('Endpoint not found, using localStorage data');
                 return user;
             }
             if (response.status === 401 || response.status === 403) {
@@ -920,7 +964,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('user', JSON.stringify(data));
                 renderNavigation();
             } else if (!isFinancePage) {
-                // Only redirect for non-finance pages
                 console.log('Session invalid, redirecting to login');
                 localStorage.removeItem('user');
                 renderNavigation();
@@ -929,15 +972,10 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.log('Session check error:', error.message);
-            // ✅ Only redirect if it's a 401/403 AND not a finance page
             if (error.message === 'Session invalid' && !isFinancePage) {
                 localStorage.removeItem('user');
                 renderNavigation();
                 window.location.href = '/login/';
-            } else if (isFinancePage) {
-                // For finance pages, keep using the stored user
-                console.log('Finance page - keeping session even with error');
-                renderNavigation();
             }
         });
     } else if (!isLoginPage) {
@@ -952,19 +990,12 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const email = this.querySelector('#subscribe-email');
             if (email && email.value) {
-                showNotification('Thank you for subscribing! You will receive updates from GLIDE Institute.', 'success');
+                showNotification('Thank you for subscribing!', 'success');
                 email.value = '';
             } else {
                 showNotification('Please enter a valid email address.', 'warning');
             }
         });
-    }
-});
-
-// Re-render when page becomes visible again
-document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) {
-        renderNavigation();
     }
 });
 
@@ -989,6 +1020,7 @@ window.getCurrentUser = getCurrentUser;
 window.isAuthenticated = isAuthenticated;
 window.renderNavigation = renderNavigation;
 window.showNotification = showNotification;
+window.getCSRFToken = getCSRFToken;
 </script>
     
     {% block extra_js %}{% endblock %}
