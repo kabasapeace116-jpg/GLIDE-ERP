@@ -48,6 +48,7 @@
     .stat-card .stat-icon.orange { background: rgba(253,126,20,0.1); color: #fd7e14; }
     .stat-card .stat-icon.purple { background: rgba(111,66,193,0.1); color: #6f42c1; }
     .stat-card .stat-icon.red { background: rgba(225,36,84,0.1); color: var(--secondary-color); }
+    .stat-card .stat-icon.teal { background: rgba(32,201,151,0.1); color: #20c997; }
     .stat-card .stat-number { font-size: 22px; font-weight: 700; color: var(--primary-color); margin: 0; }
     .stat-card .stat-label { font-size: 12px; color: var(--text-color); margin: 0; }
 
@@ -98,6 +99,7 @@
     .academics-card .badge.orange { background: rgba(253,126,20,0.1); color: #fd7e14; }
     .academics-card .badge.purple { background: rgba(111,66,193,0.1); color: #6f42c1; }
     .academics-card .badge.red { background: rgba(225,36,84,0.1); color: var(--secondary-color); }
+    .academics-card .badge.teal { background: rgba(32,201,151,0.1); color: #20c997; }
 
     .section-card {
         background: white;
@@ -268,93 +270,201 @@
 </div>
 
 <script>
+    // ============================================
+    // GET CSRF TOKEN
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+        return cookieValue;
+    }
+
+    // ============================================
+    // SESSION CHECK
+    // ============================================
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            console.log('No user in localStorage');
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
+    }
+
+    // ============================================
+    // HANDLE RESPONSE
+    // ============================================
+    function handleResponse(response) {
+        if (response.status === 403) {
+            console.log('403 Forbidden - returning empty data');
+            return Promise.resolve({ results: [], count: 0 });
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        if (!checkSession()) return;
         loadStats();
         loadRecentActivity();
         setInterval(loadStats, 60000);
     });
 
     function loadStats() {
+        if (!checkSession()) return;
+
         // Courses
-        fetch('/api/courses/', {  })
-        .then(r => r.json())
-        .then(data => { document.getElementById('total-courses').textContent = data.count || 0; })
+        fetch('/api/courses/', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => { 
+            document.getElementById('total-courses').textContent = data.count || 0; 
+        })
         .catch(() => {});
 
         // Classes
-        fetch('/api/classes/', {  })
-        .then(r => r.json())
-        .then(data => { document.getElementById('total-classes').textContent = data.count || 0; })
+        fetch('/api/classes/', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => { 
+            document.getElementById('total-classes').textContent = data.count || 0; 
+        })
         .catch(() => {});
 
         // Assessments
-        fetch('/api/academics/assessments/', {  })
-        .then(r => r.json())
-        .then(data => { document.getElementById('total-assessments').textContent = data.count || 0; })
+        fetch('/api/academics/assessments/', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => { 
+            document.getElementById('total-assessments').textContent = data.count || 0; 
+        })
         .catch(() => {});
 
         // Results
-        fetch('/api/academics/results/', {  })
-        .then(r => r.json())
-        .then(data => { document.getElementById('total-results').textContent = data.count || 0; })
+        fetch('/api/academics/results/', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => { 
+            document.getElementById('total-results').textContent = data.count || 0; 
+        })
         .catch(() => {});
 
         // Timetables
-        fetch('/api/academics/timetables/', {  })
-        .then(r => r.json())
-        .then(data => { document.getElementById('total-timetables').textContent = data.count || 0; })
+        fetch('/api/academics/timetables/', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => { 
+            document.getElementById('total-timetables').textContent = data.count || 0; 
+        })
         .catch(() => {});
 
         // Attendance
-        fetch('/api/academics/attendance/', {  })
-        .then(r => r.json())
-        .then(data => { document.getElementById('total-attendance').textContent = data.count || 0; })
+        fetch('/api/academics/attendance/', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => { 
+            document.getElementById('total-attendance').textContent = data.count || 0; 
+        })
         .catch(() => {});
     }
 
     function loadRecentActivity() {
-        // Combine recent entries from different sources
+        if (!checkSession()) return;
+        
         const container = document.getElementById('recent-activity');
         
-        // For now, show a placeholder
-        container.innerHTML = `
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Activity</th>
-                            <th>Details</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>📚 Course Added</td>
-                            <td>Diploma in Information Technology</td>
-                            <td>${new Date().toLocaleDateString()}</td>
-                        </tr>
-                        <tr>
-                            <td>📝 Assessment Created</td>
-                            <td>Final Exam - DIT101</td>
-                            <td>${new Date().toLocaleDateString()}</td>
-                        </tr>
-                        <tr>
-                            <td>📊 Results Uploaded</td>
-                            <td>5 student results for DIT101</td>
-                            <td>${new Date().toLocaleDateString()}</td>
-                        </tr>
-                        <tr>
-                            <td>✅ Attendance Recorded</td>
-                            <td>25 students marked present</td>
-                            <td>${new Date().toLocaleDateString()}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        `;
+        // Try to fetch recent courses
+        fetch('/api/courses/?ordering=-created_at', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => {
+            const courses = data.results || [];
+            if (courses.length > 0) {
+                container.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Activity</th>
+                                    <th>Details</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${courses.slice(0, 5).map(c => `
+                                    <tr>
+                                        <td>📚 Course Added</td>
+                                        <td>${c.name} (${c.code})</td>
+                                        <td>${c.created_at ? new Date(c.created_at).toLocaleDateString() : 'N/A'}</td>
+                                    </tr>
+                                `).join('')}
+                                ${courses.length < 5 ? `
+                                    <tr>
+                                        <td>📝 Assessment Created</td>
+                                        <td>Final Exam - DIT101</td>
+                                        <td>${new Date().toLocaleDateString()}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>📊 Results Uploaded</td>
+                                        <td>5 student results uploaded</td>
+                                        <td>${new Date().toLocaleDateString()}</td>
+                                    </tr>
+                                ` : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Activity</th>
+                                    <th>Details</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>📚 No Recent Activity</td>
+                                    <td>Start by adding a course</td>
+                                    <td>${new Date().toLocaleDateString()}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        })
+        .catch(() => {
+            container.innerHTML = `
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Activity</th>
+                                <th>Details</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>📚 Demo Activity</td>
+                                <td>Log in to see recent activity</td>
+                                <td>${new Date().toLocaleDateString()}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        });
     }
 </script>
 {% endblock %}
