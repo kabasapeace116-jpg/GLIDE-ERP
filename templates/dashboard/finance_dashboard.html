@@ -5,6 +5,9 @@
 
 {% block content %}
 <style>
+    /* ============================================
+       FINANCE DASHBOARD STYLES
+       ============================================ */
     .dashboard-wrapper { display: flex; min-height: 100vh; background: #f0f4f8; }
     
     .dashboard-sidebar {
@@ -601,7 +604,7 @@
     }
 
     // ============================================
-    // SESSION CHECK - FIXED (No redirect on 403)
+    // SESSION CHECK - FIXED
     // ============================================
     function checkSession() {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -822,7 +825,7 @@
     function loadDropdowns() {
         if (!checkSession()) return;
         loadStudents();
-        // ✅ REMOVED - loadSemesters() - finance users don't have permission
+        loadSemesters(); // ✅ Finance users now have permission via updated views
         loadCourses();
     }
 
@@ -843,6 +846,25 @@
                     });
                 }
             });
+        })
+        .catch(() => {});
+    }
+
+    function loadSemesters() {
+        if (!checkSession()) return;
+        fetch('/api/admissions/semesters/', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => {
+            const select = document.getElementById('invoice-semester');
+            if (select && data.results) {
+                select.innerHTML = '<option value="">Select Semester</option>';
+                data.results.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.name} - ${s.academic_year_name}`;
+                    select.appendChild(opt);
+                });
+            }
         })
         .catch(() => {});
     }
