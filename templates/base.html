@@ -703,269 +703,212 @@
         <i class="icofont-long-arrow-up"></i>
     </a>
 
-    <!-- ==================== SCRIPTS ==================== -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// ============================================
+// AUTHENTICATION FUNCTIONS
+// ============================================
+
+function getCurrentUser() {
+    try {
+        return JSON.parse(localStorage.getItem('user') || '{}');
+    } catch {
+        return null;
+    }
+}
+
+function isAuthenticated() {
+    const user = getCurrentUser();
+    return !!(user && user.id);
+}
+
+// ============================================
+// SHOW NOTIFICATION
+// ============================================
+function showNotification(message, type = 'info') {
+    const colors = {
+        success: '#28a745',
+        info: '#223a66',
+        warning: '#ffc107',
+        error: '#dc3545'
+    };
     
-    <script>
-    // ============================================
-    // AUTHENTICATION FUNCTIONS - FIXED
-    // ============================================
+    const notification = document.createElement('div');
+    notification.className = `notification-toast ${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background: ${colors[type] || '#223a66'};
+        color: ${type === 'warning' ? '#212529' : 'white'};
+        border-radius: 10px;
+        font-weight: 500;
+        z-index: 9999;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        animation: slideIn 0.5s ease;
+        max-width: 400px;
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => notification.remove(), 500);
+    }, 4000);
+}
 
-    function getCurrentUser() {
-        try {
-            return JSON.parse(localStorage.getItem('user') || '{}');
-        } catch {
-            return null;
-        }
+// ============================================
+// RENDER NAVIGATION
+// ============================================
+function renderNavigation() {
+    const navContainer = document.getElementById('nav-links');
+    if (!navContainer) return;
+    
+    const user = getCurrentUser();
+    
+    const logoutBtn = document.getElementById('logout-btn-top');
+    if (logoutBtn) {
+        logoutBtn.style.display = (user && user.id) ? 'inline-block' : 'none';
     }
-
-    function isAuthenticated() {
-        const user = getCurrentUser();
-        return !!(user && user.id);
-    }
-
-    // ============================================
-    // SHOW NOTIFICATION
-    // ============================================
-    function showNotification(message, type = 'info') {
-        const colors = {
-            success: '#28a745',
-            info: '#223a66',
-            warning: '#ffc107',
-            error: '#dc3545'
-        };
-        
-        const notification = document.createElement('div');
-        notification.className = `notification-toast ${type}`;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            background: ${colors[type] || '#223a66'};
-            color: ${type === 'warning' ? '#212529' : 'white'};
-            border-radius: 10px;
-            font-weight: 500;
-            z-index: 9999;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            animation: slideIn 0.5s ease;
-            max-width: 400px;
-        `;
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transition = 'opacity 0.5s ease';
-            setTimeout(() => notification.remove(), 500);
-        }, 4000);
-    }
-
-    // ============================================
-    // RENDER NAVIGATION - COMPLETE FIXED VERSION
-    // ============================================
-    function renderNavigation() {
-        const navContainer = document.getElementById('nav-links');
-        if (!navContainer) return;
-        
-        const user = getCurrentUser();
-        
-        // Show/hide logout button in top bar
-        const logoutBtn = document.getElementById('logout-btn-top');
-        if (logoutBtn) {
-            logoutBtn.style.display = (user && user.id) ? 'inline-block' : 'none';
+    
+    let html = '';
+    
+    if (user && user.id) {
+        let dashboardUrl = '/dashboard/';
+        if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'registrar') {
+            dashboardUrl = '/dashboard/admin/';
+        } else if (user.user_type === 'student') {
+            dashboardUrl = '/dashboard/student/';
+        } else if (user.user_type === 'finance') {
+            dashboardUrl = '/dashboard/finance/';
+        } else if (user.user_type === 'staff' || user.user_type === 'lecturer') {
+            dashboardUrl = '/dashboard/staff/';
+        } else if (user.user_type === 'hr') {
+            dashboardUrl = '/dashboard/hr/';
         }
         
-        let html = '';
+        html += `<li class="nav-item">
+            <a class="nav-link" href="${dashboardUrl}"><i class="icofont-dashboard"></i> Dashboard</a>
+        </li>`;
         
-        if (user && user.id) {
-            // ===== DASHBOARD - All users =====
-            let dashboardUrl = '/dashboard/';
-            if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'registrar') {
-                dashboardUrl = '/dashboard/admin/';
-            } else if (user.user_type === 'student') {
-                dashboardUrl = '/dashboard/student/';
-            } else if (user.user_type === 'finance') {
-                dashboardUrl = '/dashboard/finance/';
-            } else if (user.user_type === 'staff' || user.user_type === 'lecturer') {
-                dashboardUrl = '/dashboard/staff/';
-            } else if (user.user_type === 'hr') {
-                dashboardUrl = '/dashboard/hr/';
-            }
-            
+        if (user.user_type !== 'student' && user.user_type !== 'finance') {
             html += `<li class="nav-item">
-                <a class="nav-link" href="${dashboardUrl}"><i class="icofont-dashboard"></i> Dashboard</a>
-            </li>`;
-            
-            // ===== ACADEMICS - All users except finance and student =====
-            if (user.user_type !== 'student' && user.user_type !== 'finance') {
-                html += `<li class="nav-item">
-                    <a class="nav-link" href="/academics/dashboard/"><i class="icofont-book"></i> Academics</a>
-                </li>`;
-            }
-            
-            // ===== ADMISSIONS - Admin, Super Admin, Registrar only =====
-            if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'registrar') {
-                html += `<li class="nav-item">
-                    <a class="nav-link" href="/admissions/"><i class="icofont-forms"></i> Admissions</a>
-                </li>`;
-            }
-            
-            // ===== FINANCE - Finance, Admin, Super Admin =====
-            if (user.user_type === 'finance' || user.user_type === 'super_admin' || user.user_type === 'admin') {
-                html += `<li class="nav-item">
-                    <a class="nav-link" href="/dashboard/finance/"><i class="icofont-wallet"></i> Finance</a>
-                </li>`;
-            }
-            
-            // ===== HR - HR, Admin, Super Admin =====
-            if (user.user_type === 'hr' || user.user_type === 'super_admin' || user.user_type === 'admin') {
-                html += `<li class="nav-item">
-                    <a class="nav-link" href="/hr/dashboard/"><i class="icofont-users"></i> HR</a>
-                </li>`;
-            }
-            
-            // ===== REPORTS - Admin, Super Admin only =====
-            if (user.user_type === 'super_admin' || user.user_type === 'admin') {
-                html += `<li class="nav-item">
-                    <a class="nav-link" href="/reports/"><i class="icofont-file-pdf"></i> Reports</a>
-                </li>`;
-            }
-            
-            // ===== USERS - Admin, Super Admin only =====
-            if (user.user_type === 'super_admin' || user.user_type === 'admin') {
-                html += `<li class="nav-item">
-                    <a class="nav-link" href="/users/"><i class="icofont-user"></i> Users</a>
-                </li>`;
-            }
-            
-            // ===== STUDENTS - Admin, Super Admin only =====
-            if (user.user_type === 'super_admin' || user.user_type === 'admin') {
-                html += `<li class="nav-item">
-                    <a class="nav-link" href="/students/"><i class="icofont-graduate"></i> Students</a>
-                </li>`;
-            }
-            
-            // ===== COURSES - Admin, Super Admin, Staff, Lecturer =====
-            if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'staff' || user.user_type === 'lecturer') {
-                html += `<li class="nav-item">
-                    <a class="nav-link" href="/academics/courses/"><i class="icofont-book"></i> Courses</a>
-                </li>`;
-            }
-            
-            // ===== CLASSES - Admin, Super Admin, Staff, Lecturer =====
-            if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'staff' || user.user_type === 'lecturer') {
-                html += `<li class="nav-item">
-                    <a class="nav-link" href="/academics/classes/"><i class="icofont-education"></i> Classes</a>
-                </li>`;
-            }
-            
-            // ===== LOGOUT =====
-            html += `<li class="nav-item">
-                <a class="nav-link" href="#" onclick="handleLogout();"><i class="icofont-logout"></i> Logout</a>
-            </li>`;
-            
-        } else {
-            // ===== NOT LOGGED IN =====
-            html += `<li class="nav-item">
-                <a class="nav-link" href="/login/"><i class="icofont-login"></i> Login</a>
+                <a class="nav-link" href="/academics/dashboard/"><i class="icofont-book"></i> Academics</a>
             </li>`;
         }
         
-        navContainer.innerHTML = html;
-    }
-
-    // ============================================
-    // LOGOUT FUNCTION
-    // ============================================
-    function handleLogout() {
-        if (confirm('Are you sure you want to logout?')) {
-            localStorage.removeItem('user');
-            localStorage.removeItem('student');
-            sessionStorage.clear();
-            renderNavigation();
-            window.location.href = '/login/';
+        if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'registrar') {
+            html += `<li class="nav-item">
+                <a class="nav-link" href="/admissions/"><i class="icofont-forms"></i> Admissions</a>
+            </li>`;
         }
+        
+        if (user.user_type === 'finance' || user.user_type === 'super_admin' || user.user_type === 'admin') {
+            html += `<li class="nav-item">
+                <a class="nav-link" href="/dashboard/finance/"><i class="icofont-wallet"></i> Finance</a>
+            </li>`;
+        }
+        
+        if (user.user_type === 'hr' || user.user_type === 'super_admin' || user.user_type === 'admin') {
+            html += `<li class="nav-item">
+                <a class="nav-link" href="/hr/dashboard/"><i class="icofont-users"></i> HR</a>
+            </li>`;
+        }
+        
+        if (user.user_type === 'super_admin' || user.user_type === 'admin') {
+            html += `<li class="nav-item">
+                <a class="nav-link" href="/reports/"><i class="icofont-file-pdf"></i> Reports</a>
+            </li>`;
+        }
+        
+        if (user.user_type === 'super_admin' || user.user_type === 'admin') {
+            html += `<li class="nav-item">
+                <a class="nav-link" href="/users/"><i class="icofont-user"></i> Users</a>
+            </li>`;
+        }
+        
+        if (user.user_type === 'super_admin' || user.user_type === 'admin') {
+            html += `<li class="nav-item">
+                <a class="nav-link" href="/students/"><i class="icofont-graduate"></i> Students</a>
+            </li>`;
+        }
+        
+        if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'staff' || user.user_type === 'lecturer') {
+            html += `<li class="nav-item">
+                <a class="nav-link" href="/academics/courses/"><i class="icofont-book"></i> Courses</a>
+            </li>`;
+        }
+        
+        if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'staff' || user.user_type === 'lecturer') {
+            html += `<li class="nav-item">
+                <a class="nav-link" href="/academics/classes/"><i class="icofont-education"></i> Classes</a>
+            </li>`;
+        }
+        
+        html += `<li class="nav-item">
+            <a class="nav-link" href="#" onclick="handleLogout();"><i class="icofont-logout"></i> Logout</a>
+        </li>`;
+        
+    } else {
+        html += `<li class="nav-item">
+            <a class="nav-link" href="/login/"><i class="icofont-login"></i> Login</a>
+        </li>`;
     }
+    
+    navContainer.innerHTML = html;
+}
 
-    // ============================================
-    // LOGIN FUNCTION
-    // ============================================
-    function handleLogin(username, password) {
-        fetch('/api/auth/login/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                username: username,
-                password: password
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                localStorage.setItem('user', JSON.stringify(data.user));
-                renderNavigation();
-                
-                const userType = data.user.user_type;
-                const redirects = {
-                    'student': '/dashboard/student/',
-                    'admin': '/dashboard/admin/',
-                    'registrar': '/dashboard/admin/',
-                    'finance': '/dashboard/finance/',
-                    'staff': '/dashboard/staff/',
-                    'lecturer': '/dashboard/staff/',
-                    'hr': '/dashboard/hr/',
-                    'super_admin': '/dashboard/admin/'
-                };
-                window.location.href = redirects[userType] || '/dashboard/';
-            } else {
-                showNotification('Login failed: ' + (data.detail || 'Invalid credentials'), 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Login error:', error);
-            showNotification('Connection error. Please try again.', 'error');
-        });
+// ============================================
+// LOGOUT FUNCTION
+// ============================================
+function handleLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('student');
+        sessionStorage.clear();
+        renderNavigation();
+        window.location.href = '/login/';
     }
+}
 
-    // ============================================
-// INITIALIZE - FIXED
+// ============================================
+// INITIALIZE - FIXED (No redirect on 404)
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Always render navigation first
     renderNavigation();
     
-    // Get user from localStorage
     const user = getCurrentUser();
     const isLoginPage = window.location.pathname === '/login/';
     const isLogoutPage = window.location.pathname === '/logout/';
     
-    // If on login page and already has user, let the login page handle it
-    if (isLoginPage) {
-        console.log('On login page, skipping session check');
+    if (isLoginPage || isLogoutPage) {
+        console.log('On login/logout page, skipping session check');
         return;
     }
     
-    // If on logout page, skip
-    if (isLogoutPage) {
-        return;
-    }
+    // ✅ Check if this is a finance page - be more lenient
+    const isFinancePage = window.location.pathname.includes('/dashboard/finance/');
     
-    // Only verify session if user exists in localStorage
     if (user && user.id) {
         console.log('Verifying session for user:', user.username);
         
         fetch('/api/auth/current_user/', {
-            credentials: 'include',  // CRITICAL: Send cookies
+            credentials: 'include',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
         .then(response => {
             console.log('Session check response status:', response.status);
+            // ✅ Don't redirect on 404 - just use localStorage data
+            if (response.status === 404) {
+                console.log('Endpoint not found, using localStorage data');
+                return user;
+            }
             if (response.status === 401 || response.status === 403) {
                 throw new Error('Session invalid');
             }
@@ -973,38 +916,33 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             if (data && data.id) {
-                // Session valid - update user data
                 console.log('Session valid for:', data.username);
                 localStorage.setItem('user', JSON.stringify(data));
                 renderNavigation();
-            } else {
-                // Session invalid - clear and redirect
+            } else if (!isFinancePage) {
+                // Only redirect for non-finance pages
                 console.log('Session invalid, redirecting to login');
                 localStorage.removeItem('user');
                 renderNavigation();
-                if (!isLoginPage) {
-                    window.location.href = '/login/';
-                }
+                window.location.href = '/login/';
             }
         })
         .catch(error => {
             console.log('Session check error:', error.message);
-            // Don't automatically redirect on error - might be temporary
-            // Only clear if it's a 401/403
-            if (error.message === 'Session invalid') {
+            // ✅ Only redirect if it's a 401/403 AND not a finance page
+            if (error.message === 'Session invalid' && !isFinancePage) {
                 localStorage.removeItem('user');
                 renderNavigation();
-                if (!isLoginPage) {
-                    window.location.href = '/login/';
-                }
+                window.location.href = '/login/';
+            } else if (isFinancePage) {
+                // For finance pages, keep using the stored user
+                console.log('Finance page - keeping session even with error');
+                renderNavigation();
             }
         });
-    } else {
-        // No user in localStorage, but not on login page
-        if (!isLoginPage) {
-            console.log('No user found, redirecting to login');
-            window.location.href = '/login/';
-        }
+    } else if (!isLoginPage) {
+        console.log('No user found, redirecting to login');
+        window.location.href = '/login/';
     }
     
     // Subscribe form
@@ -1023,34 +961,34 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-    // Re-render when page becomes visible again
-    document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
-            renderNavigation();
-        }
-    });
+// Re-render when page becomes visible again
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        renderNavigation();
+    }
+});
 
-    // ==================== BACK TO TOP ====================
-    (function() {
-        var backtop = document.querySelector('.backtop');
-        if (backtop) {
-            window.addEventListener('scroll', function() {
-                if (window.pageYOffset > 300) {
-                    backtop.classList.add('visible');
-                } else {
-                    backtop.classList.remove('visible');
-                }
-            });
-        }
-    })();
+// ==================== BACK TO TOP ====================
+(function() {
+    var backtop = document.querySelector('.backtop');
+    if (backtop) {
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                backtop.classList.add('visible');
+            } else {
+                backtop.classList.remove('visible');
+            }
+        });
+    }
+})();
 
-    // ==================== EXPOSE GLOBALLY ====================
-    window.handleLogout = handleLogout;
-    window.handleLogin = handleLogin;
-    window.getCurrentUser = getCurrentUser;
-    window.isAuthenticated = isAuthenticated;
-    window.renderNavigation = renderNavigation;
-    window.showNotification = showNotification;
+// ==================== EXPOSE GLOBALLY ====================
+window.handleLogout = handleLogout;
+window.handleLogin = handleLogin;
+window.getCurrentUser = getCurrentUser;
+window.isAuthenticated = isAuthenticated;
+window.renderNavigation = renderNavigation;
+window.showNotification = showNotification;
 </script>
     
     {% block extra_js %}{% endblock %}
