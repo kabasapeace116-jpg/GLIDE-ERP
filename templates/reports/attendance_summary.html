@@ -144,135 +144,154 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
+    }
 
-    document.getElementById('report-date').textContent = 'Generated: ' + new Date().toLocaleString();
+    function handleResponse(response) {
+        if (response.status === 403) {
+            return Promise.resolve({ results: [], count: 0 });
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
 
-    fetch('/api/reports/attendance-summary/', {
-        
-    })
-    .then(response => response.json())
-    .then(data => {
-        renderReport(data);
-    })
-    .catch(error => {
-        document.getElementById('report-container').innerHTML = `
-            <div class="report-section text-center py-5">
-                <h4 class="text-danger"><i class="icofont-warning"></i> Error Loading Report</h4>
-                <p class="text-muted">${error.message}</p>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!checkSession()) return;
+
+        document.getElementById('report-date').textContent = 'Generated: ' + new Date().toLocaleString();
+
+        fetch('/api/reports/attendance-summary/', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => {
+            renderReport(data);
+        })
+        .catch(error => {
+            console.error('Error loading report:', error);
+            document.getElementById('report-container').innerHTML = `
+                <div class="report-section text-center py-5">
+                    <h4 class="text-danger"><i class="icofont-warning"></i> Error Loading Report</h4>
+                    <p class="text-muted">${error.message}</p>
+                    <button class="btn btn-main mt-3" onclick="location.reload()">Retry</button>
+                </div>
+            `;
+        });
+    });
+
+    function renderReport(data) {
+        const container = document.getElementById('report-container');
+
+        const total = data.total_records || 0;
+        const present = data.present || 0;
+        const absent = data.absent || 0;
+        const late = data.late || 0;
+        const excused = data.excused || 0;
+
+        container.innerHTML = `
+            <!-- Summary Stats -->
+            <div class="report-section">
+                <div class="section-title"><i class="icofont-chart-bar-graph"></i> Attendance Overview</div>
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        <div class="number">${total}</div>
+                        <p class="label">Total Records</p>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" style="color: #28a745;">${present}</div>
+                        <p class="label">Present</p>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" style="color: var(--secondary-color);">${absent}</div>
+                        <p class="label">Absent</p>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" style="color: #ffc107;">${late}</div>
+                        <p class="label">Late</p>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" style="color: #17a2b8;">${excused}</div>
+                        <p class="label">Excused</p>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" style="color: var(--primary-color);">${data.attendance_rate || '0%'}</div>
+                        <p class="label">Attendance Rate</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Distribution -->
+            <div class="report-section">
+                <div class="section-title"><i class="icofont-pie-chart"></i> Attendance Distribution</div>
+                ${total > 0 ? `
+                    <div style="margin-bottom: 6px;">
+                        <span>Present</span>
+                        <div class="progress-custom">
+                            <div class="progress-bar" style="width: ${(present/total*100).toFixed(1)}%; background: #28a745;">${(present/total*100).toFixed(1)}%</div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 6px;">
+                        <span>Absent</span>
+                        <div class="progress-custom">
+                            <div class="progress-bar" style="width: ${(absent/total*100).toFixed(1)}%; background: var(--secondary-color);">${(absent/total*100).toFixed(1)}%</div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 6px;">
+                        <span>Late</span>
+                        <div class="progress-custom">
+                            <div class="progress-bar" style="width: ${(late/total*100).toFixed(1)}%; background: #ffc107; color: #212529;">${(late/total*100).toFixed(1)}%</div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 6px;">
+                        <span>Excused</span>
+                        <div class="progress-custom">
+                            <div class="progress-bar" style="width: ${(excused/total*100).toFixed(1)}%; background: #17a2b8;">${(excused/total*100).toFixed(1)}%</div>
+                        </div>
+                    </div>
+                ` : '<p class="text-muted">No attendance data available</p>'}
+            </div>
+
+            <!-- By Course -->
+            <div class="report-section">
+                <div class="section-title"><i class="icofont-book"></i> Attendance by Course</div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr><th>Course</th><th>Total</th><th>Present</th><th>Absent</th><th>Late</th><th>Rate</th></tr>
+                        </thead>
+                        <tbody>
+                            ${data.by_course && data.by_course.length > 0 ?
+                                data.by_course.map(c => {
+                                    const rate = c.total > 0 ? Math.round((c.present/c.total)*100) : 0;
+                                    return `
+                                        <tr>
+                                            <td>${c.name}</td>
+                                            <td>${c.total || 0}</td>
+                                            <td style="color: #28a745;">${c.present || 0}</td>
+                                            <td style="color: var(--secondary-color);">${c.absent || 0}</td>
+                                            <td style="color: #ffc107;">${c.late || 0}</td>
+                                            <td><strong>${rate}%</strong></td>
+                                        </tr>
+                                    `;
+                                }).join('') :
+                                '<tr><td colspan="6" class="text-center text-muted">No course data available</td></tr>'
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         `;
-    });
-});
+    }
 
-function renderReport(data) {
-    const container = document.getElementById('report-container');
-
-    const total = data.total_records || 0;
-    const present = data.present || 0;
-    const absent = data.absent || 0;
-    const late = data.late || 0;
-    const excused = data.excused || 0;
-
-    container.innerHTML = `
-        <!-- Summary Stats -->
-        <div class="report-section">
-            <div class="section-title"><i class="icofont-chart-bar-graph"></i> Attendance Overview</div>
-            <div class="stat-grid">
-                <div class="stat-box">
-                    <div class="number">${total}</div>
-                    <p class="label">Total Records</p>
-                </div>
-                <div class="stat-box">
-                    <div class="number" style="color: #28a745;">${present}</div>
-                    <p class="label">Present</p>
-                </div>
-                <div class="stat-box">
-                    <div class="number" style="color: var(--secondary-color);">${absent}</div>
-                    <p class="label">Absent</p>
-                </div>
-                <div class="stat-box">
-                    <div class="number" style="color: #ffc107;">${late}</div>
-                    <p class="label">Late</p>
-                </div>
-                <div class="stat-box">
-                    <div class="number" style="color: #17a2b8;">${excused}</div>
-                    <p class="label">Excused</p>
-                </div>
-                <div class="stat-box">
-                    <div class="number" style="color: var(--primary-color);">${data.attendance_rate || '0%'}</div>
-                    <p class="label">Attendance Rate</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Attendance Distribution -->
-        <div class="report-section">
-            <div class="section-title"><i class="icofont-pie-chart"></i> Attendance Distribution</div>
-            ${total > 0 ? `
-                <div style="margin-bottom: 6px;">
-                    <span>Present</span>
-                    <div class="progress-custom">
-                        <div class="progress-bar" style="width: ${(present/total*100).toFixed(1)}%; background: #28a745;">${(present/total*100).toFixed(1)}%</div>
-                    </div>
-                </div>
-                <div style="margin-bottom: 6px;">
-                    <span>Absent</span>
-                    <div class="progress-custom">
-                        <div class="progress-bar" style="width: ${(absent/total*100).toFixed(1)}%; background: var(--secondary-color);">${(absent/total*100).toFixed(1)}%</div>
-                    </div>
-                </div>
-                <div style="margin-bottom: 6px;">
-                    <span>Late</span>
-                    <div class="progress-custom">
-                        <div class="progress-bar" style="width: ${(late/total*100).toFixed(1)}%; background: #ffc107; color: #212529;">${(late/total*100).toFixed(1)}%</div>
-                    </div>
-                </div>
-                <div style="margin-bottom: 6px;">
-                    <span>Excused</span>
-                    <div class="progress-custom">
-                        <div class="progress-bar" style="width: ${(excused/total*100).toFixed(1)}%; background: #17a2b8;">${(excused/total*100).toFixed(1)}%</div>
-                    </div>
-                </div>
-            ` : '<p class="text-muted">No attendance data available</p>'}
-        </div>
-
-        <!-- By Course -->
-        <div class="report-section">
-            <div class="section-title"><i class="icofont-book"></i> Attendance by Course</div>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr><th>Course</th><th>Total</th><th>Present</th><th>Absent</th><th>Late</th><th>Rate</th></tr>
-                    </thead>
-                    <tbody>
-                        ${data.by_course && data.by_course.length > 0 ?
-                            data.by_course.map(c => {
-                                const rate = c.total > 0 ? Math.round((c.present/c.total)*100) : 0;
-                                return `
-                                    <tr>
-                                        <td>${c.name}</td>
-                                        <td>${c.total || 0}</td>
-                                        <td style="color: #28a745;">${c.present || 0}</td>
-                                        <td style="color: var(--secondary-color);">${c.absent || 0}</td>
-                                        <td style="color: #ffc107;">${c.late || 0}</td>
-                                        <td><strong>${rate}%</strong></td>
-                                    </tr>
-                                `;
-                            }).join('') :
-                            '<tr><td colspan="6" class="text-center text-muted">No course data available</td></tr>'
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-}
-
-function exportReport() {
-    alert('Export functionality will be available soon.');
-}
+    function exportReport() {
+        alert('Export functionality will be available soon.');
+    }
 </script>
 {% endblock %}
