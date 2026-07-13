@@ -99,13 +99,14 @@ class AuthViewSet(viewsets.ViewSet):
                     secure=True,
                     httponly=True,
                     samesite='Lax',
-                    max_age=1209600,
+                    max_age=1209600,  # 2 weeks
                     path='/'
                 )
                 
                 return response
             
             print(f"Login failed: {serializer.errors}")
+            print("=" * 50)
             return Response({'success': False, 'detail': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
             
         except Exception as e:
@@ -119,28 +120,28 @@ class AuthViewSet(viewsets.ViewSet):
         auth_logout(request)
         return Response({'success': True, 'message': 'Logged out successfully'})
     
-@action(detail=False, methods=['get'], url_path='current_user')
-def current_user(self, request):
-    try:
-        # Check if user is authenticated via session
-        if request.user.is_authenticated:
-            user = request.user
-            return Response({
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'user_type': user.user_type,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'is_superuser': user.is_superuser,
-                'is_authenticated': True,
-                'is_active': user.is_active,
-            })
-        
-        return Response({'is_authenticated': False}, status=status.HTTP_401_UNAUTHORIZED)
-    except Exception as e:
-        print(f"Error in current_user: {e}")
-        return Response({'is_authenticated': False, 'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+    @action(detail=False, methods=['get'], url_path='current_user')
+    def current_user(self, request):
+        try:
+            # Check if user is authenticated via session
+            if request.user.is_authenticated:
+                user = request.user
+                return Response({
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'user_type': user.user_type,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'is_superuser': user.is_superuser,
+                    'is_authenticated': True,
+                    'is_active': user.is_active,
+                })
+            
+            return Response({'is_authenticated': False}, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            print(f"Error in current_user: {e}")
+            return Response({'is_authenticated': False, 'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
     
     @action(detail=False, methods=['post'], url_path='setup-admin')
     def setup_admin(self, request):
