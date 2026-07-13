@@ -38,6 +38,12 @@
         border-color: var(--secondary-color); box-shadow: 0 0 0 3px rgba(225,36,84,0.08);
         background: white;
     }
+    .filter-bar .btn-reset {
+        height: 38px; border-radius: 8px; font-weight: 600; padding: 0 20px;
+        background: transparent; color: var(--text-color); border: 1px solid #e8ecf1;
+        transition: all 0.3s ease; width: 100%;
+    }
+    .filter-bar .btn-reset:hover { border-color: var(--secondary-color); color: var(--secondary-color); }
 
     .employee-card {
         background: white; border-radius: 12px; padding: 18px 22px;
@@ -98,7 +104,7 @@
             <div class="row align-items-end">
                 <div class="col-md-3">
                     <label class="filter-label">Search</label>
-                    <input type="text" id="search-input" class="form-control" placeholder="Name or ID..." onkeyup="loadEmployees()">
+                    <input type="text" id="search-input" class="form-control" placeholder="Name or ID..." onkeyup="debounceEmployeeFilter()">
                 </div>
                 <div class="col-md-3">
                     <label class="filter-label">Status</label>
@@ -132,20 +138,74 @@
 </div>
 
 <script>
+    // ============================================
+    // GET CSRF TOKEN
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+        return cookieValue;
+    }
+
+    // ============================================
+    // SESSION CHECK
+    // ============================================
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            console.log('No user in localStorage');
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
+    }
+
+    // ============================================
+    // HANDLE RESPONSE
+    // ============================================
+    function handleResponse(response) {
+        if (response.status === 403) {
+            console.log('403 Forbidden - returning empty data');
+            return Promise.resolve({ results: [], count: 0 });
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let employeeFilterTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        if (!checkSession()) return;
         loadDepartments();
         loadEmployees();
     });
 
+    function debounceEmployeeFilter() {
+        clearTimeout(employeeFilterTimeout);
+        employeeFilterTimeout = setTimeout(() => {
+            loadEmployees();
+        }, 500);
+    }
+
     function loadDepartments() {
-        fetch('/api/departments/', {  })
-        .then(r => r.json())
+        if (!checkSession()) return;
+        fetch('/api/departments/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const select = document.getElementById('dept-filter');
-            if (data.results) {
+            if (select && data.results) {
+                select.innerHTML = '<option value="">All Departments</option>';
                 data.results.forEach(d => {
                     const opt = document.createElement('option');
                     opt.value = d.id;
@@ -157,26 +217,39 @@
     }
 
     function loadEmployees() {
-        const search = document.getElementById('search-input').value;
+        if (!checkSession()) return;
+
+        const search = document.getElementById('search-input').value.trim();
         const status = document.getElementById('status-filter').value;
         const dept = document.getElementById('dept-filter').value;
+
+        console.log('Filtering employees:', { search, status, dept });
 
         let url = '/api/hr/employees/';
         let params = [];
         if (search) params.push(`search=${encodeURIComponent(search)}`);
         if (status) params.push(`status=${status}`);
         if (dept) params.push(`department=${dept}`);
+        params.push(`ordering=-created_at`);
         if (params.length) url += '?' + params.join('&');
 
-        fetch(url, {  })
-        .then(r => r.json())
+        console.log('Fetching URL:', url);
+
+        fetch(url, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
+            console.log('Filtered employees:', data);
             renderEmployees(data);
         })
-        .catch(() => {
+        .catch(error => {
+            console.error('Error loading employees:', error);
             document.getElementById('employees-container').innerHTML = `
-                <div class="text-center py-5"><i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
-                <p class="mt-2 text-danger">Error loading employees</p></div>`;
+                <div class="text-center py-5">
+                    <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                    <p class="mt-2 text-danger">Error loading employees: ${error.message}</p>
+                    <button class="btn btn-sm btn-main mt-2" onclick="loadEmployees()">Retry</button>
+                </div>
+            `;
         });
     }
 
@@ -194,16 +267,17 @@
             <div class="employee-card">
                 <div class="employee-header">
                     <div>
-                        <div class="employee-name">${emp.user_name || 'N/A'}</div>
-                        <div class="employee-id">${emp.employee_number}</div>
+                        <div class="employee-name">${emp.user_name || emp.first_name + ' ' + emp.last_name || 'N/A'}</div>
+                        <div class="employee-id">${emp.employee_number || 'N/A'}</div>
                     </div>
-                    <span class="badge-status ${emp.status}">${emp.status.toUpperCase()}</span>
+                    <span class="badge-status ${emp.status || 'active'}">${(emp.status || 'active').toUpperCase()}</span>
                 </div>
                 <div class="employee-details">
                     <span><strong>Position:</strong> ${emp.position || 'N/A'}</span>
                     <span><strong>Department:</strong> ${emp.department_name || 'N/A'}</span>
                     <span><strong>Type:</strong> ${emp.employment_type || 'N/A'}</span>
                     <span><strong>Joined:</strong> ${emp.employment_date ? new Date(emp.employment_date).toLocaleDateString() : 'N/A'}</span>
+                    <span><strong>Salary:</strong> ${emp.salary ? 'UGX ' + emp.salary.toLocaleString() : 'N/A'}</span>
                 </div>
                 <div class="employee-actions">
                     <button class="btn btn-sm btn-main" onclick="viewEmployee('${emp.id}')">
@@ -211,6 +285,9 @@
                     </button>
                     <button class="btn btn-sm btn-warning" onclick="editEmployee('${emp.id}')">
                         <i class="icofont-edit"></i> Edit
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteEmployee('${emp.id}')">
+                        <i class="icofont-trash"></i> Delete
                     </button>
                 </div>
             </div>
@@ -223,6 +300,24 @@
 
     function editEmployee(id) {
         window.location.href = `/hr/employees/${id}/edit/`;
+    }
+
+    function deleteEmployee(id) {
+        if (!confirm('Are you sure you want to delete this employee record?')) return;
+        if (!checkSession()) return;
+        
+        const csrfToken = getCSRFToken();
+        fetch(`/api/hr/employees/${id}/`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': csrfToken },
+            credentials: 'include'
+        })
+        .then(handleResponse)
+        .then(() => { 
+            loadEmployees(); 
+            alert('Employee record deleted successfully!'); 
+        })
+        .catch(() => alert('Error deleting employee record'));
     }
 
     function resetFilters() {
