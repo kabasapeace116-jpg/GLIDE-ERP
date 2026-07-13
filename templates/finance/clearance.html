@@ -201,24 +201,49 @@
         return cookieValue;
     }
 
+    // ============================================
+    // SESSION CHECK
+    // ============================================
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            console.log('Session expired, redirecting to login');
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
+    }
+
+    function handleResponse(response) {
+        if (response.status === 403) {
+            console.log('403 Forbidden - Session may have expired');
+            localStorage.clear();
+            window.location.href = '/login/';
+            throw new Error('Session expired');
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     let clearanceTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) {
-            window.location.href = '/login/';
-            return;
-        }
+        if (!checkSession()) return;
         loadSemesters();
         loadClearance();
     });
 
     function loadSemesters() {
-        fetch('/api/admissions/semesters/')
-        .then(r => r.json())
+        if (!checkSession()) return;
+        fetch('/api/admissions/semesters/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const select = document.getElementById('semester-filter');
-            if (data.results) {
+            if (select && data.results) {
                 data.results.forEach(s => {
                     const opt = document.createElement('option');
                     opt.value = s.id;
@@ -226,7 +251,8 @@
                     select.appendChild(opt);
                 });
             }
-        }).catch(() => {});
+        })
+        .catch(() => {});
     }
 
     function debounceClearance() {
@@ -237,6 +263,8 @@
     }
 
     function loadClearance() {
+        if (!checkSession()) return;
+        
         const search = document.getElementById('search-input').value.trim();
         const status = document.getElementById('status-filter').value;
         const semester = document.getElementById('semester-filter').value;
@@ -250,11 +278,8 @@
         
         if (params.length) url += '?' + params.join('&');
 
-        fetch(url)
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return response.json();
-        })
+        fetch(url, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             renderClearance(data);
         })
@@ -274,7 +299,6 @@
         const results = data.results || [];
         const container = document.getElementById('clearance-container');
 
-        // Stats
         const total = results.length;
         const cleared = results.filter(c => c.is_cleared).length;
         const pending = total - cleared;
@@ -331,7 +355,9 @@
     }
 
     function clearStudent(id) {
+        if (!checkSession()) return;
         if (!confirm('Are you sure you want to clear this student?')) return;
+        
         const csrfToken = getCSRFToken();
         fetch(`/api/finance/clearance/${id}/`, {
             method: 'PATCH',
@@ -339,17 +365,21 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
+            credentials: 'include',
             body: JSON.stringify({
                 is_cleared: true,
                 clearance_date: new Date().toISOString().split('T')[0]
             })
         })
+        .then(handleResponse)
         .then(() => { loadClearance(); alert('Student cleared successfully!'); })
         .catch(() => alert('Error clearing student'));
     }
 
     function reverseClearance(id) {
+        if (!checkSession()) return;
         if (!confirm('Are you sure you want to reverse this clearance?')) return;
+        
         const csrfToken = getCSRFToken();
         fetch(`/api/finance/clearance/${id}/`, {
             method: 'PATCH',
@@ -357,20 +387,23 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
+            credentials: 'include',
             body: JSON.stringify({
                 is_cleared: false,
                 clearance_date: null
             })
         })
+        .then(handleResponse)
         .then(() => { loadClearance(); alert('Clearance reversed!'); })
         .catch(() => alert('Error reversing clearance'));
     }
 
     function bulkClearance() {
+        if (!checkSession()) return;
         if (!confirm('Clear ALL pending students? This action cannot be undone.')) return;
         
-        fetch('/api/finance/clearance/?is_cleared=false')
-        .then(r => r.json())
+        fetch('/api/finance/clearance/?is_cleared=false', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const pending = data.results || [];
             if (!pending.length) {
@@ -386,6 +419,7 @@
                         'Content-Type': 'application/json',
                         'X-CSRFToken': csrfToken
                     },
+                    credentials: 'include',
                     body: JSON.stringify({
                         is_cleared: true,
                         clearance_date: new Date().toISOString().split('T')[0]
@@ -396,7 +430,8 @@
             Promise.all(promises)
                 .then(() => { loadClearance(); alert(`Cleared ${pending.length} students!`); })
                 .catch(() => alert('Error during bulk clearance'));
-        }).catch(() => alert('Error loading pending clearances'));
+        })
+        .catch(() => alert('Error loading pending clearances'));
     }
 
     function viewDetails(id) {
