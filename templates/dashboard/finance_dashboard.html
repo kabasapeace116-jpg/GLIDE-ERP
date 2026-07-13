@@ -600,19 +600,16 @@
         return cookieValue;
     }
 
-    // ============================================
-    // SESSION CHECK
-    // ============================================
     function checkSession() {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        if (!user || !user.id) {
-            console.log('Session expired, redirecting to login');
-            localStorage.clear();
-            window.location.href = '/login/';
-            return false;
-        }
-        return true;
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!user || !user.id) {
+        console.log('No user in localStorage');
+        localStorage.clear();
+        window.location.href = '/login/';
+        return false;
     }
+    return true;
+}
 
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
