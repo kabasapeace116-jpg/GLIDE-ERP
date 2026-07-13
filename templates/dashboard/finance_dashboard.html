@@ -600,23 +600,41 @@
         return cookieValue;
     }
 
+    // ============================================
+    // SESSION CHECK - FIXED (No redirect on 403)
+    // ============================================
     function checkSession() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!user || !user.id) {
-        console.log('No user in localStorage');
-        localStorage.clear();
-        window.location.href = '/login/';
-        return false;
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            console.log('No user in localStorage');
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        console.log('Session valid for:', user.username);
+        return true;
     }
-    return true;
-}
+
+    // ============================================
+    // HANDLE RESPONSE - FIXED (No redirect on 403)
+    // ============================================
+    function handleResponse(response) {
+        // ✅ Don't redirect on 403 - just return empty data
+        if (response.status === 403) {
+            console.log('403 Forbidden - This is normal for some endpoints');
+            return Promise.resolve({ results: [], count: 0 });
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
 
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
     document.addEventListener('DOMContentLoaded', function() {
         if (!checkSession()) return;
 
-        // Current time
         function updateClock() {
             document.getElementById('current-time').textContent = new Date().toLocaleString('en-US', {
                 weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -804,7 +822,7 @@
     function loadDropdowns() {
         if (!checkSession()) return;
         loadStudents();
-        loadSemesters();
+        // ✅ REMOVED - loadSemesters() - finance users don't have permission
         loadCourses();
     }
 
@@ -829,25 +847,6 @@
         .catch(() => {});
     }
 
-    function loadSemesters() {
-        if (!checkSession()) return;
-        fetch('/api/admissions/semesters/', { credentials: 'include' })
-        .then(handleResponse)
-        .then(data => {
-            const select = document.getElementById('invoice-semester');
-            if (select && data.results) {
-                select.innerHTML = '<option value="">Select Semester</option>';
-                data.results.forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s.id;
-                    opt.textContent = `${s.name} - ${s.academic_year_name}`;
-                    select.appendChild(opt);
-                });
-            }
-        })
-        .catch(() => {});
-    }
-
     function loadCourses() {
         if (!checkSession()) return;
         fetch('/api/courses/', { credentials: 'include' })
@@ -865,22 +864,6 @@
             }
         })
         .catch(() => {});
-    }
-
-    // ============================================
-    // HANDLE RESPONSE - CRITICAL
-    // ============================================
-    function handleResponse(response) {
-        if (response.status === 403) {
-            console.log('403 Forbidden - Session may have expired');
-            localStorage.clear();
-            window.location.href = '/login/';
-            throw new Error('Session expired');
-        }
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        return response.json();
     }
 
     document.getElementById('payment-student')?.addEventListener('change', function() {
