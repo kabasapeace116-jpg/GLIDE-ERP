@@ -120,28 +120,46 @@ class AuthViewSet(viewsets.ViewSet):
         auth_logout(request)
         return Response({'success': True, 'message': 'Logged out successfully'})
     
-    @action(detail=False, methods=['get'], url_path='current_user')
-    def current_user(self, request):
-        try:
-            # Check if user is authenticated via session
-            if request.user.is_authenticated:
-                user = request.user
-                return Response({
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'user_type': user.user_type,
-                    'first_name': user.first_name,
-                    'last_name': user.last_name,
-                    'is_superuser': user.is_superuser,
-                    'is_authenticated': True,
-                    'is_active': user.is_active,
-                })
+@action(detail=False, methods=['get'], url_path='current_user')
+def current_user(self, request):
+    try:
+        if request.user.is_authenticated:
+            user = request.user
             
-            return Response({'is_authenticated': False}, status=status.HTTP_401_UNAUTHORIZED)
-        except Exception as e:
-            print(f"Error in current_user: {e}")
-            return Response({'is_authenticated': False, 'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+            # ✅ Check if user is a student and has a student profile
+            student_data = None
+            if user.user_type == 'student':
+                try:
+                    from core.models import Student
+                    student = Student.objects.get(user=user)
+                    student_data = {
+                        'id': student.id,
+                        'registration_number': student.registration_number,
+                        'first_name': student.first_name,
+                        'last_name': student.last_name,
+                        'course_name': student.course.name if student.course else None,
+                        'status': student.status,
+                    }
+                except Student.DoesNotExist:
+                    student_data = None
+            
+            return Response({
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'user_type': user.user_type,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'is_superuser': user.is_superuser,
+                'is_authenticated': True,
+                'is_active': user.is_active,
+                'student': student_data,  # Include student data if available
+            })
+        
+        return Response({'is_authenticated': False}, status=status.HTTP_401_UNAUTHORIZED)
+    except Exception as e:
+        print(f"Error in current_user: {e}")
+        return Response({'is_authenticated': False, 'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
     
     @action(detail=False, methods=['post'], url_path='setup-admin')
     def setup_admin(self, request):
