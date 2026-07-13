@@ -1,83 +1,298 @@
-// ============================================
-// INITIALIZE - FIXED
-// ============================================
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Login - GLIDE Institute{% endblock %}
+
+{% block content %}
+<style>
+    .login-wrapper {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        background: var(--light-bg);
+        padding: 40px 0;
+    }
+    .login-card {
+        max-width: 450px;
+        margin: 0 auto;
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+    .login-card .card-header {
+        background: var(--primary-color);
+        color: white;
+        padding: 30px;
+        text-align: center;
+        border: none;
+    }
+    .login-card .card-header .logo {
+        max-width: 100px;
+        margin-bottom: 10px;
+    }
+    .login-card .card-header h4 {
+        color: white;
+        margin: 0;
+    }
+    .login-card .card-body {
+        padding: 30px;
+        background: white;
+    }
+    .login-card .form-control {
+        border-radius: 8px;
+        height: 50px;
+        border: 1px solid #e0e0e0;
+    }
+    .login-card .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(34, 58, 102, 0.1);
+    }
+    .login-card .input-group-text {
+        background: var(--light-bg);
+        border: 1px solid #e0e0e0;
+        border-right: none;
+        border-radius: 8px 0 0 8px;
+    }
+    .login-card .input-group .form-control {
+        border-radius: 0 8px 8px 0;
+    }
+    .login-card .btn-login {
+        height: 50px;
+        font-weight: 600;
+        border-radius: 8px;
+    }
+    .login-card .card-footer {
+        background: var(--light-bg);
+        padding: 15px;
+        text-align: center;
+        border: none;
+        border-top: 1px solid var(--border-color);
+    }
+    .login-alert {
+        display: none;
+        border-radius: 8px;
+        padding: 12px 15px;
+    }
+    .login-alert.show {
+        display: block;
+    }
+    
+    .login-features {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .login-features label {
+        font-size: 14px;
+        color: var(--text-color);
+        cursor: pointer;
+    }
+    .login-features a {
+        font-size: 14px;
+        color: var(--secondary-color);
+    }
+    .login-features a:hover {
+        color: var(--primary-color);
+    }
+    
+    @media (max-width: 480px) {
+        .login-card .card-body {
+            padding: 20px;
+        }
+        .login-features {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
+
+<div class="login-wrapper">
+    <div class="container">
+        <div class="login-card">
+            <div class="card-header">
+                <img src="/static/images/logo.png" alt="GLIDE Logo" class="logo img-fluid" onerror="this.style.display='none'">
+                <h4>Student Portal Login</h4>
+                <p class="mb-0" style="color: rgba(255,255,255,0.8); font-size: 14px;">Access your academic information</p>
+            </div>
+            <div class="card-body">
+                <div id="login-alert" class="alert alert-danger login-alert">
+                    <i class="icofont-warning mr-2"></i> <span id="alert-message">Invalid credentials</span>
+                </div>
+                <form id="login-form">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="icofont-user"></i></span>
+                            </div>
+                            <input type="text" class="form-control" id="username" 
+                                   placeholder="Enter username" required autofocus>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="icofont-lock"></i></span>
+                            </div>
+                            <input type="password" class="form-control" id="password" 
+                                   placeholder="Enter password" required>
+                        </div>
+                    </div>
+                    <div class="login-features mb-4">
+                        <div>
+                            <input type="checkbox" id="remember">
+                            <label for="remember">Remember me</label>
+                        </div>
+                        <a href="/password-reset/">Forgot Password?</a>
+                    </div>
+                    <button type="submit" class="btn btn-main-2 btn-login btn-block" id="login-btn">
+                        <i class="icofont-login"></i> Login
+                    </button>
+                </form>
+            </div>
+            <div class="card-footer">
+                <p class="mb-0">Don't have an account? <a href="/admissions/apply/" class="text-color-2">Apply Now</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
 document.addEventListener('DOMContentLoaded', function() {
-    renderNavigation();
+    console.log('Login page loaded');
     
-    const user = getCurrentUser();
-    const currentPath = window.location.pathname;
-    const isLoginPage = currentPath === '/login/';
-    const isLogoutPage = currentPath === '/logout/';
-    const isFinancePage = currentPath.includes('/dashboard/finance/');
-    
-    // ✅ IMPORTANT: Skip all session checks on login page
-    if (isLoginPage) {
-        console.log('On login page - skipping all session checks');
-        return;
-    }
-    
-    if (isLogoutPage) {
-        console.log('On logout page - skipping session check');
-        return;
-    }
-    
-    // Only verify session if user exists in localStorage and not on login page
-    if (user && user.id) {
-        console.log('Verifying session for user:', user.username);
+    // Check if user is already logged in
+    fetch('/api/auth/current_user/', {
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.is_authenticated && data.user_type) {
+            const redirects = {
+                'super_admin': '/dashboard/admin/',
+                'admin': '/dashboard/admin/',
+                'registrar': '/dashboard/admin/',
+                'finance': '/dashboard/finance/',
+                'staff': '/dashboard/staff/',
+                'lecturer': '/dashboard/staff/',
+                'hr': '/dashboard/hr/',
+                'student': '/dashboard/student/'
+            };
+            const redirectUrl = redirects[data.user_type] || '/dashboard/';
+            console.log('Already logged in, redirecting to:', redirectUrl);
+            window.location.href = redirectUrl;
+        }
+    })
+    .catch(() => {
+        console.log('Not logged in, showing login form');
+    });
+
+    // Handle login form submission
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        fetch('/api/auth/current_user/', {
-            credentials: 'include',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const alertDiv = document.getElementById('login-alert');
+        const alertMessage = document.getElementById('alert-message');
+        const btn = document.getElementById('login-btn');
+        
+        console.log('Login attempt for:', username);
+        
+        if (!username || !password) {
+            alertMessage.textContent = 'Please enter both username and password';
+            alertDiv.classList.add('show');
+            return;
+        }
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Logging in...';
+        alertDiv.classList.remove('show');
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
             }
+            return cookieValue;
+        }
+        
+        const csrftoken = getCookie('csrftoken');
+        
+        fetch('/api/auth/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            credentials: 'include',
+            body: JSON.stringify({ 
+                username: username, 
+                password: password 
+            })
         })
         .then(response => {
-            console.log('Session check response status:', response.status);
-            if (response.status === 404) {
-                return user;
+            console.log('Login response status:', response.status);
+            if (response.status === 403) {
+                throw new Error('CSRF token expired. Please refresh the page.');
             }
-            if (response.status === 401 || response.status === 403) {
-                throw new Error('Session invalid');
+            if (!response.ok) {
+                return response.json().then(err => {
+                    console.error('Login error response:', err);
+                    throw new Error(err.detail || 'Login failed');
+                });
             }
             return response.json();
         })
         .then(data => {
-            if (data && data.id) {
-                console.log('Session valid for:', data.username);
-                localStorage.setItem('user', JSON.stringify(data));
-                renderNavigation();
-            } else if (!isFinancePage) {
-                console.log('Session invalid, redirecting to login');
-                localStorage.removeItem('user');
-                renderNavigation();
-                window.location.href = '/login/';
+            console.log('Login response data:', data);
+            if (data.success) {
+                // Store user data
+                localStorage.setItem('user', JSON.stringify(data.user));
+                console.log('User stored:', data.user.user_type);
+                
+                const userType = data.user.user_type;
+                const redirects = {
+                    'super_admin': '/dashboard/admin/',
+                    'admin': '/dashboard/admin/',
+                    'registrar': '/dashboard/admin/',
+                    'finance': '/dashboard/finance/',
+                    'staff': '/dashboard/staff/',
+                    'lecturer': '/dashboard/staff/',
+                    'hr': '/dashboard/hr/',
+                    'student': '/dashboard/student/'
+                };
+                const redirectUrl = redirects[userType] || '/dashboard/student/';
+                console.log('Redirecting to:', redirectUrl);
+                window.location.href = redirectUrl;
+            } else {
+                alertMessage.textContent = data.detail || 'Invalid username or password';
+                alertDiv.classList.add('show');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="icofont-login"></i> Login';
             }
         })
         .catch(error => {
-            console.log('Session check error:', error.message);
-            if (error.message === 'Session invalid' && !isFinancePage) {
-                localStorage.removeItem('user');
-                renderNavigation();
-                window.location.href = '/login/';
-            }
+            console.error('Login error:', error);
+            alertMessage.textContent = error.message || 'Connection error. Please try again.';
+            alertDiv.classList.add('show');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-login"></i> Login';
         });
-    } else if (!isLoginPage) {
-        console.log('No user found, redirecting to login');
-        window.location.href = '/login/';
-    }
-    
-    // Subscribe form
-    const subscribeForm = document.querySelector('.subscribe');
-    if (subscribeForm) {
-        subscribeForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const email = this.querySelector('#subscribe-email');
-            if (email && email.value) {
-                showNotification('Thank you for subscribing!', 'success');
-                email.value = '';
-            } else {
-                showNotification('Please enter a valid email address.', 'warning');
-            }
-        });
-    }
+    });
 });
+</script>
+
+{% endblock %}
