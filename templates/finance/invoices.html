@@ -51,6 +51,12 @@
         border-color: var(--secondary-color); box-shadow: 0 0 0 3px rgba(225,36,84,0.08);
         background: white;
     }
+    .filter-bar .btn-reset {
+        height: 38px; border-radius: 8px; font-weight: 600; padding: 0 20px;
+        background: transparent; color: var(--text-color); border: 1px solid #e8ecf1;
+        transition: all 0.3s ease; width: 100%;
+    }
+    .filter-bar .btn-reset:hover { border-color: var(--secondary-color); color: var(--secondary-color); }
 
     .stats-grid {
         display: grid;
@@ -151,7 +157,7 @@
             <div class="row align-items-end">
                 <div class="col-md-3">
                     <label class="filter-label">Search</label>
-                    <input type="text" id="search-input" class="form-control" placeholder="Student or invoice #..." onkeyup="loadInvoices()">
+                    <input type="text" id="search-input" class="form-control" placeholder="Student or invoice #..." onkeyup="debounceInvoices()">
                 </div>
                 <div class="col-md-3">
                     <label class="filter-label">Status</label>
@@ -192,18 +198,45 @@
 </div>
 
 <script>
+    // ============================================
+    // GET CSRF TOKEN
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+        return cookieValue;
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     let currentPage = 1;
     let totalPages = 1;
+    let invoiceTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        if (!user || !user.id) {
+            window.location.href = '/login/';
+            return;
+        }
         loadInvoices();
         setInterval(loadInvoices, 30000);
     });
 
+    function debounceInvoices() {
+        clearTimeout(invoiceTimeout);
+        invoiceTimeout = setTimeout(() => {
+            loadInvoices(1);
+        }, 500);
+    }
+
     function loadInvoices(page = 1) {
-        const search = document.getElementById('search-input').value;
+        const search = document.getElementById('search-input').value.trim();
         const status = document.getElementById('status-filter').value;
         const dateFrom = document.getElementById('date-from').value;
         const dateTo = document.getElementById('date-to').value;
@@ -214,15 +247,23 @@
         if (dateFrom) url += `&issue_date__gte=${dateFrom}`;
         if (dateTo) url += `&issue_date__lte=${dateTo}`;
 
-        fetch(url, {  })
-        .then(r => r.json())
+        fetch(url)
+        .then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
+        })
         .then(data => {
             renderInvoices(data);
         })
-        .catch(() => {
+        .catch(error => {
+            console.error('Error loading invoices:', error);
             document.getElementById('invoices-container').innerHTML = `
-                <div class="text-center py-5"><i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
-                <p class="mt-2 text-danger">Error loading invoices. Please try again.</p></div>`;
+                <div class="text-center py-5">
+                    <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                    <p class="mt-2 text-danger">Error loading invoices. Please try again.</p>
+                    <button class="btn btn-sm btn-main mt-2" onclick="loadInvoices()">Retry</button>
+                </div>
+            `;
         });
     }
 
@@ -230,7 +271,6 @@
         const results = data.results || [];
         const container = document.getElementById('invoices-container');
 
-        // Stats
         const total = results.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0);
         const paid = results.reduce((s, inv) => s + parseFloat(inv.amount_paid || 0), 0);
         const outstanding = results.reduce((s, inv) => s + parseFloat(inv.balance || 0), 0);
@@ -257,7 +297,7 @@
                     <div class="invoice-amount">UGX ${(inv.total_amount || 0).toLocaleString()}</div>
                 </div>
                 <div class="invoice-details">
-                    <span><strong>Semester:</strong> ${inv.semester || 'N/A'}</span>
+                    <span><strong>Semester:</strong> ${inv.semester_name || 'N/A'}</span>
                     <span><strong>Paid:</strong> UGX ${(inv.amount_paid || 0).toLocaleString()}</span>
                     <span><strong>Balance:</strong> UGX ${(inv.balance || 0).toLocaleString()}</span>
                     <span><strong>Due Date:</strong> ${inv.due_date ? new Date(inv.due_date).toLocaleDateString() : 'N/A'}</span>
@@ -274,8 +314,7 @@
             </div>
         `).join('');
 
-        // Pagination
-        totalPages = Math.ceil(data.count / 20) || 1;
+        totalPages = Math.ceil((data.count || 0) / 20) || 1;
         currentPage = data.current_page || 1;
         renderPagination();
     }
@@ -303,14 +342,25 @@
 
     function markPaid(id) {
         if (!confirm('Mark this invoice as fully paid?')) return;
+        const csrfToken = getCSRFToken();
         fetch(`/api/finance/invoices/${id}/mark_paid/`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
             body: JSON.stringify({ amount: 0, payment_method: 'other' })
         })
-        .then(r => r.json())
         .then(() => { loadInvoices(currentPage); alert('Invoice marked as paid!'); })
         .catch(() => alert('Error marking invoice as paid'));
+    }
+
+    function resetFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('status-filter').value = '';
+        document.getElementById('date-from').value = '';
+        document.getElementById('date-to').value = '';
+        loadInvoices(1);
     }
 </script>
 {% endblock %}
