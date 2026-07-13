@@ -258,22 +258,47 @@
         return cookieValue;
     }
 
+    // ============================================
+    // SESSION CHECK
+    // ============================================
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            console.log('Session expired, redirecting to login');
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
+    }
+
+    function handleResponse(response) {
+        if (response.status === 403) {
+            console.log('403 Forbidden - Session may have expired');
+            localStorage.clear();
+            window.location.href = '/login/';
+            throw new Error('Session expired');
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     let editingId = null;
     let feeFilterTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) {
-            window.location.href = '/login/';
-            return;
-        }
+        if (!checkSession()) return;
         loadCourses();
         loadFees();
     });
 
     function loadCourses() {
-        fetch('/api/courses/')
-        .then(r => r.json())
+        if (!checkSession()) return;
+        fetch('/api/courses/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const selects = ['course-filter', 'fee-course'];
             selects.forEach(id => {
@@ -287,7 +312,8 @@
                     });
                 }
             });
-        }).catch(() => {});
+        })
+        .catch(() => {});
     }
 
     function debounceFeeFilter() {
@@ -298,6 +324,8 @@
     }
 
     function loadFees() {
+        if (!checkSession()) return;
+        
         const search = document.getElementById('search-input').value.trim();
         const course = document.getElementById('course-filter').value;
         const type = document.getElementById('type-filter').value;
@@ -311,11 +339,8 @@
         
         if (params.length) url += '?' + params.join('&');
 
-        fetch(url)
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return response.json();
-        })
+        fetch(url, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             renderFees(data);
         })
@@ -386,8 +411,9 @@
     }
 
     function editFee(id) {
-        fetch(`/api/finance/fee-structures/${id}/`)
-        .then(r => r.json())
+        if (!checkSession()) return;
+        fetch(`/api/finance/fee-structures/${id}/`, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             editingId = id;
             document.getElementById('modal-title').innerHTML = '<i class="icofont-edit"></i> Edit Fee Structure';
@@ -399,10 +425,13 @@
             document.getElementById('fee-active').checked = data.is_active !== false;
             document.getElementById('fee-alert').classList.add('d-none');
             $('#feeModal').modal('show');
-        }).catch(() => alert('Error loading fee details'));
+        })
+        .catch(() => alert('Error loading fee details'));
     }
 
     function saveFee() {
+        if (!checkSession()) return;
+        
         const data = {
             course: document.getElementById('fee-course').value,
             fee_type: document.getElementById('fee-type').value,
@@ -434,12 +463,10 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
+            credentials: 'include',
             body: JSON.stringify(data)
         })
-        .then(r => {
-            if (!r.ok) throw new Error('Failed to save fee');
-            return r.json();
-        })
+        .then(handleResponse)
         .then(() => {
             $('#feeModal').modal('hide');
             loadFees();
@@ -455,8 +482,9 @@
     }
 
     function toggleFee(id) {
-        fetch(`/api/finance/fee-structures/${id}/`)
-        .then(r => r.json())
+        if (!checkSession()) return;
+        fetch(`/api/finance/fee-structures/${id}/`, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             data.is_active = !data.is_active;
             const csrfToken = getCSRFToken();
@@ -466,22 +494,26 @@
                     'Content-Type': 'application/json',
                     'X-CSRFToken': csrfToken
                 },
+                credentials: 'include',
                 body: JSON.stringify(data)
             });
         })
+        .then(handleResponse)
         .then(() => { loadFees(); })
         .catch(() => alert('Error toggling fee status'));
     }
 
     function deleteFee(id) {
+        if (!checkSession()) return;
         if (!confirm('Are you sure you want to delete this fee structure?')) return;
+        
         const csrfToken = getCSRFToken();
         fetch(`/api/finance/fee-structures/${id}/`, {
             method: 'DELETE',
-            headers: {
-                'X-CSRFToken': csrfToken
-            }
+            headers: { 'X-CSRFToken': csrfToken },
+            credentials: 'include'
         })
+        .then(handleResponse)
         .then(() => { loadFees(); alert('Fee deleted successfully!'); })
         .catch(() => alert('Error deleting fee'));
     }
