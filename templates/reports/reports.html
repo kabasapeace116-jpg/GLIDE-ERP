@@ -169,42 +169,84 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+    // ============================================
+    // SESSION CHECK
+    // ============================================
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            console.log('No user in localStorage');
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
+    }
 
-    // Load quick stats
-    fetch('/api/reports/student-statistics/', {
-        
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('total-students').textContent = data.total_students || 0;
-    }).catch(() => {});
+    // ============================================
+    // HANDLE RESPONSE
+    // ============================================
+    function handleResponse(response) {
+        if (response.status === 403) {
+            console.log('403 Forbidden - returning empty data');
+            return Promise.resolve({ results: [], count: 0 });
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
 
-    fetch('/api/courses/', {
-        
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('total-courses').textContent = data.count || 0;
-    }).catch(() => {});
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!checkSession()) return;
 
-    fetch('/api/hr/employees/', {
-        
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('total-staff').textContent = data.count || 0;
-    }).catch(() => {});
+        // Load quick stats
+        fetch('/api/reports/student-statistics/', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => {
+            document.getElementById('total-students').textContent = data.total_students || 0;
+        })
+        .catch(() => {});
 
-    fetch('/api/reports/financial-summary/', {
-        
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('total-revenue').textContent = 'UGX ' + (data.total_payments || 0).toLocaleString();
-    }).catch(() => {});
-});
+        fetch('/api/courses/', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => {
+            document.getElementById('total-courses').textContent = data.count || 0;
+        })
+        .catch(() => {});
+
+        fetch('/api/hr/employees/', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => {
+            document.getElementById('total-staff').textContent = data.count || 0;
+        })
+        .catch(() => {});
+
+        fetch('/api/reports/financial-summary/', { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => {
+            document.getElementById('total-revenue').textContent = 'UGX ' + (data.total_payments || 0).toLocaleString();
+        })
+        .catch(() => {});
+
+        // Auto-refresh stats every 60 seconds
+        setInterval(function() {
+            if (!checkSession()) return;
+            
+            fetch('/api/reports/student-statistics/', { credentials: 'include' })
+            .then(handleResponse)
+            .then(data => {
+                document.getElementById('total-students').textContent = data.total_students || 0;
+            })
+            .catch(() => {});
+
+            fetch('/api/reports/financial-summary/', { credentials: 'include' })
+            .then(handleResponse)
+            .then(data => {
+                document.getElementById('total-revenue').textContent = 'UGX ' + (data.total_payments || 0).toLocaleString();
+            })
+            .catch(() => {});
+        }, 60000);
+    });
 </script>
 {% endblock %}
