@@ -472,6 +472,7 @@
                 <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
+                <div id="fee-alert" class="alert alert-danger d-none"></div>
                 <div class="form-group">
                     <label>Course <span class="text-danger">*</span></label>
                     <select id="fee-course" class="form-control">
@@ -520,6 +521,7 @@
                 <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
+                <div id="invoice-alert" class="alert alert-danger d-none"></div>
                 <div class="form-group">
                     <label>Student <span class="text-danger">*</span></label>
                     <select id="invoice-student" class="form-control">
@@ -553,6 +555,7 @@
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
+                <div id="payment-alert" class="alert alert-danger d-none"></div>
                 <div class="form-group">
                     <label>Student <span class="text-danger">*</span></label>
                     <select id="payment-student" class="form-control">
@@ -595,6 +598,24 @@
 
 <script>
     // ============================================
+    // GET CSRF TOKEN FROM COOKIE
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === 'csrftoken=') {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // ============================================
     // GLOBAL VARIABLES
     // ============================================
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -603,7 +624,10 @@
     // DOCUMENT READY
     // ============================================
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        if (!user || !user.id) {
+            window.location.href = '/login/';
+            return;
+        }
 
         // Current time
         function updateClock() {
@@ -638,9 +662,7 @@
     // ============================================
     function loadStats() {
         // Revenue and financial summary
-        fetch('/api/reports/financial-summary/', {
-            
-        })
+        fetch('/api/reports/financial-summary/')
         .then(r => r.json())
         .then(data => {
             document.getElementById('total-revenue').textContent = 'UGX ' + (data.total_payments || 0).toLocaleString();
@@ -649,9 +671,7 @@
         .catch(() => {});
 
         // Invoices count
-        fetch('/api/finance/invoices/', {
-            
-        })
+        fetch('/api/finance/invoices/')
         .then(r => r.json())
         .then(data => {
             document.getElementById('total-invoices').textContent = data.count || 0;
@@ -659,9 +679,7 @@
         .catch(() => {});
 
         // Payments count
-        fetch('/api/finance/payments/', {
-            
-        })
+        fetch('/api/finance/payments/')
         .then(r => r.json())
         .then(data => {
             document.getElementById('total-payments').textContent = data.count || 0;
@@ -669,9 +687,7 @@
         .catch(() => {});
 
         // Fee structures count
-        fetch('/api/finance/fee-structures/', {
-            
-        })
+        fetch('/api/finance/fee-structures/')
         .then(r => r.json())
         .then(data => {
             document.getElementById('total-fees').textContent = data.count || 0;
@@ -679,9 +695,7 @@
         .catch(() => {});
 
         // Clearance stats
-        fetch('/api/finance/clearance/', {
-            
-        })
+        fetch('/api/finance/clearance/')
         .then(r => r.json())
         .then(data => {
             const results = data.results || [];
@@ -695,9 +709,7 @@
     // LOAD FEE STRUCTURES
     // ============================================
     function loadFeeStructures() {
-        fetch('/api/finance/fee-structures/', {
-            
-        })
+        fetch('/api/finance/fee-structures/')
         .then(r => r.json())
         .then(data => {
             const results = data.results || [];
@@ -729,9 +741,7 @@
     // LOAD INVOICES
     // ============================================
     function loadInvoices() {
-        fetch('/api/finance/invoices/?ordering=-created_at', {
-            
-        })
+        fetch('/api/finance/invoices/?ordering=-created_at')
         .then(r => r.json())
         .then(data => {
             const results = data.results || [];
@@ -761,9 +771,7 @@
     // LOAD PAYMENTS
     // ============================================
     function loadPayments() {
-        fetch('/api/finance/payments/?ordering=-payment_date', {
-            
-        })
+        fetch('/api/finance/payments/?ordering=-payment_date')
         .then(r => r.json())
         .then(data => {
             const results = data.results || [];
@@ -774,10 +782,10 @@
             }
             tbody.innerHTML = results.slice(0, 5).map(p => `
                 <tr>
-                    <td><strong>${p.payment_number}</strong></td>
+                    <td><strong>${p.payment_number || 'N/A'}</strong></td>
                     <td>${p.student_name || 'N/A'}</td>
                     <td>UGX ${(p.amount || 0).toLocaleString()}</td>
-                    <td><span class="badge badge-info">${p.payment_method}</span></td>
+                    <td><span class="badge badge-info">${p.payment_method || 'N/A'}</span></td>
                     <td>${p.payment_date ? new Date(p.payment_date).toLocaleDateString() : 'N/A'}</td>
                     <td><button class="btn btn-sm btn-outline-primary" onclick="viewPayment('${p.id}')"><i class="icofont-eye"></i></button></td>
                 </tr>
@@ -792,9 +800,7 @@
     // LOAD CLEARANCE
     // ============================================
     function loadClearance() {
-        fetch('/api/finance/clearance/', {
-            
-        })
+        fetch('/api/finance/clearance/')
         .then(r => r.json())
         .then(data => {
             const results = data.results || [];
@@ -806,8 +812,8 @@
             tbody.innerHTML = results.slice(0, 5).map(c => `
                 <tr>
                     <td><strong>${c.student_name || 'N/A'}</strong></td>
-                    <td>${c.student || 'N/A'}</td>
-                    <td>${c.semester || 'N/A'}</td>
+                    <td>${c.student_registration || 'N/A'}</td>
+                    <td>${c.semester_name || 'N/A'}</td>
                     <td><span class="badge-status ${c.is_cleared ? 'cleared' : 'not_cleared'}">${c.is_cleared ? '✅ Cleared' : '⏳ Pending'}</span></td>
                     <td>
                         ${!c.is_cleared ? 
@@ -833,7 +839,7 @@
     }
 
     function loadStudents() {
-        fetch('/api/students/', {  })
+        fetch('/api/students/')
         .then(r => r.json())
         .then(data => {
             ['payment-student', 'invoice-student'].forEach(id => {
@@ -853,7 +859,7 @@
     }
 
     function loadSemesters() {
-        fetch('/api/admissions/semesters/', {  })
+        fetch('/api/admissions/semesters/')
         .then(r => r.json())
         .then(data => {
             const select = document.getElementById('invoice-semester');
@@ -862,7 +868,7 @@
                 data.results.forEach(s => {
                     const opt = document.createElement('option');
                     opt.value = s.id;
-                    opt.textContent = `${s.name} - ${s.academic_year_name}`;
+                    opt.textContent = `${s.name} - ${s.academic_year_name || 'N/A'}`;
                     select.appendChild(opt);
                 });
             }
@@ -871,7 +877,7 @@
     }
 
     function loadCourses() {
-        fetch('/api/courses/', {  })
+        fetch('/api/courses/')
         .then(r => r.json())
         .then(data => {
             const select = document.getElementById('fee-course');
@@ -897,9 +903,7 @@
         select.innerHTML = '<option value="">Select Invoice</option>';
         if (!studentId) return;
 
-        fetch(`/api/finance/invoices/?student=${studentId}`, {
-            
-        })
+        fetch(`/api/finance/invoices/?student=${studentId}`)
         .then(r => r.json())
         .then(data => {
             if (data.results) {
@@ -917,7 +921,10 @@
     // ============================================
     // FEE STRUCTURE FUNCTIONS
     // ============================================
-    function openAddFeeModal() { $('#addFeeModal').modal('show'); }
+    function openAddFeeModal() { 
+        document.getElementById('fee-alert').classList.add('d-none');
+        $('#addFeeModal').modal('show'); 
+    }
 
     function saveFee() {
         const data = {
@@ -927,22 +934,44 @@
             academic_year: document.getElementById('fee-year').value,
             is_active: document.getElementById('fee-active').checked
         };
+        
+        const alertDiv = document.getElementById('fee-alert');
         if (!data.course || !data.amount || !data.academic_year) {
-            alert('Please fill in all required fields');
+            alertDiv.textContent = 'Please fill in all required fields';
+            alertDiv.classList.remove('d-none');
             return;
         }
+        alertDiv.classList.add('d-none');
+
+        const csrfToken = getCSRFToken();
+        const btn = document.querySelector('#addFeeModal .btn-main');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Saving...';
+
         fetch('/api/finance/fee-structures/', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
             body: JSON.stringify(data)
         })
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) throw new Error('Failed to save fee');
+            return r.json();
+        })
         .then(() => {
             $('#addFeeModal').modal('hide');
             loadAllData();
             alert('Fee added successfully!');
         })
-        .catch(() => alert('Error saving fee'));
+        .catch(error => {
+            alert('Error saving fee: ' + error.message);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-save"></i> Save';
+        });
     }
 
     function editFee(id) {
@@ -951,9 +980,12 @@
 
     function deleteFee(id) {
         if (!confirm('Delete this fee structure?')) return;
+        const csrfToken = getCSRFToken();
         fetch(`/api/finance/fee-structures/${id}/`, {
             method: 'DELETE',
-            
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
         })
         .then(() => { loadAllData(); alert('Fee deleted!'); })
         .catch(() => alert('Error deleting fee'));
@@ -962,55 +994,70 @@
     // ============================================
     // INVOICE FUNCTIONS
     // ============================================
-    function openGenerateInvoice() { $('#generateInvoiceModal').modal('show'); }
+    function openGenerateInvoice() { 
+        document.getElementById('invoice-alert').classList.add('d-none');
+        $('#generateInvoiceModal').modal('show'); 
+    }
 
     function generateInvoice() {
-    const studentId = document.getElementById('invoice-student').value;
-    const semesterId = document.getElementById('invoice-semester').value;
-    
-    if (!studentId || !semesterId) {
-        alert('Please select student and semester');
-        return;
-    }
-    
-    const btn = document.querySelector('#generateInvoiceModal .btn-success');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Generating...';
-    
-    fetch('/api/invoices/generate_invoice/', {  // Changed from /api/finance/invoices/ to /api/invoices/
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            student_id: parseInt(studentId),
-            semester_id: parseInt(semesterId)
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="icofont-file-text"></i> Generate';
+        const studentId = document.getElementById('invoice-student').value;
+        const semesterId = document.getElementById('invoice-semester').value;
         
-        if (data.success) {
-            $('#generateInvoiceModal').modal('hide');
-            loadAllData();
-            alert('✅ ' + data.message + '\nInvoice Number: ' + (data.invoice?.invoice_number || 'N/A'));
-        } else {
-            alert('❌ ' + (data.error || 'Invoice generation failed'));
+        const alertDiv = document.getElementById('invoice-alert');
+        if (!studentId || !semesterId) {
+            alertDiv.textContent = 'Please select student and semester';
+            alertDiv.classList.remove('d-none');
+            return;
         }
-    })
-    .catch(error => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="icofont-file-text"></i> Generate';
-        console.error('Error:', error);
-        alert('❌ Error generating invoice: ' + error.message);
-    });
-}
+        alertDiv.classList.add('d-none');
+        
+        const csrfToken = getCSRFToken();
+        const btn = document.querySelector('#generateInvoiceModal .btn-success');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Generating...';
+        
+        fetch('/api/finance/invoices/generate_invoice/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                student_id: parseInt(studentId),
+                semester_id: parseInt(semesterId)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                $('#generateInvoiceModal').modal('hide');
+                loadAllData();
+                alert('✅ ' + data.message + '\nInvoice Number: ' + (data.invoice?.invoice_number || 'N/A'));
+            } else {
+                alert('❌ ' + (data.error || 'Invoice generation failed'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error generating invoice: ' + error.message);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-file-text"></i> Generate';
+        });
+    }
+
+    function viewInvoice(id) {
+        window.location.href = `/finance/invoices/${id}/`;
+    }
 
     // ============================================
     // PAYMENT FUNCTIONS
     // ============================================
-    function openRecordPayment() { $('#recordPaymentModal').modal('show'); }
+    function openRecordPayment() { 
+        document.getElementById('payment-alert').classList.add('d-none');
+        $('#recordPaymentModal').modal('show'); 
+    }
 
     function recordPayment() {
         const data = {
@@ -1020,22 +1067,44 @@
             payment_method: document.getElementById('payment-method').value,
             reference_number: document.getElementById('payment-ref').value
         };
+        
+        const alertDiv = document.getElementById('payment-alert');
         if (!data.student || !data.amount || !data.payment_method) {
-            alert('Please fill in all required fields');
+            alertDiv.textContent = 'Please fill in all required fields';
+            alertDiv.classList.remove('d-none');
             return;
         }
+        alertDiv.classList.add('d-none');
+
+        const csrfToken = getCSRFToken();
+        const btn = document.querySelector('#recordPaymentModal .btn-warning');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Recording...';
+
         fetch('/api/finance/payments/', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
             body: JSON.stringify(data)
         })
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) throw new Error('Failed to record payment');
+            return r.json();
+        })
         .then(() => {
             $('#recordPaymentModal').modal('hide');
             loadAllData();
             alert('Payment recorded successfully!');
         })
-        .catch(() => alert('Error recording payment'));
+        .catch(error => {
+            alert('Error recording payment: ' + error.message);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-save"></i> Record Payment';
+        });
     }
 
     function viewPayment(id) {
@@ -1047,9 +1116,13 @@
     // ============================================
     function clearStudent(id) {
         if (!confirm('Clear this student?')) return;
+        const csrfToken = getCSRFToken();
         fetch(`/api/finance/clearance/${id}/`, {
             method: 'PATCH',
-            headers: {'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
             body: JSON.stringify({ is_cleared: true, clearance_date: new Date().toISOString().split('T')[0] })
         })
         .then(() => { loadAllData(); alert('Student cleared!'); })
@@ -1058,9 +1131,13 @@
 
     function reverseClearance(id) {
         if (!confirm('Reverse clearance?')) return;
+        const csrfToken = getCSRFToken();
         fetch(`/api/finance/clearance/${id}/`, {
             method: 'PATCH',
-            headers: {'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
             body: JSON.stringify({ is_cleared: false, clearance_date: null })
         })
         .then(() => { loadAllData(); alert('Clearance reversed!'); })
@@ -1069,17 +1146,20 @@
 
     function bulkClearance() {
         if (!confirm('Clear ALL pending students?')) return;
-        fetch('/api/finance/clearance/?is_cleared=false', {
-            
-        })
+        fetch('/api/finance/clearance/?is_cleared=false')
         .then(r => r.json())
         .then(data => {
             const pending = data.results || [];
             if (!pending.length) { alert('No pending clearances.'); return; }
+            
+            const csrfToken = getCSRFToken();
             const promises = pending.map(c => 
                 fetch(`/api/finance/clearance/${c.id}/`, {
                     method: 'PATCH',
-                    headers: {'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
                     body: JSON.stringify({ is_cleared: true, clearance_date: new Date().toISOString().split('T')[0] })
                 })
             );
@@ -1094,7 +1174,7 @@
     function handleLogout() {
         if (confirm('Logout?')) {
             localStorage.clear();
-            window.location.href = '/login/'; // Redirect to login
+            window.location.href = '/login/';
         }
     }
 </script>
