@@ -40,6 +40,12 @@
         height: 38px; border-radius: 8px; border: 1px solid #e8ecf1;
         font-size: 13px; transition: all 0.3s ease; background: #f8f9fc;
     }
+    .filter-bar .btn-reset {
+        height: 38px; border-radius: 8px; font-weight: 600; padding: 0 20px;
+        background: transparent; color: var(--text-color); border: 1px solid #e8ecf1;
+        transition: all 0.3s ease; width: 100%;
+    }
+    .filter-bar .btn-reset:hover { border-color: var(--secondary-color); color: var(--secondary-color); }
 
     .stats-grid {
         display: grid;
@@ -128,37 +134,34 @@
             <div class="stat-card"><div class="stat-number" id="attendance-rate" style="color:var(--primary-color);">0%</div><p class="stat-label">Overall Rate</p></div>
         </div>
 
-        <!-- ===== FILTER BAR ===== -->
-<div class="filter-bar">
-    <form id="filter-form" onsubmit="return false;">
-        <div class="row align-items-end">
-            <div class="col-md-3">
-                <label class="filter-label"><i class="icofont-search"></i> Search</label>
-                <input type="text" id="search-input" class="form-control" 
-                       placeholder="Student name..." onkeyup="debounceAttendanceFilter()">
-            </div>
-            <div class="col-md-3">
-                <label class="filter-label"><i class="icofont-calendar"></i> Date</label>
-                <input type="date" id="date-filter" class="form-control" onchange="loadAttendance()">
-            </div>
-            <div class="col-md-3">
-                <label class="filter-label"><i class="icofont-check-circled"></i> Status</label>
-                <select id="status-filter" class="form-select" onchange="loadAttendance()">
-                    <option value="">All Status</option>
-                    <option value="present">✅ Present</option>
-                    <option value="absent">❌ Absent</option>
-                    <option value="late">⏰ Late</option>
-                    <option value="excused">📝 Excused</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <button class="btn btn-reset w-100" onclick="resetAttendanceFilters()">
-                    <i class="icofont-refresh"></i> Reset
-                </button>
+        <div class="filter-bar">
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label class="filter-label"><i class="icofont-search"></i> Search</label>
+                    <input type="text" id="search-input" class="form-control" 
+                           placeholder="Student name..." onkeyup="debounceAttendanceFilter()">
+                </div>
+                <div class="col-md-3">
+                    <label class="filter-label"><i class="icofont-calendar"></i> Date</label>
+                    <input type="date" id="date-filter" class="form-control" onchange="loadAttendance()">
+                </div>
+                <div class="col-md-3">
+                    <label class="filter-label"><i class="icofont-check-circled"></i> Status</label>
+                    <select id="status-filter" class="form-select" onchange="loadAttendance()">
+                        <option value="">All Status</option>
+                        <option value="present">✅ Present</option>
+                        <option value="absent">❌ Absent</option>
+                        <option value="late">⏰ Late</option>
+                        <option value="excused">📝 Excused</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-reset w-100" onclick="resetAttendanceFilters()">
+                        <i class="icofont-refresh"></i> Reset
+                    </button>
+                </div>
             </div>
         </div>
-    </form>
-</div>
 
         <div id="attendance-container">
             <div class="text-center py-5">
@@ -178,6 +181,8 @@
                 <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
+                <div id="attendance-alert" class="alert alert-danger d-none"></div>
+                <input type="hidden" id="edit-attendance-id">
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
@@ -251,10 +256,46 @@
 </div>
 
 <script>
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    // ============================================
+    // GET CSRF TOKEN
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+        return cookieValue;
+    }
+
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
+    }
+
+    function handleResponse(response) {
+        if (response.status === 403) {
+            return Promise.resolve({ results: [], count: 0 });
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
+
+    let attendanceFilterTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        if (!checkSession()) return;
         document.getElementById('date-filter').value = new Date().toISOString().split('T')[0];
         loadStudents();
         loadCourseUnits();
@@ -264,8 +305,8 @@
     });
 
     function loadStudents() {
-        fetch('/api/students/')
-        .then(r => r.json())
+        fetch('/api/students/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const select = document.getElementById('attendance-student');
             if (data.results) {
@@ -281,8 +322,8 @@
     }
 
     function loadCourseUnits() {
-        fetch('/api/academics/course-units/', {  })
-        .then(r => r.json())
+        fetch('/api/academics/course-units/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const select = document.getElementById('attendance-unit');
             if (data.results) {
@@ -298,8 +339,8 @@
     }
 
     function loadClasses() {
-        fetch('/api/classes/', {  })
-        .then(r => r.json())
+        fetch('/api/classes/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const select = document.getElementById('attendance-class');
             if (data.results) {
@@ -314,82 +355,51 @@
         }).catch(() => {});
     }
 
-    // ============================================
-// ATTENDANCE FILTERS - FIXED
-// ============================================
+    function debounceAttendanceFilter() {
+        clearTimeout(attendanceFilterTimeout);
+        attendanceFilterTimeout = setTimeout(() => {
+            loadAttendance();
+        }, 500);
+    }
 
-let attendanceFilterTimeout;
+    function loadAttendance() {
+        if (!checkSession()) return;
 
-function debounceAttendanceFilter() {
-    clearTimeout(attendanceFilterTimeout);
-    attendanceFilterTimeout = setTimeout(() => {
+        const search = document.getElementById('search-input').value.trim();
+        const date = document.getElementById('date-filter').value;
+        const status = document.getElementById('status-filter').value;
+
+        let url = '/api/academics/attendance/';
+        let params = [];
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        if (date) params.push(`date=${date}`);
+        if (status) params.push(`status=${status}`);
+        params.push(`ordering=-date`);
+        if (params.length > 0) url += '?' + params.join('&');
+
+        fetch(url, { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => {
+            renderAttendance(data);
+        })
+        .catch(error => {
+            console.error('Error loading attendance:', error);
+            document.getElementById('attendance-container').innerHTML = `
+                <div class="text-center py-5">
+                    <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                    <p class="mt-2 text-danger">Error loading attendance: ${error.message}</p>
+                    <button class="btn btn-sm btn-main mt-2" onclick="loadAttendance()">Retry</button>
+                </div>
+            `;
+        });
+    }
+
+    function resetAttendanceFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('date-filter').value = new Date().toISOString().split('T')[0];
+        document.getElementById('status-filter').value = '';
         loadAttendance();
-    }, 500);
-}
-
-function loadAttendance() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!user || !user.id) {
-        window.location.href = '/login/'; // Redirect to login
-        return;
     }
-
-    const search = document.getElementById('search-input').value.trim();
-    const date = document.getElementById('date-filter').value;
-    const status = document.getElementById('status-filter').value;
-
-    console.log('Filtering attendance:', { search, date, status });
-
-    let url = '/api/academics/attendance/';
-    let params = [];
-    
-    if (search) {
-        params.push(`search=${encodeURIComponent(search)}`);
-    }
-    if (date) {
-        params.push(`date=${date}`);
-    }
-    if (status && status !== '') {
-        params.push(`status=${status}`);
-    }
-    
-    params.push(`ordering=-date`);
-    
-    if (params.length > 0) {
-        url += '?' + params.join('&');
-    }
-
-    console.log('Fetching URL:', url);
-
-    fetch(url, {
-        
-    })
-    .then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Filtered attendance:', data);
-        renderAttendance(data);
-    })
-    .catch(error => {
-        console.error('Error loading attendance:', error);
-        document.getElementById('attendance-container').innerHTML = `
-            <div class="text-center py-5">
-                <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
-                <p class="mt-2 text-danger">Error loading attendance: ${error.message}</p>
-                <button class="btn btn-sm btn-main mt-2" onclick="loadAttendance()">Retry</button>
-            </div>
-        `;
-    });
-}
-
-function resetAttendanceFilters() {
-    document.getElementById('search-input').value = '';
-    document.getElementById('date-filter').value = new Date().toISOString().split('T')[0];
-    document.getElementById('status-filter').value = '';
-    loadAttendance();
-}
 
     function renderAttendance(data) {
         const results = data.results || [];
@@ -442,6 +452,8 @@ function resetAttendanceFilters() {
     }
 
     function openRecordAttendance() {
+        document.getElementById('attendance-alert').classList.add('d-none');
+        document.getElementById('edit-attendance-id').value = '';
         document.getElementById('attendance-student').value = '';
         document.getElementById('attendance-unit').value = '';
         document.getElementById('attendance-class').value = '';
@@ -454,9 +466,10 @@ function resetAttendanceFilters() {
     }
 
     function editAttendance(id) {
-        fetch(`/api/academics/attendance/${id}/`, {  })
-        .then(r => r.json())
+        fetch(`/api/academics/attendance/${id}/`, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
+            document.getElementById('edit-attendance-id').value = data.id || '';
             document.getElementById('attendance-student').value = data.student || '';
             document.getElementById('attendance-unit').value = data.course_unit || '';
             document.getElementById('attendance-class').value = data.class_obj || '';
@@ -465,6 +478,7 @@ function resetAttendanceFilters() {
             document.getElementById('attendance-time-in').value = data.time_in || '';
             document.getElementById('attendance-time-out').value = data.time_out || '';
             document.getElementById('attendance-remarks').value = data.remarks || '';
+            document.getElementById('attendance-alert').classList.add('d-none');
             $('#attendanceModal').modal('show');
         }).catch(() => alert('Error loading attendance details'));
     }
@@ -482,47 +496,61 @@ function resetAttendanceFilters() {
             remarks: document.getElementById('attendance-remarks').value
         };
 
+        const alertDiv = document.getElementById('attendance-alert');
         if (!data.student || !data.course_unit || !data.class_obj || !data.date || !data.status) {
-            alert('Please fill in all required fields');
+            alertDiv.textContent = 'Please fill in all required fields';
+            alertDiv.classList.remove('d-none');
             return;
         }
+        alertDiv.classList.add('d-none');
 
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/api/academics/attendance/${id}/` : '/api/academics/attendance/record_attendance/';
+        const csrfToken = getCSRFToken();
+
+        const btn = document.querySelector('#attendanceModal .btn-main');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Saving...';
 
         fetch(url, {
             method: method,
-            headers: {'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'include',
             body: JSON.stringify(data)
         })
-        .then(r => r.json())
+        .then(handleResponse)
         .then(() => {
             $('#attendanceModal').modal('hide');
             loadAttendance();
             alert(id ? 'Attendance updated!' : 'Attendance recorded!');
         })
-        .catch(() => alert('Error saving attendance'));
+        .catch(error => {
+            alert('Error saving attendance: ' + error.message);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-save"></i> Save';
+        });
     }
 
     function deleteAttendance(id) {
         if (!confirm('Delete this attendance record?')) return;
+        const csrfToken = getCSRFToken();
         fetch(`/api/academics/attendance/${id}/`, {
             method: 'DELETE',
-            
+            headers: { 'X-CSRFToken': csrfToken },
+            credentials: 'include'
         })
+        .then(handleResponse)
         .then(() => { loadAttendance(); alert('Attendance record deleted!'); })
         .catch(() => alert('Error deleting attendance'));
     }
 
     function exportAttendance() {
         alert('Export functionality will be available soon.');
-    }
-
-    function resetFilters() {
-        document.getElementById('search-input').value = '';
-        document.getElementById('date-filter').value = new Date().toISOString().split('T')[0];
-        document.getElementById('status-filter').value = '';
-        loadAttendance();
     }
 </script>
 {% endblock %}
