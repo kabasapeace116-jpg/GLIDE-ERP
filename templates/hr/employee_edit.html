@@ -403,16 +403,59 @@
 </div>
 
 <script>
+    // ============================================
+    // GET CSRF TOKEN
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+        return cookieValue;
+    }
+
+    // ============================================
+    // SESSION CHECK
+    // ============================================
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            console.log('No user in localStorage');
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
+    }
+
+    // ============================================
+    // HANDLE RESPONSE
+    // ============================================
+    function handleResponse(response) {
+        if (response.status === 403) {
+            console.log('403 Forbidden - Session may have expired');
+            localStorage.clear();
+            window.location.href = '/login/';
+            throw new Error('Session expired');
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     let editEmployeeId = null;
 
     document.addEventListener('DOMContentLoaded', function() {
         console.log('=== EMPLOYEE EDIT PAGE LOADED ===');
         
-        if (!user || !user.id) {
-            window.location.href = '/login/'; // Redirect to login
-            return;
-        }
+        if (!checkSession()) return;
 
         const currentPath = window.location.pathname;
         const regexMatch = currentPath.match(/\/hr\/employees\/(\d+)\/edit\//);
@@ -440,11 +483,12 @@
     });
 
     function loadDepartments() {
-        fetch('/api/departments/', {  })
-        .then(r => r.json())
+        if (!checkSession()) return;
+        fetch('/api/departments/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const select = document.getElementById('edit-emp-department');
-            if (data.results) {
+            if (select && data.results) {
                 select.innerHTML = '<option value="">Select Department</option>';
                 data.results.forEach(d => {
                     const opt = document.createElement('option');
@@ -458,15 +502,11 @@
     }
 
     function loadEmployee(id) {
+        if (!checkSession()) return;
         console.log('Loading employee with ID:', id);
         
-        fetch(`/api/hr/employees/${id}/`, {
-            
-        })
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return response.json();
-        })
+        fetch(`/api/hr/employees/${id}/`, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             console.log('Employee data loaded:', data);
             document.getElementById('loading-state').style.display = 'none';
@@ -524,6 +564,8 @@
         event.preventDefault();
         console.log('=== EDIT SUBMIT CALLED ===');
 
+        if (!checkSession()) return;
+
         const formData = {
             first_name: document.getElementById('edit-first-name').value.trim(),
             last_name: document.getElementById('edit-last-name').value.trim(),
@@ -552,14 +594,19 @@
             return;
         }
 
+        const csrfToken = getCSRFToken();
         const btn = document.getElementById('submit-btn');
         btn.disabled = true;
         btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Updating...';
 
+        // Try the correct endpoint - update_with_user
         fetch(`/api/hr/employees/${editEmployeeId}/update_with_user/`, {
             method: 'PUT',
-            headers: {'Content-Type': 'application/json'
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             },
+            credentials: 'include',
             body: JSON.stringify(formData)
         })
         .then(response => {
@@ -572,7 +619,7 @@
         })
         .then(data => {
             console.log('Update response:', data);
-            if (data.id) {
+            if (data.id || data.message) {
                 // Show success popup
                 const popup = document.getElementById('successPopup');
                 document.getElementById('popup-message').innerHTML = `
