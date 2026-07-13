@@ -770,67 +770,100 @@
         }, 4000);
     }
 
-    // ============================================
-    // FETCH STUDENT DATA (No JWT)
-    // ============================================
-    function fetchStudentData() {
-        console.log('📡 Fetching student data...');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        
-        if (!user || !user.id) {
-            console.error('❌ No user found');
-            window.location.href = '/login/'; // Redirect to login
+    // In student_dashboard.html - fetchStudentData function
+function fetchStudentData() {
+    console.log('📡 Fetching student data...');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    if (!user.id) {
+        console.error('❌ No user found');
+        window.location.href = '/login/';
+        return;
+    }
+    
+    // ✅ First try to get student by user ID
+    fetch(`/api/students/?user=${user.id}`, {
+        credentials: 'include'
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        console.log('📊 Student data:', data);
+        if (data.results && data.results.length > 0) {
+            const student = data.results[0];
+            localStorage.setItem('student', JSON.stringify(student));
+            updateUI(student);
+            fetchStudentStats(student.id);
+            fetchStudentResults(student.id);
+            fetchStudentAttendance(student.id);
+            fetchFinancialStatus(student.id);
             return;
         }
         
-        // Try to get student by user ID
-        fetch(`/api/students/?user=${user.id}`)
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return response.json();
+        // ✅ If no student profile found, try to create one
+        console.log('No student profile found, trying to create one...');
+        return createStudentProfile(user);
+    })
+    .then(student => {
+        if (student) {
+            localStorage.setItem('student', JSON.stringify(student));
+            updateUI(student);
+            fetchStudentStats(student.id);
+            fetchStudentResults(student.id);
+            fetchStudentAttendance(student.id);
+            fetchFinancialStatus(student.id);
+        } else {
+            // Show message if no student profile
+            document.querySelector('.profile-header-card .profile-info h3').textContent = 
+                `Welcome ${user.first_name || 'Student'}!`;
+            document.querySelector('.profile-status .status-badge').textContent = 'PENDING';
+            showNotification('Student profile not found. Please contact administration.', 'warning');
+        }
+    })
+    .catch(error => {
+        console.error('❌ Error fetching student data:', error);
+        // Show error but keep user logged in
+        showNotification('Unable to load student data. Please contact administration.', 'error');
+    });
+}
+
+// ✅ Function to create a student profile
+function createStudentProfile(user) {
+    // Check if user already has a student profile
+    return fetch('/api/students/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+            user: user.id,
+            first_name: user.first_name || 'Student',
+            last_name: user.last_name || 'User',
+            email: user.email || '',
+            phone: user.phone || '',
+            status: 'active',
+            enrollment_date: new Date().toISOString().split('T')[0]
         })
-        .then(data => {
-            console.log('📊 Student data:', data);
-            if (data.results && data.results.length > 0) {
-                const student = data.results[0];
-                localStorage.setItem('student', JSON.stringify(student));
-                updateUI(student);
-                fetchStudentStats(student.id);
-                fetchStudentResults(student.id);
-                fetchStudentAttendance(student.id);
-                fetchFinancialStatus(student.id);
-                return;
-            }
-            // Try my_profile endpoint
-            return fetch('/api/students/my_profile/');
-        })
-        .then(response => {
-            if (response && response.ok) return response.json();
-            return null;
-        })
-        .then(data => {
-            if (data && data.id) {
-                localStorage.setItem('student', JSON.stringify(data));
-                updateUI(data);
-                fetchStudentStats(data.id);
-                fetchStudentResults(data.id);
-                fetchStudentAttendance(data.id);
-                fetchFinancialStatus(data.id);
-            }
-        })
-        .catch(error => {
-            console.error('❌ Error fetching student data:', error);
-            const container = document.querySelector('#results-container');
-            if (container) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="icofont-warning" style="color: #dc3545;"></i>
-                        <p style="color: #dc3545;">Unable to load student data. Please contact administration.</p>
-                    </div>
-                `;
-            }
-        });
-    }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        console.log('✅ Student profile created:', data);
+        showNotification('Student profile created successfully!', 'success');
+        return data;
+    })
+    .catch(error => {
+        console.error('❌ Error creating student profile:', error);
+        showNotification('Error creating student profile. Please contact administration.', 'error');
+        return null;
+    });
+}
 
     // ============================================
     // UPDATE UI
