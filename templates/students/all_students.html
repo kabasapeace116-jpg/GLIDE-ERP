@@ -51,6 +51,12 @@
         border-color: var(--secondary-color); box-shadow: 0 0 0 3px rgba(225,36,84,0.08);
         background: white;
     }
+    .filter-bar .btn-reset {
+        height: 38px; border-radius: 8px; font-weight: 600; padding: 0 20px;
+        background: transparent; color: var(--text-color); border: 1px solid #e8ecf1;
+        transition: all 0.3s ease; width: 100%;
+    }
+    .filter-bar .btn-reset:hover { border-color: var(--secondary-color); color: var(--secondary-color); }
 
     .stats-grid {
         display: grid;
@@ -61,7 +67,10 @@
     .stat-card {
         background: white; border-radius: 12px; padding: 15px 20px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+        cursor: pointer;
+        transition: all 0.3s ease;
     }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
     .stat-card .stat-number { font-size: 22px; font-weight: 700; color: var(--primary-color); }
     .stat-card .stat-label { font-size: 12px; color: var(--text-color); margin: 0; }
 
@@ -140,10 +149,10 @@
 
         <!-- Stats -->
         <div class="stats-grid" id="stats-grid">
-            <div class="stat-card"><div class="stat-number" id="total-students">0</div><p class="stat-label">Total</p></div>
-            <div class="stat-card"><div class="stat-number" id="active-students">0</div><p class="stat-label">Active</p></div>
-            <div class="stat-card"><div class="stat-number" id="graduated-students">0</div><p class="stat-label">Graduated</p></div>
-            <div class="stat-card"><div class="stat-number" id="inactive-students">0</div><p class="stat-label">Inactive</p></div>
+            <div class="stat-card" onclick="resetFilters()"><div class="stat-number" id="total-students">0</div><p class="stat-label">Total</p></div>
+            <div class="stat-card" onclick="document.getElementById('status-filter').value='active'; loadStudents();"><div class="stat-number" id="active-students">0</div><p class="stat-label">Active</p></div>
+            <div class="stat-card" onclick="document.getElementById('status-filter').value='graduated'; loadStudents();"><div class="stat-number" id="graduated-students">0</div><p class="stat-label">Graduated</p></div>
+            <div class="stat-card" onclick="document.getElementById('status-filter').value='inactive'; loadStudents();"><div class="stat-number" id="inactive-students">0</div><p class="stat-label">Inactive</p></div>
         </div>
 
         <!-- Filter -->
@@ -151,12 +160,11 @@
             <div class="row align-items-end">
                 <div class="col-md-3">
                     <label class="filter-label">Search</label>
-                    <input type="text" id="search-input" class="form-control" placeholder="Name or Reg No..." 
-       onkeyup="debounceFilter()">
+                    <input type="text" id="search-input" class="form-control" placeholder="Name or Reg No..." onkeyup="debounceFilter()">
                 </div>
                 <div class="col-md-3">
                     <label class="filter-label">Status</label>
-                    <select id="status-filter" class="form-select" onchange="loadStudents()">
+                    <select id="status-filter" class="form-select" onchange="loadStudents(1)">
                         <option value="">All Status</option>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
@@ -167,7 +175,7 @@
                 </div>
                 <div class="col-md-3">
                     <label class="filter-label">Course</label>
-                    <select id="course-filter" class="form-select" onchange="loadStudents()">
+                    <select id="course-filter" class="form-select" onchange="loadStudents(1)">
                         <option value="">All Courses</option>
                     </select>
                 </div>
@@ -192,23 +200,28 @@
     </div>
 </div>
 
-
-
 <script>
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    // ============================================
+    // ALL STUDENTS - FIXED
+    // ============================================
+
     let currentPage = 1;
     let totalPages = 1;
+    let filterTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            window.location.href = '/login/';
+            return;
+        }
         loadFilters();
         loadStudents();
         setInterval(loadStudents, 30000);
     });
 
     function loadFilters() {
-        // Load courses for filter
-        fetch('/api/courses/', {  })
+        fetch('/api/courses/')
         .then(r => r.json())
         .then(data => {
             const select = document.getElementById('course-filter');
@@ -221,145 +234,101 @@
                 });
             }
         }).catch(() => {});
-
-        // Load courses for edit modal
-        fetch('/api/courses/', {  })
-        .then(r => r.json())
-        .then(data => {
-            const select = document.getElementById('edit-course');
-            if (data.results) {
-                data.results.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c.id;
-                    opt.textContent = c.name;
-                    select.appendChild(opt);
-                });
-            }
-        }).catch(() => {});
-
-        // Load classes for edit modal
-        fetch('/api/classes/', {  })
-        .then(r => r.json())
-        .then(data => {
-            const select = document.getElementById('edit-class');
-            if (data.results) {
-                data.results.forEach(cls => {
-                    const opt = document.createElement('option');
-                    opt.value = cls.id;
-                    opt.textContent = `${cls.name} (${cls.code})`;
-                    select.appendChild(opt);
-                });
-            }
-        }).catch(() => {});
     }
 
     function loadStudents(page = 1) {
-    const search = document.getElementById('search-input').value.trim();
-    const status = document.getElementById('status-filter').value;
-    const course = document.getElementById('course-filter').value;
+        const search = document.getElementById('search-input').value.trim();
+        const status = document.getElementById('status-filter').value;
+        const course = document.getElementById('course-filter').value;
 
-    console.log('Filtering students:', { search, status, course, page });
+        let url = `/api/students/?page=${page}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (status) url += `&status=${status}`;
+        if (course) url += `&course=${course}`;
+        url += `&ordering=-created_at`;
 
-    let url = `/api/students/?page=${page}`;
-    
-    // Add search parameter
-    if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
+        fetch(url)
+        .then(response => {
+            if (response.status === 403) {
+                alert('Session expired. Please login again.');
+                window.location.href = '/login/';
+                return;
+            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            renderStudents(data);
+            updateStats(data);
+        })
+        .catch(error => {
+            console.error('Error loading students:', error);
+            document.getElementById('students-container').innerHTML = `
+                <div class="text-center py-5">
+                    <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                    <p class="mt-2 text-danger">Error loading students: ${error.message}</p>
+                    <button class="btn btn-sm btn-main mt-2" onclick="loadStudents(1)">Retry</button>
+                </div>`;
+        });
     }
-    
-    // Add status filter
-    if (status) {
-        url += `&status=${status}`;
-    }
-    
-    // Add course filter
-    if (course) {
-        url += `&course=${course}`;
-    }
-
-    // Add ordering
-    url += `&ordering=-created_at`;
-
-    console.log('Fetching URL:', url);
-
-    fetch(url, {  })
-    .then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Filtered data:', data);
-        renderStudents(data);
-        updateStats(data);
-    })
-    .catch(error => {
-        console.error('Error loading students:', error);
-        document.getElementById('students-container').innerHTML = `
-            <div class="text-center py-5">
-                <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
-                <p class="mt-2 text-danger">Error loading students: ${error.message}</p>
-            </div>`;
-    });
-}
 
     function updateStats(data) {
         const results = data.results || [];
-        const total = results.length;
+        const total = data.count || 0;
         const active = results.filter(s => s.status === 'active').length;
         const graduated = results.filter(s => s.status === 'graduated').length;
         const inactive = results.filter(s => s.status === 'inactive' || s.status === 'suspended' || s.status === 'dropped').length;
 
-        document.getElementById('total-students').textContent = data.count || 0;
+        document.getElementById('total-students').textContent = total;
         document.getElementById('active-students').textContent = active;
         document.getElementById('graduated-students').textContent = graduated;
         document.getElementById('inactive-students').textContent = inactive;
     }
 
     function renderStudents(data) {
-    const results = data.results || [];
-    const container = document.getElementById('students-container');
+        const results = data.results || [];
+        const container = document.getElementById('students-container');
 
-    if (!results.length) {
-        container.innerHTML = `<div class="text-center py-5"><i class="icofont-graduate" style="font-size:40px;opacity:0.3;"></i>
-            <p class="mt-2 text-muted">No students found</p></div>`;
-        document.getElementById('pagination-links').innerHTML = '';
-        return;
-    }
+        if (!results.length) {
+            container.innerHTML = `<div class="text-center py-5"><i class="icofont-graduate" style="font-size:40px;opacity:0.3;"></i>
+                <p class="mt-2 text-muted">No students found</p></div>`;
+            document.getElementById('pagination-links').innerHTML = '';
+            return;
+        }
 
-    container.innerHTML = results.map(s => `
-        <div class="student-card" onclick="window.location.href='/students/${s.id}/'">
-            <div class="student-header">
-                <div>
-                    <div class="student-name">${s.first_name} ${s.last_name}</div>
-                    <div class="student-reg">${s.registration_number}</div>
+        container.innerHTML = results.map(s => `
+            <div class="student-card" onclick="window.location.href='/students/${s.id}/'">
+                <div class="student-header">
+                    <div>
+                        <div class="student-name">${s.first_name} ${s.last_name}</div>
+                        <div class="student-reg">${s.registration_number}</div>
+                    </div>
+                    <span class="badge-status ${s.status}">${s.status.toUpperCase()}</span>
                 </div>
-                <span class="badge-status ${s.status}">${s.status.toUpperCase()}</span>
+                <div class="student-details">
+                    <span><strong>Course:</strong> ${s.course_name || 'N/A'}</span>
+                    <span><strong>Class:</strong> ${s.current_class_name || 'N/A'}</span>
+                    <span><strong>Email:</strong> ${s.email || 'N/A'}</span>
+                    <span><strong>Phone:</strong> ${s.phone || 'N/A'}</span>
+                </div>
+                <div class="student-actions" onclick="event.stopPropagation();">
+                    <button class="btn btn-sm btn-main" onclick="viewStudent('${s.id}')">
+                        <i class="icofont-eye"></i> View
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="editStudent('${s.id}')">
+                        <i class="icofont-edit"></i> Edit
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteStudent('${s.id}')">
+                        <i class="icofont-trash"></i> Delete
+                    </button>
+                </div>
             </div>
-            <div class="student-details">
-                <span><strong>Course:</strong> ${s.course_name || 'N/A'}</span>
-                <span><strong>Class:</strong> ${s.current_class_name || 'N/A'}</span>
-                <span><strong>Email:</strong> ${s.email || 'N/A'}</span>
-                <span><strong>Phone:</strong> ${s.phone || 'N/A'}</span>
-            </div>
-            <div class="student-actions" onclick="event.stopPropagation();">
-                <button class="btn btn-sm btn-main" onclick="viewStudent('${s.id}')">
-                    <i class="icofont-eye"></i> View
-                </button>
-                <button class="btn btn-sm btn-warning" onclick="editStudent('${s.id}')">
-    <i class="icofont-edit"></i> Edit
-</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteStudent('${s.id}')">
-                    <i class="icofont-trash"></i> Delete
-                </button>
-            </div>
-        </div>
-    `).join('');
+        `).join('');
 
-    // Pagination
-    totalPages = Math.ceil(data.count / 20) || 1;
-    currentPage = data.current_page || 1;
-    renderPagination();
-}
+        totalPages = Math.ceil((data.count || 0) / 20) || 1;
+        currentPage = data.current_page || 1;
+        renderPagination();
+    }
 
     function renderPagination() {
         const container = document.getElementById('pagination-links');
@@ -386,69 +355,13 @@
         window.location.href = `/students/${id}/`;
     }
 
-    function openEditModal(id) {
-        fetch(`/api/students/${id}/`, {  })
-        .then(r => r.json())
-        .then(data => {
-            document.getElementById('edit-student-id').value = data.id;
-            document.getElementById('edit-first-name').value = data.first_name || '';
-            document.getElementById('edit-last-name').value = data.last_name || '';
-            document.getElementById('edit-other-name').value = data.other_name || '';
-            document.getElementById('edit-email').value = data.email || '';
-            document.getElementById('edit-phone').value = data.phone || '';
-            document.getElementById('edit-status').value = data.status || 'active';
-            document.getElementById('edit-course').value = data.course || '';
-            document.getElementById('edit-class').value = data.current_class || '';
-            document.getElementById('edit-address').value = data.address || '';
-            $('#editStudentModal').modal('show');
-        }).catch(() => alert('Error loading student data'));
-    }
-
-    function saveStudentEdit() {
-        const id = document.getElementById('edit-student-id').value;
-        const data = {
-            first_name: document.getElementById('edit-first-name').value.trim(),
-            last_name: document.getElementById('edit-last-name').value.trim(),
-            other_name: document.getElementById('edit-other-name').value.trim(),
-            email: document.getElementById('edit-email').value.trim(),
-            phone: document.getElementById('edit-phone').value.trim(),
-            status: document.getElementById('edit-status').value,
-            course: document.getElementById('edit-course').value || null,
-            current_class: document.getElementById('edit-class').value || null,
-            address: document.getElementById('edit-address').value.trim()
-        };
-
-        if (!data.first_name || !data.last_name || !data.email || !data.phone) {
-            document.getElementById('edit-alert').classList.remove('d-none');
-            document.getElementById('edit-alert-message').textContent = 'Please fill in all required fields';
-            return;
-        }
-
-        fetch(`/api/students/${id}/`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(r => r.json())
-        .then(() => {
-            $('#editStudentModal').modal('hide');
-            loadStudents(currentPage);
-            alert('Student updated successfully!');
-        })
-        .catch(() => alert('Error updating student'));
-    }
-
     function editStudent(id) {
-    window.location.href = `/students/${id}/edit/`;
-}
+        window.location.href = `/students/${id}/edit/`;
+    }
 
     function deleteStudent(id) {
         if (!confirm('Are you sure you want to delete this student?')) return;
-        fetch(`/api/students/${id}/`, {
-            method: 'DELETE',
-            
-        })
+        fetch(`/api/students/${id}/`, { method: 'DELETE' })
         .then(() => { loadStudents(currentPage); alert('Student deleted!'); })
         .catch(() => alert('Error deleting student'));
     }
@@ -460,14 +373,9 @@
         loadStudents(1);
     }
 
-    // Debounce function to prevent too many API calls
-let filterTimeout;
-
-function debounceFilter() {
-    clearTimeout(filterTimeout);
-    filterTimeout = setTimeout(() => {
-        loadStudents(1);
-    }, 500);
-}
+    function debounceFilter() {
+        clearTimeout(filterTimeout);
+        filterTimeout = setTimeout(() => { loadStudents(1); }, 500);
+    }
 </script>
 {% endblock %}
