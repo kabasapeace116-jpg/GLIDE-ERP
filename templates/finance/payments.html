@@ -242,21 +242,46 @@
         return cookieValue;
     }
 
+    // ============================================
+    // SESSION CHECK
+    // ============================================
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            console.log('Session expired, redirecting to login');
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
+    }
+
+    function handleResponse(response) {
+        if (response.status === 403) {
+            console.log('403 Forbidden - Session may have expired');
+            localStorage.clear();
+            window.location.href = '/login/';
+            throw new Error('Session expired');
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     let paymentTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) {
-            window.location.href = '/login/';
-            return;
-        }
+        if (!checkSession()) return;
         loadStudents();
         loadPayments();
     });
 
     function loadStudents() {
-        fetch('/api/students/')
-        .then(r => r.json())
+        if (!checkSession()) return;
+        fetch('/api/students/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const select = document.getElementById('payment-student');
             if (select && data.results) {
@@ -268,7 +293,8 @@
                     select.appendChild(opt);
                 });
             }
-        }).catch(() => {});
+        })
+        .catch(() => {});
     }
 
     document.getElementById('payment-student').addEventListener('change', function() {
@@ -277,8 +303,8 @@
         select.innerHTML = '<option value="">Select Invoice</option>';
         if (!studentId) return;
 
-        fetch(`/api/finance/invoices/?student=${studentId}`)
-        .then(r => r.json())
+        fetch(`/api/finance/invoices/?student=${studentId}`, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             if (data.results) {
                 data.results.forEach(inv => {
@@ -288,7 +314,8 @@
                     select.appendChild(opt);
                 });
             }
-        }).catch(() => {});
+        })
+        .catch(() => {});
     });
 
     function debouncePayments() {
@@ -299,6 +326,8 @@
     }
 
     function loadPayments() {
+        if (!checkSession()) return;
+        
         const search = document.getElementById('search-input').value.trim();
         const method = document.getElementById('method-filter').value;
         const dateFrom = document.getElementById('date-from').value;
@@ -314,11 +343,8 @@
         
         if (params.length) url += '?' + params.join('&');
 
-        fetch(url)
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return response.json();
-        })
+        fetch(url, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             renderPayments(data);
         })
@@ -387,6 +413,8 @@
     }
 
     function savePayment() {
+        if (!checkSession()) return;
+        
         const data = {
             student: document.getElementById('payment-student').value,
             invoice: document.getElementById('payment-invoice').value || null,
@@ -417,12 +445,10 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
+            credentials: 'include',
             body: JSON.stringify(data)
         })
-        .then(r => {
-            if (!r.ok) throw new Error('Failed to record payment');
-            return r.json();
-        })
+        .then(handleResponse)
         .then(() => {
             $('#paymentModal').modal('hide');
             loadPayments();
