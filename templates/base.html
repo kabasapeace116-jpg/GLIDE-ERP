@@ -762,55 +762,119 @@
         }, 4000);
     }
 
-// In base.html, replace the renderNavigation function
-function renderNavigation() {
-    const navContainer = document.getElementById('nav-links');
-    if (!navContainer) return;
-    
-    const user = getCurrentUser();
-    
-    // Show/hide logout button in top bar
-    const logoutBtn = document.getElementById('logout-btn-top');
-    if (logoutBtn) {
-        logoutBtn.style.display = (user && user.id) ? 'inline-block' : 'none';
-    }
-    
-    let html = '';
-    
-    if (user && user.id) {
-        // Dashboard URL based on user type
-        let dashboardUrl = '/dashboard/';
-        if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'registrar') {
-            dashboardUrl = '/dashboard/admin/';
-        } else if (user.user_type === 'student') {
-            dashboardUrl = '/dashboard/student/';
-        } else if (user.user_type === 'finance') {
-            dashboardUrl = '/dashboard/finance/';
-        } else if (user.user_type === 'staff' || user.user_type === 'lecturer') {
-            dashboardUrl = '/dashboard/staff/';
-        } else if (user.user_type === 'hr') {
-            dashboardUrl = '/dashboard/hr/';
+    // ============================================
+    // RENDER NAVIGATION - COMPLETE FIXED VERSION
+    // ============================================
+    function renderNavigation() {
+        const navContainer = document.getElementById('nav-links');
+        if (!navContainer) return;
+        
+        const user = getCurrentUser();
+        
+        // Show/hide logout button in top bar
+        const logoutBtn = document.getElementById('logout-btn-top');
+        if (logoutBtn) {
+            logoutBtn.style.display = (user && user.id) ? 'inline-block' : 'none';
         }
         
-        html += `<li class="nav-item">
-            <a class="nav-link" href="${dashboardUrl}"><i class="icofont-dashboard"></i> Dashboard</a>
-        </li>`;
+        let html = '';
         
-        // Add other navigation items based on user type...
-        // (Keep your existing navigation code here)
+        if (user && user.id) {
+            // ===== DASHBOARD - All users =====
+            let dashboardUrl = '/dashboard/';
+            if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'registrar') {
+                dashboardUrl = '/dashboard/admin/';
+            } else if (user.user_type === 'student') {
+                dashboardUrl = '/dashboard/student/';
+            } else if (user.user_type === 'finance') {
+                dashboardUrl = '/dashboard/finance/';
+            } else if (user.user_type === 'staff' || user.user_type === 'lecturer') {
+                dashboardUrl = '/dashboard/staff/';
+            } else if (user.user_type === 'hr') {
+                dashboardUrl = '/dashboard/hr/';
+            }
+            
+            html += `<li class="nav-item">
+                <a class="nav-link" href="${dashboardUrl}"><i class="icofont-dashboard"></i> Dashboard</a>
+            </li>`;
+            
+            // ===== ACADEMICS - All users except finance and student =====
+            if (user.user_type !== 'student' && user.user_type !== 'finance') {
+                html += `<li class="nav-item">
+                    <a class="nav-link" href="/academics/dashboard/"><i class="icofont-book"></i> Academics</a>
+                </li>`;
+            }
+            
+            // ===== ADMISSIONS - Admin, Super Admin, Registrar only =====
+            if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'registrar') {
+                html += `<li class="nav-item">
+                    <a class="nav-link" href="/admissions/"><i class="icofont-forms"></i> Admissions</a>
+                </li>`;
+            }
+            
+            // ===== FINANCE - Finance, Admin, Super Admin =====
+            if (user.user_type === 'finance' || user.user_type === 'super_admin' || user.user_type === 'admin') {
+                html += `<li class="nav-item">
+                    <a class="nav-link" href="/dashboard/finance/"><i class="icofont-wallet"></i> Finance</a>
+                </li>`;
+            }
+            
+            // ===== HR - HR, Admin, Super Admin =====
+            if (user.user_type === 'hr' || user.user_type === 'super_admin' || user.user_type === 'admin') {
+                html += `<li class="nav-item">
+                    <a class="nav-link" href="/hr/dashboard/"><i class="icofont-users"></i> HR</a>
+                </li>`;
+            }
+            
+            // ===== REPORTS - Admin, Super Admin only =====
+            if (user.user_type === 'super_admin' || user.user_type === 'admin') {
+                html += `<li class="nav-item">
+                    <a class="nav-link" href="/reports/"><i class="icofont-file-pdf"></i> Reports</a>
+                </li>`;
+            }
+            
+            // ===== USERS - Admin, Super Admin only =====
+            if (user.user_type === 'super_admin' || user.user_type === 'admin') {
+                html += `<li class="nav-item">
+                    <a class="nav-link" href="/users/"><i class="icofont-user"></i> Users</a>
+                </li>`;
+            }
+            
+            // ===== STUDENTS - Admin, Super Admin only =====
+            if (user.user_type === 'super_admin' || user.user_type === 'admin') {
+                html += `<li class="nav-item">
+                    <a class="nav-link" href="/students/"><i class="icofont-graduate"></i> Students</a>
+                </li>`;
+            }
+            
+            // ===== COURSES - Admin, Super Admin, Staff, Lecturer =====
+            if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'staff' || user.user_type === 'lecturer') {
+                html += `<li class="nav-item">
+                    <a class="nav-link" href="/academics/courses/"><i class="icofont-book"></i> Courses</a>
+                </li>`;
+            }
+            
+            // ===== CLASSES - Admin, Super Admin, Staff, Lecturer =====
+            if (user.user_type === 'super_admin' || user.user_type === 'admin' || user.user_type === 'staff' || user.user_type === 'lecturer') {
+                html += `<li class="nav-item">
+                    <a class="nav-link" href="/academics/classes/"><i class="icofont-education"></i> Classes</a>
+                </li>`;
+            }
+            
+            // ===== LOGOUT =====
+            html += `<li class="nav-item">
+                <a class="nav-link" href="#" onclick="handleLogout();"><i class="icofont-logout"></i> Logout</a>
+            </li>`;
+            
+        } else {
+            // ===== NOT LOGGED IN =====
+            html += `<li class="nav-item">
+                <a class="nav-link" href="/login/"><i class="icofont-login"></i> Login</a>
+            </li>`;
+        }
         
-        // Logout
-        html += `<li class="nav-item">
-            <a class="nav-link" href="#" onclick="handleLogout();"><i class="icofont-logout"></i> Logout</a>
-        </li>`;
-    } else {
-        html += `<li class="nav-item">
-            <a class="nav-link" href="/login/"><i class="icofont-login"></i> Login</a>
-        </li>`;
+        navContainer.innerHTML = html;
     }
-    
-    navContainer.innerHTML = html;
-}
 
     // ============================================
     // LOGOUT FUNCTION
@@ -873,20 +937,34 @@ function renderNavigation() {
     document.addEventListener('DOMContentLoaded', function() {
         renderNavigation();
         
-        // Verify session with server
+        // Verify session with server - but don't redirect if on login page
         const user = getCurrentUser();
-        if (user && user.id) {
-            fetch('/api/auth/current_user/')
+        const isLoginPage = window.location.pathname === '/login/';
+        
+        if (user && user.id && !isLoginPage) {
+            fetch('/api/auth/current_user/', {
+                credentials: 'include'
+            })
             .then(response => response.json())
             .then(data => {
                 if (data.id) {
                     localStorage.setItem('user', JSON.stringify(data));
                     renderNavigation();
+                } else {
+                    // Session expired, clear local data
+                    localStorage.removeItem('user');
+                    renderNavigation();
+                    if (!isLoginPage) {
+                        window.location.href = '/login/';
+                    }
                 }
             })
             .catch(() => {
                 localStorage.removeItem('user');
                 renderNavigation();
+                if (!isLoginPage) {
+                    window.location.href = '/login/';
+                }
             });
         }
         
