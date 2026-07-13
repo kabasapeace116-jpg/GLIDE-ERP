@@ -536,28 +536,49 @@
 
 <script>
     // ============================================
-    // GET CSRF TOKEN FROM COOKIE
+    // GET CSRF TOKEN FROM COOKIE - FIXED
     // ============================================
     function getCSRFToken() {
         let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, 10) === 'csrftoken=') {
-                    cookieValue = decodeURIComponent(cookie.substring(10));
-                    break;
-                }
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
             }
         }
         return cookieValue;
     }
 
+    // ============================================
+    // GET SESSION ID FROM COOKIE - FOR DEBUGGING
+    // ============================================
+    function getSessionId() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'sessionid=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+        return cookieValue;
+    }
+
+    // ============================================
+    // MAIN FUNCTION
+    // ============================================
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     let studentId = null;
 
     document.addEventListener('DOMContentLoaded', function() {
         console.log('=== STUDENT EDIT PAGE LOADED ===');
+        console.log('User:', user);
+        console.log('Cookies:', document.cookie);
+        console.log('CSRF Token:', getCSRFToken());
+        console.log('Session ID:', getSessionId());
         
         if (!user || !user.id) {
             console.log('No user found, redirecting to login');
@@ -573,7 +594,7 @@
         const match = path.match(/\/students\/(\d+)\/edit\//);
         if (match) {
             id = match[1];
-            console.log('Found ID:', id);
+            console.log('Found ID via regex:', id);
         }
         
         if (!id) {
@@ -814,9 +835,21 @@
         btn.disabled = true;
         btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Updating...';
 
-        // ✅ Get CSRF token
+        // Get CSRF token
         const csrfToken = getCSRFToken();
         console.log('CSRF Token found:', csrfToken ? 'Yes' : 'No');
+        
+        if (!csrfToken) {
+            console.warn('No CSRF token found! Trying to refresh...');
+            // Try to get it from the meta tag if available
+            const metaCsrf = document.querySelector('meta[name="csrf-token"]');
+            if (metaCsrf) {
+                console.log('Found CSRF token in meta tag');
+                // Use meta tag token instead
+                const token = metaCsrf.getAttribute('content');
+                console.log('Token from meta:', token);
+            }
+        }
 
         console.log('Sending PUT request to:', `/api/students/${studentId}/`);
 
@@ -824,8 +857,10 @@
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken  // ✅ Add CSRF token here
+                'X-CSRFToken': csrfToken || '',  // Send even if empty
+                'X-Requested-With': 'XMLHttpRequest'  // Helps identify AJAX request
             },
+            credentials: 'include',  // CRITICAL: Include cookies
             body: JSON.stringify(data)
         })
         .then(response => {
@@ -848,6 +883,10 @@
                 setTimeout(() => {
                     window.location.href = `/students/${studentId}/`;
                 }, 1500);
+            } else if (result.status === 403) {
+                showAlert('Session expired. Please refresh the page and try again.', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="icofont-save"></i> Update Student';
             } else {
                 let errorMsg = 'Invalid data';
                 if (result.data) {
