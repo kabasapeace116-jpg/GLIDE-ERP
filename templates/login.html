@@ -166,12 +166,14 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Login page loaded');
         
-        // Check if user is already logged in (using session, not JWT)
-        fetch('/api/auth/current_user/')
+        // ✅ FIXED: Check if user is already logged in - but don't redirect if on login page
+        fetch('/api/auth/current_user/', {
+            credentials: 'include'
+        })
         .then(response => response.json())
         .then(data => {
-            if (data.is_authenticated) {
-                // Redirect based on user type
+            if (data.is_authenticated && data.user_type) {
+                // Only redirect if we're on the login page
                 const redirects = {
                     'super_admin': '/dashboard/admin/',
                     'admin': '/dashboard/admin/',
@@ -188,97 +190,111 @@
             }
         })
         .catch(() => {
-            // Not logged in, show login form
             console.log('Not logged in, showing login form');
         });
 
         // Handle login form submission
-document.getElementById('login-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-    const alertDiv = document.getElementById('login-alert');
-    const alertMessage = document.getElementById('alert-message');
-    const btn = document.getElementById('login-btn');
-    
-    console.log('Login attempt for:', username);
-    
-    if (!username || !password) {
-        alertMessage.textContent = 'Please enter both username and password';
-        alertDiv.classList.add('show');
-        return;
-    }
-    
-    btn.disabled = true;
-    btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Logging in...';
-    alertDiv.classList.remove('show');
-    
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-    
-    const csrftoken = getCookie('csrftoken');
-    
-    fetch('/api/auth/login/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken
-        },
-        body: JSON.stringify({ 
-            username: username, 
-            password: password 
-        })
-    })
-    .then(response => {
-        console.log('Login response status:', response.status);
-        if (!response.ok) {
-            return response.json().then(err => {
-                console.error('Login error response:', err);
-                throw new Error(err.detail || 'Login failed');
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Login response data:', data);
-        if (data.success) {
-            // Store user data
-            localStorage.setItem('user', JSON.stringify(data.user));
-            console.log('User stored:', data.user.user_type);
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
             
-            // ✅ Use redirect URL from server
-            const redirectUrl = data.redirect_url || '/dashboard/student/';
-            console.log('Redirecting to:', redirectUrl);
-            window.location.href = redirectUrl;
-        } else {
-            alertMessage.textContent = data.detail || 'Invalid username or password';
-            alertDiv.classList.add('show');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="icofont-login"></i> Login';
-        }
-    })
-    .catch(error => {
-        console.error('Login error:', error);
-        alertMessage.textContent = error.message || 'Connection error. Please try again.';
-        alertDiv.classList.add('show');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="icofont-login"></i> Login';
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const alertDiv = document.getElementById('login-alert');
+            const alertMessage = document.getElementById('alert-message');
+            const btn = document.getElementById('login-btn');
+            
+            console.log('Login attempt for:', username);
+            
+            if (!username || !password) {
+                alertMessage.textContent = 'Please enter both username and password';
+                alertDiv.classList.add('show');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Logging in...';
+            alertDiv.classList.remove('show');
+            
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            
+            const csrftoken = getCookie('csrftoken');
+            
+            fetch('/api/auth/login/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                credentials: 'include',
+                body: JSON.stringify({ 
+                    username: username, 
+                    password: password 
+                })
+            })
+            .then(response => {
+                console.log('Login response status:', response.status);
+                if (response.status === 403) {
+                    throw new Error('CSRF token expired. Please refresh the page.');
+                }
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        console.error('Login error response:', err);
+                        throw new Error(err.detail || 'Login failed');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Login response data:', data);
+                if (data.success) {
+                    // Store user data
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    console.log('User stored:', data.user.user_type);
+                    
+                    // ✅ FIXED: Use user type to determine redirect
+                    const userType = data.user.user_type;
+                    const redirects = {
+                        'super_admin': '/dashboard/admin/',
+                        'admin': '/dashboard/admin/',
+                        'registrar': '/dashboard/admin/',
+                        'finance': '/dashboard/finance/',
+                        'staff': '/dashboard/staff/',
+                        'lecturer': '/dashboard/staff/',
+                        'hr': '/dashboard/hr/',
+                        'student': '/dashboard/student/'
+                    };
+                    const redirectUrl = redirects[userType] || '/dashboard/student/';
+                    console.log('Redirecting to:', redirectUrl);
+                    window.location.href = redirectUrl;
+                } else {
+                    alertMessage.textContent = data.detail || 'Invalid username or password';
+                    alertDiv.classList.add('show');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="icofont-login"></i> Login';
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                alertMessage.textContent = error.message || 'Connection error. Please try again.';
+                alertDiv.classList.add('show');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="icofont-login"></i> Login';
+            });
+        });
     });
-});
-});
 </script>
 
 {% endblock %}
