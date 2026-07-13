@@ -119,7 +119,7 @@ class AuthViewSet(viewsets.ViewSet):
         auth_logout(request)
         return Response({'success': True, 'message': 'Logged out successfully'})
     
-    @action(detail=False, methods=['get'], url_path='current_user')
+@action(detail=False, methods=['get'], url_path='current_user')
 def current_user(self, request):
     try:
         # Check if user is authenticated via session
