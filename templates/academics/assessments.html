@@ -41,6 +41,12 @@
         height: 38px; border-radius: 8px; border: 1px solid #e8ecf1;
         font-size: 13px; transition: all 0.3s ease; background: #f8f9fc;
     }
+    .filter-bar .btn-reset {
+        height: 38px; border-radius: 8px; font-weight: 600; padding: 0 20px;
+        background: transparent; color: var(--text-color); border: 1px solid #e8ecf1;
+        transition: all 0.3s ease; width: 100%;
+    }
+    .filter-bar .btn-reset:hover { border-color: var(--secondary-color); color: var(--secondary-color); }
 
     .stats-grid {
         display: grid;
@@ -114,43 +120,40 @@
             <div class="stat-card"><div class="stat-number" id="closed-assessments" style="color:#dc3545;">0</div><p class="stat-label">Closed</p></div>
         </div>
 
-        <!-- ===== FILTER BAR ===== -->
-<div class="filter-bar">
-    <form id="filter-form" onsubmit="return false;">
-        <div class="row align-items-end">
-            <div class="col-md-3">
-                <label class="filter-label"><i class="icofont-search"></i> Search</label>
-                <input type="text" id="search-input" class="form-control" 
-                       placeholder="Assessment name or unit..." onkeyup="debounceAssessmentFilter()">
-            </div>
-            <div class="col-md-3">
-                <label class="filter-label"><i class="icofont-list"></i> Type</label>
-                <select id="type-filter" class="form-select" onchange="loadAssessments()">
-                    <option value="">All Types</option>
-                    <option value="quiz">📝 Quiz</option>
-                    <option value="assignment">📄 Assignment</option>
-                    <option value="midterm">📊 Midterm</option>
-                    <option value="final">🎯 Final</option>
-                    <option value="practical">🔧 Practical</option>
-                    <option value="project">📁 Project</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="filter-label"><i class="icofont-check-circled"></i> Status</label>
-                <select id="status-filter" class="form-select" onchange="loadAssessments()">
-                    <option value="">All Status</option>
-                    <option value="true">✅ Published</option>
-                    <option value="false">📝 Draft</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <button class="btn btn-reset w-100" onclick="resetAssessmentFilters()">
-                    <i class="icofont-refresh"></i> Reset
-                </button>
+        <div class="filter-bar">
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label class="filter-label"><i class="icofont-search"></i> Search</label>
+                    <input type="text" id="search-input" class="form-control" 
+                           placeholder="Assessment name or unit..." onkeyup="debounceAssessmentFilter()">
+                </div>
+                <div class="col-md-3">
+                    <label class="filter-label"><i class="icofont-list"></i> Type</label>
+                    <select id="type-filter" class="form-select" onchange="loadAssessments()">
+                        <option value="">All Types</option>
+                        <option value="quiz">📝 Quiz</option>
+                        <option value="assignment">📄 Assignment</option>
+                        <option value="midterm">📊 Midterm</option>
+                        <option value="final">🎯 Final</option>
+                        <option value="practical">🔧 Practical</option>
+                        <option value="project">📁 Project</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="filter-label"><i class="icofont-check-circled"></i> Status</label>
+                    <select id="status-filter" class="form-select" onchange="loadAssessments()">
+                        <option value="">All Status</option>
+                        <option value="true">✅ Published</option>
+                        <option value="false">📝 Draft</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-reset w-100" onclick="resetAssessmentFilters()">
+                        <i class="icofont-refresh"></i> Reset
+                    </button>
+                </div>
             </div>
         </div>
-    </form>
-</div>
 
         <div id="assessments-container">
             <div class="text-center py-5">
@@ -170,6 +173,7 @@
                 <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
+                <div id="assessment-alert" class="alert alert-danger d-none"></div>
                 <input type="hidden" id="edit-assessment-id">
                 <div class="row">
                     <div class="col-md-6">
@@ -260,10 +264,46 @@
 </div>
 
 <script>
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    // ============================================
+    // GET CSRF TOKEN
+    // ============================================
+    function getCSRFToken() {
+        let cookieValue = null;
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+        return cookieValue;
+    }
+
+    function checkSession() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user || !user.id) {
+            localStorage.clear();
+            window.location.href = '/login/';
+            return false;
+        }
+        return true;
+    }
+
+    function handleResponse(response) {
+        if (response.status === 403) {
+            return Promise.resolve({ results: [], count: 0 });
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
+
+    let assessmentFilterTimeout;
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!user || !user.id) { window.location.href = '/login/'; // Redirect to login return; }
+        if (!checkSession()) return;
         loadCourseUnits();
         loadClasses();
         loadSemesters();
@@ -272,8 +312,8 @@
     });
 
     function loadCourseUnits() {
-        fetch('/api/academics/course-units/')
-        .then(r => r.json())
+        fetch('/api/academics/course-units/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const select = document.getElementById('assessment-unit');
             if (data.results) {
@@ -289,8 +329,8 @@
     }
 
     function loadClasses() {
-        fetch('/api/classes/')
-        .then(r => r.json())
+        fetch('/api/classes/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const select = document.getElementById('assessment-class');
             if (data.results) {
@@ -306,8 +346,8 @@
     }
 
     function loadSemesters() {
-        fetch('/api/admissions/semesters/')
-        .then(r => r.json())
+        fetch('/api/admissions/semesters/', { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             const select = document.getElementById('assessment-semester');
             if (data.results) {
@@ -322,80 +362,51 @@
         }).catch(() => {});
     }
 
-    // ============================================
-// ASSESSMENTS FILTERS - FIXED
-// ============================================
+    function debounceAssessmentFilter() {
+        clearTimeout(assessmentFilterTimeout);
+        assessmentFilterTimeout = setTimeout(() => {
+            loadAssessments();
+        }, 500);
+    }
 
-let assessmentFilterTimeout;
+    function loadAssessments() {
+        if (!checkSession()) return;
 
-function debounceAssessmentFilter() {
-    clearTimeout(assessmentFilterTimeout);
-    assessmentFilterTimeout = setTimeout(() => {
+        const search = document.getElementById('search-input').value.trim();
+        const type = document.getElementById('type-filter').value;
+        const status = document.getElementById('status-filter').value;
+
+        let url = '/api/academics/assessments/';
+        let params = [];
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        if (type) params.push(`assessment_type=${type}`);
+        if (status !== '') params.push(`is_published=${status}`);
+        params.push(`ordering=-created_at`);
+        if (params.length > 0) url += '?' + params.join('&');
+
+        fetch(url, { credentials: 'include' })
+        .then(handleResponse)
+        .then(data => {
+            renderAssessments(data);
+        })
+        .catch(error => {
+            console.error('Error loading assessments:', error);
+            document.getElementById('assessments-container').innerHTML = `
+                <div class="text-center py-5">
+                    <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
+                    <p class="mt-2 text-danger">Error loading assessments: ${error.message}</p>
+                    <button class="btn btn-sm btn-main mt-2" onclick="loadAssessments()">Retry</button>
+                </div>
+            `;
+        });
+    }
+
+    function resetAssessmentFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('type-filter').value = '';
+        document.getElementById('status-filter').value = '';
         loadAssessments();
-    }, 500);
-}
-
-function loadAssessments() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!user || !user.id) {
-        window.location.href = '/login/'; // Redirect to login
-        return;
     }
-
-    const search = document.getElementById('search-input').value.trim();
-    const type = document.getElementById('type-filter').value;
-    const status = document.getElementById('status-filter').value;
-
-    console.log('Filtering assessments:', { search, type, status });
-
-    let url = '/api/academics/assessments/';
-    let params = [];
-    
-    if (search) {
-        params.push(`search=${encodeURIComponent(search)}`);
-    }
-    if (type && type !== '') {
-        params.push(`assessment_type=${type}`);
-    }
-    if (status !== '') {
-        params.push(`is_published=${status}`);
-    }
-    
-    params.push(`ordering=-created_at`);
-    
-    if (params.length > 0) {
-        url += '?' + params.join('&');
-    }
-
-    console.log('Fetching URL:', url);
-
-    fetch(url)
-    .then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Filtered assessments:', data);
-        renderAssessments(data);
-    })
-    .catch(error => {
-        console.error('Error loading assessments:', error);
-        document.getElementById('assessments-container').innerHTML = `
-            <div class="text-center py-5">
-                <i class="icofont-warning" style="font-size:40px;color:var(--danger);"></i>
-                <p class="mt-2 text-danger">Error loading assessments: ${error.message}</p>
-                <button class="btn btn-sm btn-main mt-2" onclick="loadAssessments()">Retry</button>
-            </div>
-        `;
-    });
-}
-
-function resetAssessmentFilters() {
-    document.getElementById('search-input').value = '';
-    document.getElementById('type-filter').value = '';
-    document.getElementById('status-filter').value = '';
-    loadAssessments();
-}
 
     function renderAssessments(data) {
         const results = data.results || [];
@@ -451,6 +462,7 @@ function resetAssessmentFilters() {
     }
 
     function openAddAssessmentModal() {
+        document.getElementById('assessment-alert').classList.add('d-none');
         document.getElementById('modal-title').innerHTML = '<i class="icofont-plus"></i> Create Assessment';
         document.getElementById('edit-assessment-id').value = '';
         document.getElementById('assessment-name').value = '';
@@ -467,8 +479,8 @@ function resetAssessmentFilters() {
     }
 
     function editAssessment(id) {
-        fetch(`/api/academics/assessments/${id}/`)
-        .then(r => r.json())
+        fetch(`/api/academics/assessments/${id}/`, { credentials: 'include' })
+        .then(handleResponse)
         .then(data => {
             document.getElementById('modal-title').innerHTML = '<i class="icofont-edit"></i> Edit Assessment';
             document.getElementById('edit-assessment-id').value = data.id;
@@ -482,6 +494,7 @@ function resetAssessmentFilters() {
             document.getElementById('assessment-date').value = data.date || '';
             document.getElementById('assessment-semester').value = data.semester || '';
             document.getElementById('assessment-published').checked = data.is_published || false;
+            document.getElementById('assessment-alert').classList.add('d-none');
             $('#assessmentModal').modal('show');
         }).catch(() => alert('Error loading assessment details'));
     }
@@ -501,62 +514,88 @@ function resetAssessmentFilters() {
             is_published: document.getElementById('assessment-published').checked
         };
 
+        const alertDiv = document.getElementById('assessment-alert');
         if (!data.name || !data.course_unit || !data.class_obj || !data.date || !data.semester) {
-            alert('Please fill in all required fields');
+            alertDiv.textContent = 'Please fill in all required fields';
+            alertDiv.classList.remove('d-none');
             return;
         }
+        alertDiv.classList.add('d-none');
 
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/api/academics/assessments/${id}/` : '/api/academics/assessments/';
+        const csrfToken = getCSRFToken();
+
+        const btn = document.querySelector('#assessmentModal .btn-main');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Saving...';
 
         fetch(url, {
             method: method,
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'include',
             body: JSON.stringify(data)
         })
-        .then(r => r.json())
+        .then(handleResponse)
         .then(() => {
             $('#assessmentModal').modal('hide');
             loadAssessments();
             alert(id ? 'Assessment updated!' : 'Assessment created!');
         })
-        .catch(() => alert('Error saving assessment'));
+        .catch(error => {
+            alert('Error saving assessment: ' + error.message);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="icofont-save"></i> Save';
+        });
     }
 
     function publishAssessment(id) {
+        const csrfToken = getCSRFToken();
         fetch(`/api/academics/assessments/${id}/publish/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'include'
         })
+        .then(handleResponse)
         .then(() => { loadAssessments(); alert('Assessment published!'); })
         .catch(() => alert('Error publishing assessment'));
     }
 
     function closeAssessment(id) {
         if (!confirm('Close this assessment?')) return;
+        const csrfToken = getCSRFToken();
         fetch(`/api/academics/assessments/${id}/close/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'include'
         })
+        .then(handleResponse)
         .then(() => { loadAssessments(); alert('Assessment closed!'); })
         .catch(() => alert('Error closing assessment'));
     }
 
     function deleteAssessment(id) {
         if (!confirm('Delete this assessment?')) return;
+        const csrfToken = getCSRFToken();
         fetch(`/api/academics/assessments/${id}/`, {
             method: 'DELETE',
-            
+            headers: { 'X-CSRFToken': csrfToken },
+            credentials: 'include'
         })
+        .then(handleResponse)
         .then(() => { loadAssessments(); alert('Assessment deleted!'); })
         .catch(() => alert('Error deleting assessment'));
-    }
-
-    function resetFilters() {
-        document.getElementById('search-input').value = '';
-        document.getElementById('type-filter').value = '';
-        document.getElementById('status-filter').value = '';
-        loadAssessments();
     }
 </script>
 {% endblock %}
