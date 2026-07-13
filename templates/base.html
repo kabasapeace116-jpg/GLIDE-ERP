@@ -932,57 +932,96 @@
     }
 
     // ============================================
-    // INITIALIZE
-    // ============================================
-    document.addEventListener('DOMContentLoaded', function() {
-        renderNavigation();
+// INITIALIZE - FIXED
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Always render navigation first
+    renderNavigation();
+    
+    // Get user from localStorage
+    const user = getCurrentUser();
+    const isLoginPage = window.location.pathname === '/login/';
+    const isLogoutPage = window.location.pathname === '/logout/';
+    
+    // If on login page and already has user, let the login page handle it
+    if (isLoginPage) {
+        console.log('On login page, skipping session check');
+        return;
+    }
+    
+    // If on logout page, skip
+    if (isLogoutPage) {
+        return;
+    }
+    
+    // Only verify session if user exists in localStorage
+    if (user && user.id) {
+        console.log('Verifying session for user:', user.username);
         
-        // Verify session with server - but don't redirect if on login page
-        const user = getCurrentUser();
-        const isLoginPage = window.location.pathname === '/login/';
-        
-        if (user && user.id && !isLoginPage) {
-            fetch('/api/auth/current_user/', {
-                credentials: 'include'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.id) {
-                    localStorage.setItem('user', JSON.stringify(data));
-                    renderNavigation();
-                } else {
-                    // Session expired, clear local data
-                    localStorage.removeItem('user');
-                    renderNavigation();
-                    if (!isLoginPage) {
-                        window.location.href = '/login/';
-                    }
-                }
-            })
-            .catch(() => {
+        fetch('/api/auth/current_user/', {
+            credentials: 'include',  // CRITICAL: Send cookies
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            console.log('Session check response status:', response.status);
+            if (response.status === 401 || response.status === 403) {
+                throw new Error('Session invalid');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data && data.id) {
+                // Session valid - update user data
+                console.log('Session valid for:', data.username);
+                localStorage.setItem('user', JSON.stringify(data));
+                renderNavigation();
+            } else {
+                // Session invalid - clear and redirect
+                console.log('Session invalid, redirecting to login');
                 localStorage.removeItem('user');
                 renderNavigation();
                 if (!isLoginPage) {
                     window.location.href = '/login/';
                 }
-            });
-        }
-        
-        // Subscribe form
-        const subscribeForm = document.querySelector('.subscribe');
-        if (subscribeForm) {
-            subscribeForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const email = this.querySelector('#subscribe-email');
-                if (email && email.value) {
-                    showNotification('Thank you for subscribing! You will receive updates from GLIDE Institute.', 'success');
-                    email.value = '';
-                } else {
-                    showNotification('Please enter a valid email address.', 'warning');
+            }
+        })
+        .catch(error => {
+            console.log('Session check error:', error.message);
+            // Don't automatically redirect on error - might be temporary
+            // Only clear if it's a 401/403
+            if (error.message === 'Session invalid') {
+                localStorage.removeItem('user');
+                renderNavigation();
+                if (!isLoginPage) {
+                    window.location.href = '/login/';
                 }
-            });
+            }
+        });
+    } else {
+        // No user in localStorage, but not on login page
+        if (!isLoginPage) {
+            console.log('No user found, redirecting to login');
+            window.location.href = '/login/';
         }
-    });
+    }
+    
+    // Subscribe form
+    const subscribeForm = document.querySelector('.subscribe');
+    if (subscribeForm) {
+        subscribeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = this.querySelector('#subscribe-email');
+            if (email && email.value) {
+                showNotification('Thank you for subscribing! You will receive updates from GLIDE Institute.', 'success');
+                email.value = '';
+            } else {
+                showNotification('Please enter a valid email address.', 'warning');
+            }
+        });
+    }
+});
 
     // Re-render when page becomes visible again
     document.addEventListener('visibilitychange', function() {
