@@ -8,7 +8,8 @@ from .serializers import (
     AdmissionBatchSerializer, AdmittedStudentSerializer,
     AcademicYearSerializer, SemesterSerializer
 )
-from core.permissions import IsAdmin, IsStaff
+from core.permissions import IsAdmin, IsStaff, IsFinance  # Added IsFinance
+
 
 class AcademicYearViewSet(viewsets.ModelViewSet):
     queryset = AcademicYear.objects.all()
@@ -27,10 +28,19 @@ class AcademicYearViewSet(viewsets.ModelViewSet):
         except AcademicYear.DoesNotExist:
             return Response({'error': 'Academic year not found'}, status=status.HTTP_404_NOT_FOUND)
 
+
 class SemesterViewSet(viewsets.ModelViewSet):
     queryset = Semester.objects.all()
     serializer_class = SemesterSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
+    # ✅ FIXED: Allow finance users to view semesters
+    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        # Allow all authenticated users to view (list/retrieve)
+        if self.action in ['list', 'retrieve']:
+            return [IsAuthenticated()]
+        # Only admins can create, update, delete
+        return [IsAuthenticated(), IsAdmin()]
     
     @action(detail=False, methods=['post'])
     def set_current(self, request):
@@ -43,6 +53,7 @@ class SemesterViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Current semester set successfully'})
         except Semester.DoesNotExist:
             return Response({'error': 'Semester not found'}, status=status.HTTP_404_NOT_FOUND)
+
 
 class AdmittedStudentViewSet(viewsets.ModelViewSet):
     queryset = AdmittedStudent.objects.all()
