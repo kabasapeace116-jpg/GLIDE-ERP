@@ -163,36 +163,39 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('Login page loaded');
-        
-        // ✅ FIXED: Check if user is already logged in - but don't redirect if on login page
-        fetch('/api/auth/current_user/', {
-            credentials: 'include'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.is_authenticated && data.user_type) {
-                // Only redirect if we're on the login page
-                const redirects = {
-                    'super_admin': '/dashboard/admin/',
-                    'admin': '/dashboard/admin/',
-                    'registrar': '/dashboard/admin/',
-                    'finance': '/dashboard/finance/',
-                    'staff': '/dashboard/staff/',
-                    'lecturer': '/dashboard/staff/',
-                    'hr': '/dashboard/hr/',
-                    'student': '/dashboard/student/'
-                };
-                const redirectUrl = redirects[data.user_type] || '/dashboard/';
-                console.log('Already logged in, redirecting to:', redirectUrl);
-                window.location.href = redirectUrl;
-            }
-        })
-        .catch(() => {
-            console.log('Not logged in, showing login form');
-        });
-
+    // ============================================
+// LOGIN PAGE - SESSION CHECK
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Login page loaded');
+    
+    // Check if user is already logged in
+    fetch('/api/auth/current_user/', {
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.is_authenticated && data.user_type) {
+            // Only redirect if we're actually authenticated
+            const redirects = {
+                'super_admin': '/dashboard/admin/',
+                'admin': '/dashboard/admin/',
+                'registrar': '/dashboard/admin/',
+                'finance': '/dashboard/finance/',
+                'staff': '/dashboard/staff/',
+                'lecturer': '/dashboard/staff/',
+                'hr': '/dashboard/hr/',
+                'student': '/dashboard/student/'
+            };
+            const redirectUrl = redirects[data.user_type] || '/dashboard/';
+            console.log('Already logged in, redirecting to:', redirectUrl);
+            window.location.href = redirectUrl;
+        }
+    })
+    .catch(() => {
+        console.log('Not logged in, showing login form');
+    });
+});
         // Handle login form submission
         document.getElementById('login-form').addEventListener('submit', function(e) {
             e.preventDefault();
