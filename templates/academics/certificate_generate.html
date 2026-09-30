@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Generate Certificate{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <h3 class="mb-4">Generate Certificate</h3>
+
+  {% if messages %}
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags }}">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" class="card shadow-sm p-4">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label class="form-label">Student</label>
+      <select name="student_id" id="id_student" class="form-select" required>
+        <option value="">— Select student —</option>
+        {% for s in students %}
+          <option value="{{ s.pk }}"
+            {% if form_data.student_id == s.pk|stringformat:"s" %}selected{% endif %}>
+            {{ s.registration_number }} — {{ s.full_name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Certificate Type</label>
+      <select name="certificate_type" id="id_type" class="form-select" required>
+        <option value="">— Select type —</option>
+        {% for value, label in certificate_types %}
+          <option value="{{ value }}"
+            {% if form_data.certificate_type == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3" id="course-unit-wrap" style="display:none;">
+      <label class="form-label">Course Unit (for course completion)</label>
+      <select name="course_unit_id" id="id_course_unit" class="form-select">
+        <option value="">— Select course unit —</option>
+        {% for cu in course_units %}
+          <option value="{{ cu.pk }}">{{ cu.code }} — {{ cu.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Description (optional)</label>
+      <textarea name="description" class="form-control" rows="3">{{ form_data.description }}</textarea>
+    </div>
+
+    <div id="eligibility-box" class="alert d-none"></div>
+
+    <div class="d-flex gap-2">
+      <button type="button" id="check-btn" class="btn btn-outline-secondary">
+        Check eligibility
+      </button>
+      <button type="submit" class="btn btn-primary">Generate</button>
+      <a href="{% url 'certificate_list' %}" class="btn btn-link">Cancel</a>
+    </div>
+  </form>
+
+</div>
+
+<script>
+const typeEl   = document.getElementById('id_type');
+const cuWrap   = document.getElementById('course-unit-wrap');
+const checkBtn = document.getElementById('check-btn');
+const eligBox  = document.getElementById('eligibility-box');
+
+function toggleCourseUnit() {
+  cuWrap.style.display = (typeEl.value === 'course_completion') ? '' : 'none';
+}
+typeEl.addEventListener('change', toggleCourseUnit);
+toggleCourseUnit();
+
+checkBtn.addEventListener('click', async () => {
+  const studentId = document.getElementById('id_student').value;
+  const certType  = typeEl.value;
+  const cuId      = document.getElementById('id_course_unit').value;
+
+  if (!studentId || !certType) {
+    eligBox.className = 'alert alert-warning';
+    eligBox.textContent = 'Please select a student and a certificate type.';
+    return;
+  }
+
+  const params = new URLSearchParams({
+    student_id: studentId,
+    certificate_type: certType,
+    ...(cuId ? { course_unit_id: cuId } : {})
+  });
+
+  const res  = await fetch('{% url "certificate_check_eligibility" %}?' + params);
+  const data = await res.json();
+
+  eligBox.className = 'alert ' + (data.eligible ? 'alert-success' : 'alert-danger');
+  eligBox.textContent = data.eligible
+    ? '✔ Eligible — you can generate this certificate.'
+    : '✘ ' + data.reason;
+});
+</script>
+{% endblock %}

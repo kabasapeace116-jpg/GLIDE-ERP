@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Verify Certificate{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 640px;">
+
+  <h3 class="mb-4 text-center">Certificate Verification</h3>
+
+  {% if certificate %}
+    <div class="alert alert-success">
+      <h5 class="mb-2">✔ Valid Certificate</h5>
+      <p class="mb-1"><strong>Certificate No:</strong> {{ certificate.certificate_number }}</p>
+      <p class="mb-1"><strong>Student:</strong>
+        {{ certificate.snapshot_data.student.full_name|default:certificate.student.full_name }}</p>
+      <p class="mb-1"><strong>Type:</strong> {{ certificate.get_certificate_type_display }}</p>
+      <p class="mb-0"><strong>Issued:</strong> {{ certificate.issue_date|date:"d F Y" }}</p>
+    </div>
+  {% else %}
+    <div class="alert alert-danger">
+      <h5 class="mb-2">✘ Not Found</h5>
+      <p class="mb-0">No active certificate matches code <code>{{ verification_code }}</code>.</p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

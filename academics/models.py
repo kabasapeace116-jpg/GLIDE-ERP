@@ -2,6 +2,8 @@ from django.db import models
 from core.models import Course, Class, Student, User
 from admissions.models import Semester, AcademicYear
 from django.utils import timezone
+import uuid
+
 
 class CourseUnit(models.Model):
     name = models.CharField(max_length=200)
@@ -14,6 +16,7 @@ class CourseUnit(models.Model):
 
     def __str__(self):
         return f"{self.code} - {self.name}"
+
 
 class Timetable(models.Model):
     DAY_CHOICES = (
@@ -38,6 +41,7 @@ class Timetable(models.Model):
 
     def __str__(self):
         return f"{self.class_obj.name} - {self.course_unit.code} ({self.day_of_week} {self.start_time})"
+
 
 class Assessment(models.Model):
     ASSESSMENT_TYPES = (
@@ -64,6 +68,7 @@ class Assessment(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.course_unit.code} ({self.get_assessment_type_display()})"
+
 
 class Result(models.Model):
     GRADING_SCALE = (
@@ -109,6 +114,7 @@ class Result(models.Model):
     def __str__(self):
         return f"{self.student.registration_number} - {self.course_unit.code} - {self.grade}"
 
+
 class StudentCourseProgress(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='course_progress')
     course_unit = models.ForeignKey(CourseUnit, on_delete=models.CASCADE, related_name='student_progress')
@@ -123,6 +129,7 @@ class StudentCourseProgress(models.Model):
 
     def __str__(self):
         return f"{self.student.registration_number} - {self.course_unit.code} - {self.grade}"
+
 
 class AttendanceRecord(models.Model):
     STATUS_CHOICES = (
@@ -148,3 +155,71 @@ class AttendanceRecord(models.Model):
 
     def __str__(self):
         return f"{self.student.registration_number} - {self.date} - {self.status}"
+
+
+class Certificate(models.Model):
+    CERTIFICATE_TYPES = (
+        ('course_completion', 'Course Completion'),
+        ('program_completion', 'Program Completion'),
+        ('transcript', 'Academic Transcript'),
+        ('merit', 'Merit Certificate'),
+    )
+
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('issued', 'Issued'),
+        ('revoked', 'Revoked'),
+    )
+
+    certificate_number = models.CharField(max_length=50, unique=True, blank=True)
+    verification_code = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+
+    student = models.ForeignKey(
+        Student, on_delete=models.CASCADE, related_name='certificates'
+    )
+    certificate_type = models.CharField(max_length=30, choices=CERTIFICATE_TYPES)
+
+    course_unit = models.ForeignKey(
+        CourseUnit, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='certificates'
+    )
+    semester = models.ForeignKey(
+        Semester, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='certificates'
+    )
+    academic_year = models.ForeignKey(
+        AcademicYear, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='certificates'
+    )
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+
+    issue_date = models.DateField(default=timezone.now)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+
+    issued_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='issued_certificates'
+    )
+
+    snapshot_data = models.JSONField(default=dict, blank=True)
+    custom_content = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-issue_date', '-created_at']
+        unique_together = ('student', 'certificate_type', 'course_unit', 'semester')
+
+    def save(self, *args, **kwargs):
+        if not self.certificate_number:
+            year = timezone.now().year
+            self.certificate_number = (
+                f"CERT-{year}-{str(self.verification_code)[:8].upper()}"
+            )
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.certificate_number} - {self.student.registration_number}"

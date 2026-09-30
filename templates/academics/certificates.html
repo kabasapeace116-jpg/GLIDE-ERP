@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Certificates{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Certificates</h2>
+    <a href="{% url 'certificate_generate' %}" class="btn btn-primary">
+      + Generate Certificate
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags }} alert-dismissible fade show">
+        {{ m }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form class="row g-2 mb-3" method="get">
+    <div class="col-md-4">
+      <input type="text" name="q" value="{{ q }}" class="form-control"
+             placeholder="Search student, reg no, certificate no...">
+    </div>
+    <div class="col-md-3">
+      <select name="type" class="form-select">
+        <option value="">All types</option>
+        {% for value, label in certificate_types %}
+          <option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>
+            {{ label }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-outline-secondary w-100">Filter</button>
+    </div>
+  </form>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Certificate No</th>
+            <th>Student</th>
+            <th>Type</th>
+            <th>Issue Date</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cert in certificates %}
+          <tr>
+            <td><code>{{ cert.certificate_number }}</code></td>
+            <td>
+              {{ cert.student.full_name }}<br>
+              <small class="text-muted">{{ cert.student.registration_number }}</small>
+            </td>
+            <td>{{ cert.get_certificate_type_display }}</td>
+            <td>{{ cert.issue_date }}</td>
+            <td>
+              <span class="badge bg-{% if cert.status == 'issued' %}success{% elif cert.status == 'revoked' %}danger{% else %}secondary{% endif %}">
+                {{ cert.get_status_display }}
+              </span>
+            </td>
+            <td class="text-end">
+              <a href="{% url 'certificate_detail' cert.pk %}"
+                 class="btn btn-sm btn-outline-primary">View</a>
+              <a href="{% url 'certificate_download' cert.pk %}"
+                 class="btn btn-sm btn-outline-success">PDF</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center py-4 text-muted">No certificates found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

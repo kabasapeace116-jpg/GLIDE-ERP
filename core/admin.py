@@ -36,6 +36,11 @@ class StudentAdmin(admin.ModelAdmin):
     list_display = ('registration_number', 'full_name', 'course', 'current_class', 'status')
     list_filter = ('status', 'course', 'gender', 'marital_status')
     search_fields = ('registration_number', 'first_name', 'last_name', 'email')
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing existing object
+            return ['registration_number']
+        return []
 
 @admin.register(StudentApplication)
 class StudentApplicationAdmin(admin.ModelAdmin):

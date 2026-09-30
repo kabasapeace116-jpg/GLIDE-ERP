@@ -395,3 +395,61 @@ class FinancialClearanceViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Semester not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'])
+    def clear_student(self, request):
+        """
+        Clear a student financially and update their status
+        """
+        student_id = request.data.get('student_id')
+        semester_id = request.data.get('semester_id')
+        
+        try:
+            student = Student.objects.get(id=student_id)
+            semester = Semester.objects.get(id=semester_id)
+            
+            # Check if student has any unpaid invoices for this semester
+            from .models import Invoice
+            invoices = Invoice.objects.filter(student=student, semester=semester)
+            unpaid = invoices.filter(status__in=['issued', 'partially_paid', 'overdue'])
+            
+            if unpaid.exists():
+                return Response({
+                    'error': 'Student has unpaid invoices for this semester',
+                    'unpaid_count': unpaid.count(),
+                    'unpaid_invoices': [inv.invoice_number for inv in unpaid]
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create or update clearance
+            clearance, created = FinancialClearance.objects.get_or_create(
+                student=student,
+                semester=semester,
+                defaults={
+                    'is_cleared': True,
+                    'cleared_by': request.user,
+                    'clearance_date': timezone.now().date()
+                }
+            )
+            if not created:
+                clearance.is_cleared = True
+                clearance.clearance_date = timezone.now().date()
+                clearance.cleared_by = request.user
+                clearance.save()
+            
+            # Update student's financial clearance status
+            student.has_financial_clearance = True
+            student.financial_clearance_date = timezone.now().date()
+            student.save()
+            
+            return Response({
+                'success': True,
+                'message': 'Student cleared successfully',
+                'clearance': FinancialClearanceSerializer(clearance).data,
+                'student_status': student.status
+            })
+        except Student.DoesNotExist:
+            return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Semester.DoesNotExist:
+            return Response({'error': 'Semester not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

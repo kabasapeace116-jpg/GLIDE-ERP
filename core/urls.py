@@ -1,5 +1,3 @@
-# core/urls.py
-
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
@@ -19,7 +17,6 @@ router.register(r'classes', ClassViewSet)
 router.register(r'students', StudentViewSet)
 router.register(r'applications', StudentApplicationViewSet)
 router.register(r'invoices', InvoiceViewSet)
-
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -9,38 +9,22 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'user_type', 'phone', 'profile_picture', 'address', 'is_active']
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    password = serializers.CharField(write_only=True)
     
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'user_type', 'phone', 'is_active', 'is_staff', 'is_superuser']
+        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'user_type', 'phone']
 
     def create(self, validated_data):
-        # If password is not provided, generate one
-        password = validated_data.pop('password', None)
-        if not password:
-            import random
-            import string
-            password = ''.join(random.choices(string.ascii_letters + string.digits + '!@#$%^&*', k=10))
-        
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
-            password=password,
+            password=validated_data['password'],
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
             user_type=validated_data.get('user_type', 'student'),
             phone=validated_data.get('phone', '')
         )
-        
-        # Set additional fields
-        user.is_active = validated_data.get('is_active', True)
-        user.is_staff = validated_data.get('is_staff', False)
-        user.is_superuser = validated_data.get('is_superuser', False)
-        user.save()
-        
-        # Store password to return it
-        setattr(user, '_created_password', password)
         return user
 
 class LoginSerializer(serializers.Serializer):
@@ -78,64 +62,50 @@ class ClassSerializer(serializers.ModelSerializer):
         model = Class
         fields = '__all__'
 
+# ============================================
+# STUDENT SERIALIZER WITH PROFILE PICTURE FIX
+# ============================================
 class StudentSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
     current_class_name = serializers.CharField(source='current_class.name', read_only=True)
     course_name = serializers.CharField(source='course.name', read_only=True)
+    profile_picture_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Student
         fields = '__all__'
-        read_only_fields = ['registration_number']
+        read_only_fields = ['registration_number', 'enrollment_date', 'created_at', 'updated_at']
+    
+    def get_profile_picture_url(self, obj):
+        """Get the full URL for the profile picture"""
+        if obj.profile_picture:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.profile_picture.url)
+            return obj.profile_picture.url
+        return None
     
     def create(self, validated_data):
-        # Remove registration_number if present (will be auto-generated)
+        # Remove user if present (will be created automatically or handled separately)
+        validated_data.pop('user', None)
         validated_data.pop('registration_number', None)
         
-        # Check if user is provided, if not create one
-        user_data = validated_data.pop('user', None)
-        
-        if user_data:
-            # If user data is provided (should be an ID), use existing user
-            if isinstance(user_data, int):
-                try:
-                    from core.models import User
-                    user = User.objects.get(id=user_data)
-                except User.DoesNotExist:
-                    user = None
-            else:
-                user = user_data
-        else:
-            # Create a user from student data
-            from core.models import User
-            username = f"{validated_data['first_name'].lower()}.{validated_data['last_name'].lower()}{str(validated_data['phone'])[-4:]}"
-            email = validated_data.get('email', f"{username}@glide.edu")
-            
-            # Check if username already exists, if so add random numbers
-            import random
-            while User.objects.filter(username=username).exists():
-                username = f"{validated_data['first_name'].lower()}.{validated_data['last_name'].lower()}{random.randint(10, 99)}"
-            
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                password='Student@2024',  # Default password
-                first_name=validated_data['first_name'],
-                last_name=validated_data['last_name'],
-                user_type='student',
-                phone=validated_data.get('phone', '')
-            )
-        
-        # Create the student with the user
-        student = Student.objects.create(user=user, **validated_data)
+        # Create student
+        student = Student.objects.create(**validated_data)
         return student
     
     def update(self, instance, validated_data):
         # Remove fields that shouldn't be updated
         validated_data.pop('user', None)
         validated_data.pop('registration_number', None)
+        validated_data.pop('enrollment_date', None)
         
-        return super().update(instance, validated_data)
+        # Handle profile_picture separately (it's in validated_data)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        return instance
 
 class StudentApplicationSerializer(serializers.ModelSerializer):
     course_name = serializers.CharField(source='course_applied.name', read_only=True)

@@ -41,3 +41,26 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttendanceRecord
         fields = '__all__'
+
+from .models import Certificate
+
+
+class CertificateSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.full_name', read_only=True)
+    student_registration = serializers.CharField(
+        source='student.registration_number', read_only=True
+    )
+    certificate_type_display = serializers.CharField(
+        source='get_certificate_type_display', read_only=True
+    )
+    issued_by_name = serializers.CharField(
+        source='issued_by.get_full_name', read_only=True
+    )
+
+    class Meta:
+        model = Certificate
+        fields = '__all__'
+        read_only_fields = (
+            'certificate_number', 'verification_code',
+            'snapshot_data', 'created_at', 'updated_at',
+        )

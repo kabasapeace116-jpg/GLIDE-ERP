@@ -2,16 +2,30 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, RedirectView
 from django.contrib.auth.views import LogoutView
-from django.views.generic import RedirectView
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
 
-# ALL DRF_YASG IMPORTS REMOVED
+# Certificate views (HTML pages)
+from academics import views_web as academics_web
+
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="GLIDE Institute API",
+        default_version='v1',
+        description="Student Management System API",
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
 
 urlpatterns = [
     # Admin
     path('admin/', admin.site.urls),
-    
+
     # Public Pages
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
     path('login/', TemplateView.as_view(template_name='login.html'), name='login'),
@@ -23,21 +37,21 @@ urlpatterns = [
     path('terms/', TemplateView.as_view(template_name='terms.html'), name='terms'),
     path('privacy/', TemplateView.as_view(template_name='privacy.html'), name='privacy'),
     path('faq/', TemplateView.as_view(template_name='faq.html'), name='faq'),
-    
+
     # Dashboard Pages
     path('dashboard/student/', TemplateView.as_view(template_name='dashboard/student_dashboard.html'), name='student_dashboard'),
     path('dashboard/admin/', TemplateView.as_view(template_name='dashboard/admin_dashboard.html'), name='admin_dashboard'),
     path('dashboard/finance/', TemplateView.as_view(template_name='dashboard/finance_dashboard.html'), name='finance_dashboard'),
     path('dashboard/staff/', TemplateView.as_view(template_name='dashboard/staff_dashboard.html'), name='staff_dashboard'),
     path('dashboard/hr/', TemplateView.as_view(template_name='dashboard/hr_dashboard.html'), name='hr_dashboard'),
-    
+
     # Admissions Pages
     path('admissions/', TemplateView.as_view(template_name='admissions/landing.html'), name='admissions_landing'),
     path('admissions/applications/', TemplateView.as_view(template_name='admissions/applications.html'), name='applications'),
     path('admissions/applications/<int:pk>/', TemplateView.as_view(template_name='admissions/application_detail.html'), name='application_detail'),
     path('admissions/register/', TemplateView.as_view(template_name='admissions/register_student.html'), name='register_student'),
     path('admissions/apply/', TemplateView.as_view(template_name='admissions/apply.html'), name='apply'),
-    
+
     # Academics Pages
     path('academics/dashboard/', TemplateView.as_view(template_name='academics/dashboard.html'), name='academics_dashboard'),
     path('academics/courses/', TemplateView.as_view(template_name='academics/courses.html'), name='courses'),
@@ -53,20 +67,55 @@ urlpatterns = [
     path('academics/results/upload/', TemplateView.as_view(template_name='academics/result_upload.html'), name='result_upload'),
     path('academics/attendance/', TemplateView.as_view(template_name='academics/attendance.html'), name='attendance'),
     path('academics/attendance/record/', TemplateView.as_view(template_name='academics/attendance_record.html'), name='attendance_record'),
-    
+
+    # ---------- CERTIFICATE PAGES ----------
+    path('academics/certificates/',
+         academics_web.certificate_list,
+         name='certificate_list'),
+    path('academics/certificates/generate/',
+         academics_web.certificate_generate,
+         name='certificate_generate'),
+    path('academics/certificates/check-eligibility/',
+         academics_web.certificate_check_eligibility_view,
+         name='certificate_check_eligibility'),
+
+    # Must come BEFORE <int:pk>/ so "update-content" isn't parsed as a pk
+    path('academics/certificates/<int:pk>/update-content/',
+         academics_web.certificate_update_content,
+         name='certificate_update_content'),
+
+    path('academics/certificates/<int:pk>/',
+         academics_web.certificate_detail,
+         name='certificate_detail'),
+    path('academics/certificates/<int:pk>/download/',
+         academics_web.certificate_download,
+         name='certificate_download'),
+    path('academics/certificates/verify/<uuid:verification_code>/',
+         academics_web.certificate_verify,
+         name='certificate_verify'),
+
     # Finance Pages
     path('finance/', RedirectView.as_view(url='/dashboard/finance/', permanent=True), name='finance_redirect'),
     path('finance/fees/', TemplateView.as_view(template_name='finance/fees.html'), name='fees'),
     path('finance/fees/add/', TemplateView.as_view(template_name='finance/fee_add.html'), name='fee_add'),
     path('finance/fees/<int:pk>/edit/', TemplateView.as_view(template_name='finance/fee_edit.html'), name='fee_edit'),
-    path('finance/invoices/', TemplateView.as_view(template_name='finance/invoices.html'), name='invoices'),
-    path('finance/invoices/<int:pk>/', TemplateView.as_view(template_name='finance/invoice_detail.html'), name='finance_invoice_detail'),
+    path('finance/invoices/', TemplateView.as_view(template_name='finance/invoices.html'), name='finance_invoices'),
     path('finance/invoices/generate/', TemplateView.as_view(template_name='finance/invoice_generate.html'), name='invoice_generate'),
+    path('finance/invoices/<int:pk>/', TemplateView.as_view(template_name='finance/invoice_detail.html'), name='finance_invoice_detail'),
     path('finance/payments/', TemplateView.as_view(template_name='finance/payments.html'), name='payments'),
     path('finance/payments/record/', TemplateView.as_view(template_name='finance/payment_record.html'), name='payment_record'),
     path('finance/clearance/', TemplateView.as_view(template_name='finance/clearance.html'), name='clearance'),
     path('finance/clearance/<int:pk>/', TemplateView.as_view(template_name='finance/clearance_detail.html'), name='finance_clearance_detail'),
-    
+
+    # Reports Pages
+    path('reports/', TemplateView.as_view(template_name='reports/reports.html'), name='reports'),
+    path('reports/student-statistics/', TemplateView.as_view(template_name='reports/student_statistics.html'), name='student_statistics'),
+    path('reports/academic-performance/', TemplateView.as_view(template_name='reports/academic_performance.html'), name='academic_performance'),
+    path('reports/financial-summary/', TemplateView.as_view(template_name='reports/financial_summary.html'), name='financial_summary'),
+    path('reports/attendance-summary/', TemplateView.as_view(template_name='reports/attendance_summary.html'), name='attendance_summary'),
+    path('reports/course-enrollment/', TemplateView.as_view(template_name='reports/course_enrollment.html'), name='course_enrollment'),
+    path('reports/generate-pdf/', TemplateView.as_view(template_name='reports/generate_pdf.html'), name='generate_pdf'),
+
     # HR Pages
     path('hr/', TemplateView.as_view(template_name='hr/dashboard.html'), name='hr_dashboard'),
     path('hr/dashboard/', TemplateView.as_view(template_name='hr/dashboard.html'), name='hr_dashboard_redirect'),
@@ -77,25 +126,18 @@ urlpatterns = [
     path('hr/leave-requests/', TemplateView.as_view(template_name='hr/leave_requests.html'), name='hr_leave_requests'),
     path('hr/attendance/', TemplateView.as_view(template_name='hr/attendance.html'), name='hr_attendance'),
     path('hr/reports/', TemplateView.as_view(template_name='hr/hr_reports.html'), name='hr_reports'),
-    
-    # Reports Pages
-    path('reports/', TemplateView.as_view(template_name='reports/reports.html'), name='reports'),
-    path('reports/student-statistics/', TemplateView.as_view(template_name='reports/student_statistics.html'), name='student_statistics'),
-    path('reports/academic-performance/', TemplateView.as_view(template_name='reports/academic_performance.html'), name='academic_performance'),
-    path('reports/financial-summary/', TemplateView.as_view(template_name='reports/financial_summary.html'), name='financial_summary'),
-    path('reports/attendance-summary/', TemplateView.as_view(template_name='reports/attendance_summary.html'), name='attendance_summary'),
-    path('reports/course-enrollment/', TemplateView.as_view(template_name='reports/course_enrollment.html'), name='course_enrollment'),
-    path('reports/generate-pdf/', TemplateView.as_view(template_name='reports/generate_pdf.html'), name='generate_pdf'),
-    
-    # Students
+
+    # Student Pages
     path('students/', TemplateView.as_view(template_name='students/all_students.html'), name='all_students'),
-    path('students/<int:pk>/edit/', TemplateView.as_view(template_name='students/student_edit.html'), name='student_edit'),
     path('students/<int:pk>/', TemplateView.as_view(template_name='students/student_detail.html'), name='student_detail'),
-    path('test-edit/', TemplateView.as_view(template_name='students/student_edit.html'), name='test_edit'),
-    
+    path('students/<int:pk>/edit/', TemplateView.as_view(template_name='students/student_edit.html'), name='student_edit'),
+
     # User Management
     path('users/', TemplateView.as_view(template_name='users/user_management.html'), name='user_management'),
-    
+
+    # Test Page
+    path('test-edit/', TemplateView.as_view(template_name='students/student_edit.html'), name='test_edit'),
+
     # API URLs
     path('api/', include('core.urls')),
     path('api/admissions/', include('admissions.urls')),
@@ -103,10 +145,15 @@ urlpatterns = [
     path('api/finance/', include('finance.urls')),
     path('api/hr/', include('hr.urls')),
     path('api/reports/', include('reports.urls')),
-    
-    # SWAGGER/REDOC URLS COMPLETELY REMOVED
+
+    # API Documentation
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0)),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0)),
 ]
 
+# ============================================
+# MEDIA AND STATIC FILES SERVING
+# ============================================
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Certificate {{ certificate.certificate_number }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Action bar -->
+  <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <h3 class="mb-0" style="color: var(--primary-color);">Certificate Preview</h3>
+    <div>
+      <a href="{% url 'certificate_list' %}" class="btn btn-solid-border btn-sm">Back</a>
+      <button type="button" id="edit-toggle" class="btn btn-main-2 btn-sm">
+        <i class="icofont-edit"></i> Edit Content
+      </button>
+      <a href="{% url 'certificate_download' certificate.pk %}" class="btn btn-main btn-sm">
+        <i class="icofont-download"></i> Download PDF
+      </a>
+      <button onclick="window.print()" class="btn btn-main btn-sm">
+        <i class="icofont-print"></i> Print
+      </button>
+    </div>
+  </div>
+
+  <div id="save-banner" class="alert alert-success no-print" style="display:none;">
+    Content saved.
+  </div>
+
+  <!-- ==================== CERTIFICATE ==================== -->
+  <div id="certificate">
+    <div class="cert-outer">
+      <div class="cert-inner">
+
+        <span class="corner tl"></span>
+        <span class="corner tr"></span>
+        <span class="corner bl"></span>
+        <span class="corner br"></span>
+
+        <!-- HEADER -->
+        <div class="cert-header">
+          <img src="{% static 'images/logo.png' %}" alt="GLIDE" class="cert-logo">
+          <div class="cert-school-block">
+            <div class="cert-school-name">GLIDE INSTITUTE</div>
+            <div class="cert-school-sub">of Science and Technology</div>
+            <div class="cert-school-tag">P.O Box 71252, Clock Tower, Kampala, Uganda</div>
+          </div>
+        </div>
+
+        <div class="cert-divider"></div>
+
+        <h1 class="cert-title">CERTIFICATE</h1>
+        <div class="cert-subtitle">{{ certificate.get_certificate_type_display }}</div>
+
+        <!-- INTRO -->
+        <p class="cert-lead">
+          <span class="editable" data-key="intro_text">{{ content.intro_text }}</span>
+        </p>
+
+        <!-- STUDENT NAME -->
+        <h2 class="cert-student-name">
+          <span class="editable" data-key="student_name">{{ content.student_name }}</span>
+        </h2>
+
+        <!-- REG NO -->
+        <p class="cert-reg">
+          Registration No.
+          <strong>
+            <span class="editable" data-key="reg_no">{{ content.reg_no }}</span>
+          </strong>
+        </p>
+
+        <!-- BODY -->
+        <p class="cert-body">
+          <span class="editable" data-key="body_text">{{ content.body_text }}</span>
+        </p>
+
+        <!-- AWARD -->
+        {% if content.award_text %}
+        <p class="cert-course cert-award">
+          <span class="editable" data-key="award_text">{{ content.award_text }}</span>
+        </p>
+        {% endif %}
+
+        <!-- CLOSING -->
+        {% if content.closing_text %}
+        <p class="cert-body">
+          <span class="editable" data-key="closing_text">{{ content.closing_text }}</span>
+        </p>
+        {% endif %}
+
+        <!-- SEAL LINE -->
+        <p class="cert-body cert-closing">
+          <em>
+            <span class="editable" data-key="seal_text">{{ content.seal_text }}</span>
+          </em>
+        </p>
+
+        <!-- SIGNATURES -->
+        <div class="cert-signatures">
+
+          <div class="signature-block">
+            <div class="signature-line"></div>
+            <div class="signature-name">
+              <span class="editable" data-key="signature_left_name">{{ content.signature_left_name }}</span>
+            </div>
+            <div class="signature-role">
+              <span class="editable" data-key="signature_left_role">{{ content.signature_left_role }}</span>
+            </div>
+          </div>
+
+          <div class="seal-block">
+            <div class="seal">
+              <div class="seal-text-top">GLIDE</div>
+              <div class="seal-star">★</div>
+              <div class="seal-text-bottom">OFFICIAL</div>
+            </div>
+          </div>
+
+          <div class="signature-block">
+            <div class="signature-line"></div>
+            <div class="signature-name">
+              <span class="editable" data-key="signature_right_name">{{ content.signature_right_name }}</span>
+            </div>
+            <div class="signature-role">
+              <span class="editable" data-key="signature_right_role">{{ content.signature_right_role }}</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="cert-footer">
+          <div>
+            <span class="cert-label">Certificate No:</span>
+            <span class="cert-value">{{ certificate.certificate_number }}</span>
+          </div>
+          <div class="text-right">
+  <span class="cert-label">Authenticity:</span>
+  <span class="cert-value" style="letter-spacing: 1px;">
+    Verify at glideafrica.org/verify
+  </span>
+  <div style="font-size: 8px; color: #888; margin-top: 2px;">
+    Code: <span style="font-family: 'Courier New', monospace; color: var(--primary-color);">
+      {{ certificate.verification_code }}
+    </span>
+  </div>
+</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Save / Cancel -->
+  <div id="edit-actions" class="text-center mt-3 no-print" style="display:none;">
+    <button type="button" id="save-btn" class="btn btn-main">
+      <i class="icofont-check"></i> Save Changes
+    </button>
+    <button type="button" id="cancel-btn" class="btn btn-solid-border">
+      Cancel
+    </button>
+  </div>
+
+</div>
+
+<style>
+  #certificate {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: #fdfaf3;
+    aspect-ratio: 1.414 / 1;
+    font-family: "Roboto", sans-serif;
+  }
+  .cert-outer {
+    padding: 14px;
+    border: 8px solid var(--primary-color);
+    background: #fdfaf3;
+    height: 100%;
+  }
+  .cert-inner {
+    border: 2px solid #d4af37;
+    padding: 26px 45px;
+    height: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .corner {
+    position: absolute;
+    width: 36px; height: 36px;
+    border-color: #d4af37;
+    border-style: solid; border-width: 0;
+  }
+  .corner.tl { top: 6px; left: 6px;  border-top-width: 3px; border-left-width: 3px; }
+  .corner.tr { top: 6px; right: 6px; border-top-width: 3px; border-right-width: 3px; }
+  .corner.bl { bottom: 6px; left: 6px;  border-bottom-width: 3px; border-left-width: 3px; }
+  .corner.br { bottom: 6px; right: 6px; border-bottom-width: 3px; border-right-width: 3px; }
+
+  .cert-header { display: flex; align-items: center; gap: 18px; margin-bottom: 8px; }
+  .cert-logo { width: 72px; height: 72px; object-fit: contain; }
+  .cert-school-name {
+    font-family: "Exo", sans-serif; font-size: 20px; font-weight: 700;
+    letter-spacing: 3px; color: var(--primary-color); line-height: 1;
+  }
+  .cert-school-sub {
+    font-family: "Exo", sans-serif; font-size: 11px; font-weight: 600;
+    letter-spacing: 2px; color: var(--secondary-color); margin-top: 3px;
+  }
+  .cert-school-tag { font-size: 9px; color: #888; letter-spacing: 1px; margin-top: 3px; font-style: italic; }
+
+  .cert-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #d4af37 20%, #b8860b 50%, #d4af37 80%, transparent 100%);
+    margin: 6px 0 10px;
+  }
+
+  .cert-title {
+    font-family: "Exo", sans-serif; font-size: 36px; font-weight: 700;
+    letter-spacing: 12px; color: var(--primary-color); text-align: center; margin: 0;
+  }
+  .cert-subtitle {
+    text-align: center; font-family: "Exo", sans-serif; font-size: 11px;
+    color: var(--secondary-color); letter-spacing: 4px;
+    text-transform: uppercase; font-weight: 700; margin-top: 2px; margin-bottom: 6px;
+  }
+
+  .cert-lead, .cert-body {
+    text-align: center; font-size: 12px; color: #555;
+    margin: 6px 0 2px; letter-spacing: 0.5px; line-height: 1.5;
+  }
+  .cert-closing { margin-top: 10px; font-size: 11px; }
+
+  .cert-student-name {
+    font-family: "Exo", sans-serif; font-size: 28px; font-weight: 700;
+    color: var(--primary-color); text-align: center; margin: 6px 0 2px;
+    padding-bottom: 6px;
+  }
+  .cert-student-name::after {
+    content: ""; display: block; width: 55%; height: 1px;
+    background: #d4af37; margin: 6px auto 0;
+  }
+
+  .cert-reg { text-align: center; font-size: 11px; color: #666; margin: 2px 0 8px; }
+
+  .cert-course {
+    text-align: center; font-family: "Exo", sans-serif;
+    font-size: 17px; color: var(--secondary-color); margin: 6px 0 8px; line-height: 1.3;
+  }
+  .cert-award { font-size: 19px; font-weight: 700; letter-spacing: 1px; }
+
+  .cert-signatures {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-top: auto; padding-top: 14px; gap: 30px;
+  }
+  .signature-block { flex: 1; text-align: center; max-width: 240px; }
+  .signature-line { border-top: 1px solid #555; margin-bottom: 4px; }
+  .signature-name {
+    font-size: 11px; font-weight: 700; color: var(--primary-color);
+    font-family: "Exo", sans-serif;
+  }
+  .signature-role {
+    font-size: 9px; color: #888; letter-spacing: 1px; text-transform: uppercase;
+  }
+
+  .seal-block { flex: 0 0 100px; text-align: center; }
+  .seal {
+    width: 92px; height: 92px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #fde68a 0%, #d4af37 60%, #8b6508 100%);
+    box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 6px #d4af37, 0 2px 8px rgba(0,0,0,0.15);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 0 auto; transform: rotate(-8deg);
+    font-family: "Exo", sans-serif; color: var(--primary-color); text-align: center;
+  }
+  .seal-text-top, .seal-text-bottom { font-size: 9px; font-weight: 700; letter-spacing: 1px; }
+  .seal-star { font-size: 20px; line-height: 1; margin: 2px 0; }
+
+  .cert-footer {
+    display: flex; justify-content: space-between; margin-top: 12px;
+    padding-top: 8px; border-top: 1px solid #d4af37; font-size: 9px;
+  }
+  .cert-label {
+    color: #888; letter-spacing: 1px; text-transform: uppercase; margin-right: 6px;
+  }
+  .cert-value {
+    color: var(--primary-color); font-weight: 700; font-family: "Courier New", monospace;
+  }
+
+  /* ============= EDIT MODE ============= */
+  .editable {
+    display: inline-block;
+    min-width: 20px;
+    padding: 1px 3px;
+    border-radius: 3px;
+    transition: background 0.15s;
+  }
+  #certificate:not(.editing) .editable {
+    background: transparent;
+    outline: none;
+  }
+  #certificate.editing .editable {
+    background: rgba(255, 235, 130, 0.35);
+    outline: 1px dashed #d4af37;
+    cursor: text;
+  }
+  #certificate.editing .editable:focus {
+    background: #fffbe5;
+    outline: 2px solid var(--secondary-color);
+  }
+
+  @media print {
+    body * { visibility: hidden; }
+    #certificate, #certificate * { visibility: visible; }
+    #certificate { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; }
+    .no-print { display: none !important; }
+    .editable { background: transparent !important; outline: none !important; }
+  }
+</style>
+
+<script>
+(function() {
+  const cert        = document.getElementById('certificate');
+  const editToggle  = document.getElementById('edit-toggle');
+  const editActions = document.getElementById('edit-actions');
+  const saveBtn     = document.getElementById('save-btn');
+  const cancelBtn   = document.getElementById('cancel-btn');
+  const banner      = document.getElementById('save-banner');
+
+  let originalValues = {};
+
+  function enterEditMode() {
+    originalValues = {};
+    document.querySelectorAll('.editable').forEach(el => {
+      const key = el.dataset.key;
+      originalValues[key] = el.textContent;
+      el.setAttribute('contenteditable', 'true');
+      el.spellcheck = false;
+    });
+    cert.classList.add('editing');
+    editActions.style.display = '';
+    editToggle.style.display = 'none';
+    banner.style.display = 'none';
+  }
+
+  function exitEditMode(restore) {
+    document.querySelectorAll('.editable').forEach(el => {
+      el.removeAttribute('contenteditable');
+      if (restore) {
+        const key = el.dataset.key;
+        if (key in originalValues) el.textContent = originalValues[key];
+      }
+    });
+    cert.classList.remove('editing');
+    editActions.style.display = 'none';
+    editToggle.style.display = '';
+  }
+
+  function collect() {
+    const out = {};
+    document.querySelectorAll('.editable').forEach(el => {
+      out[el.dataset.key] = el.textContent.trim();
+    });
+    return out;
+  }
+
+  function getCsrf() {
+    const m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : '';
+  }
+
+  async function save() {
+    const payload = collect();
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = 'Saving...';
+
+    try {
+      const res = await fetch(
+        "{% url 'certificate_update_content' certificate.pk %}",
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrf(),
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+      const data = await res.json();
+      if (data.ok) {
+        exitEditMode(false);
+        banner.textContent = 'Content saved successfully.';
+        banner.style.display = '';
+        setTimeout(() => { banner.style.display = 'none'; }, 4000);
+      } else {
+        alert('Save failed: ' + (data.error || 'unknown error'));
+      }
+    } catch (e) {
+      alert('Network error: ' + e.message);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="icofont-check"></i> Save Changes';
+    }
+  }
+
+  editToggle.addEventListener('click', enterEditMode);
+  cancelBtn.addEventListener('click', () => exitEditMode(true));
+  saveBtn.addEventListener('click', save);
+})();
+</script>
+{% endblock %}

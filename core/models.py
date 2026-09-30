@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+import random
+import string
 
 class User(AbstractUser):
     USER_TYPES = (
@@ -19,6 +21,8 @@ class User(AbstractUser):
     address = models.TextField(blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
     is_active = models.BooleanField(default=True)
+    # New field for student-specific user
+    is_student_user = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.username} - {self.get_user_type_display()}"
@@ -145,9 +149,22 @@ class Student(models.Model):
         ('graduated', 'Graduated'),
         ('dropped', 'Dropped'),
         ('suspended', 'Suspended'),
+        ('pending_clearance', 'Pending Clearance'),  # NEW
+        ('pending_registration', 'Pending Registration'),  # NEW
     )
+    
     registration_number = models.CharField(max_length=20, unique=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile', null=True, blank=True)
+    
+    # NEW: Link to application
+    application = models.OneToOneField(
+        'StudentApplication', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='registered_student'
+    )
+    
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     other_name = models.CharField(max_length=50, blank=True)
@@ -161,7 +178,12 @@ class Student(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='students')
     enrollment_date = models.DateField(auto_now_add=True)
     graduation_date = models.DateField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STUDENT_STATUS, default='active')
+    status = models.CharField(max_length=30, choices=STUDENT_STATUS, default='pending_registration')
+    
+    # Financial clearance tracking
+    has_financial_clearance = models.BooleanField(default=False)
+    financial_clearance_date = models.DateField(null=True, blank=True)
+    
     phone = models.CharField(max_length=15)
     alternate_phone = models.CharField(max_length=15, blank=True)
     email = models.EmailField()
@@ -171,15 +193,20 @@ class Student(models.Model):
     sub_county = models.CharField(max_length=50, blank=True)
     parish = models.CharField(max_length=50, blank=True)
     village = models.CharField(max_length=50, blank=True)
-    profile_picture = models.ImageField(upload_to='students/', null=True, blank=True)
+    
+    profile_picture = models.ImageField(upload_to='student_profiles/', null=True, blank=True)
+    
     sponsor_type = models.CharField(max_length=50, blank=True)
     parent_name = models.CharField(max_length=100, blank=True)
     parent_phone = models.CharField(max_length=15, blank=True)
     parent_address = models.TextField(blank=True)
+    
+    # Registration completion tracking
+    is_fully_registered = models.BooleanField(default=False)
+    registration_completed_date = models.DateTimeField(null=True, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    registration_number = models.CharField(max_length=20, unique=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile', null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.registration_number:

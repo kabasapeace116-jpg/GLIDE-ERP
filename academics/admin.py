@@ -32,3 +32,24 @@ class StudentCourseProgressAdmin(admin.ModelAdmin):
 class AttendanceRecordAdmin(admin.ModelAdmin):
     list_display = ('student', 'course_unit', 'date', 'status')
     list_filter = ('status', 'date', 'class_obj')
+
+from .models import Certificate
+
+@admin.register(Certificate)
+class CertificateAdmin(admin.ModelAdmin):
+    list_display = (
+        'certificate_number', 'student', 'certificate_type',
+        'issue_date', 'status'
+    )
+    list_filter = ('certificate_type', 'status', 'issue_date')
+    search_fields = (
+        'certificate_number', 'student__registration_number',
+        'student__first_name', 'student__last_name'
+    )
+    readonly_fields = ('certificate_number', 'verification_code', 'snapshot_data')
+    actions = ['issue_selected']
+
+    @admin.action(description="Mark selected certificates as issued")
+    def issue_selected(self, request, queryset):
+        updated = queryset.update(status='issued')
+        self.message_user(request, f"{updated} certificate(s) marked as issued.")
