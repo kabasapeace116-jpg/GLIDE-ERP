@@ -22,47 +22,63 @@
     .page-header-custom h3 i { color: var(--secondary-color); margin-right: 12px; }
     .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
     .page-header-custom .btn-white {
-        background: white; color: var(--primary-color); padding: 8px 22px;
-        border-radius: 50px; font-weight: 600; border: none; transition: all 0.3s ease;
+        background: white; color: var(--primary-color);
+        padding: 8px 22px; border-radius: 50px;
+        font-weight: 600; border: none; transition: all 0.3s ease;
     }
-    .page-header-custom .btn-white:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+    .page-header-custom .btn-white:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    }
     .page-header-custom .btn-white-outline {
-        border: 2px solid rgba(255,255,255,0.3); color: white; background: transparent;
-        padding: 8px 22px; border-radius: 50px; font-weight: 600; transition: all 0.3s ease;
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white; background: transparent;
+        padding: 8px 22px; border-radius: 50px;
+        font-weight: 600; transition: all 0.3s ease;
     }
-    .page-header-custom .btn-white-outline:hover { background: white; color: var(--primary-color); }
+    .page-header-custom .btn-white-outline:hover {
+        background: white; color: var(--primary-color);
+    }
 
     .detail-section {
         background: white; border-radius: 15px; padding: 25px 30px;
-        box-shadow: 0 2px 15px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+        box-shadow: 0 2px 15px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
         margin-bottom: 25px;
     }
     .detail-section .section-title {
-        font-size: 16px; font-weight: 700; color: var(--primary-color);
-        margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0;
+        font-size: 16px; font-weight: 700;
+        color: var(--primary-color); margin-bottom: 15px;
+        padding-bottom: 10px; border-bottom: 2px solid #f0f0f0;
         display: flex; align-items: center; gap: 10px;
     }
-    .detail-section .section-title i { color: var(--secondary-color); font-size: 20px; }
+    .detail-section .section-title i {
+        color: var(--secondary-color); font-size: 20px;
+    }
 
     .detail-grid {
-        display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 12px 30px;
     }
     .detail-grid .detail-item {
-        display: flex; flex-direction: column; padding: 8px 0;
-        border-bottom: 1px solid #f5f5f5;
+        display: flex; flex-direction: column;
+        padding: 8px 0; border-bottom: 1px solid #f5f5f5;
     }
     .detail-grid .detail-item:last-child { border-bottom: none; }
     .detail-grid .detail-item .label {
-        font-size: 12px; font-weight: 600; color: var(--text-color);
-        text-transform: uppercase; letter-spacing: 0.5px;
+        font-size: 12px; font-weight: 600;
+        color: var(--text-color); text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     .detail-grid .detail-item .value {
-        font-size: 15px; color: var(--text-dark); font-weight: 500; margin-top: 2px;
+        font-size: 15px; color: var(--text-dark);
+        font-weight: 500; margin-top: 2px;
     }
 
     .badge-status {
-        padding: 6px 18px; border-radius: 20px; font-size: 14px; font-weight: 600;
+        padding: 6px 18px; border-radius: 20px;
+        font-size: 14px; font-weight: 600;
     }
     .badge-status.active { background: #e8f5e9; color: #1b5e20; }
     .badge-status.inactive { background: #ffebee; color: #b71c1c; }
@@ -73,6 +89,7 @@
     .profile-avatar {
         width: 120px; height: 120px; border-radius: 50%;
         object-fit: cover; border: 4px solid var(--primary-color);
+        background: #f0f4f8;
     }
 
     .stats-mini {
@@ -80,11 +97,15 @@
         gap: 10px; margin-top: 15px;
     }
     .stats-mini .stat-box {
-        background: var(--light-bg); border-radius: 8px; padding: 10px;
-        text-align: center;
+        background: var(--light-bg); border-radius: 8px;
+        padding: 10px; text-align: center;
     }
-    .stats-mini .stat-box .number { font-size: 20px; font-weight: 700; color: var(--primary-color); }
-    .stats-mini .stat-box .label { font-size: 11px; color: var(--text-color); margin: 0; }
+    .stats-mini .stat-box .number {
+        font-size: 20px; font-weight: 700; color: var(--primary-color);
+    }
+    .stats-mini .stat-box .label {
+        font-size: 11px; color: var(--text-color); margin: 0;
+    }
 
     @media (max-width: 768px) {
         .page-header-custom { padding: 20px; text-align: center; }
@@ -96,7 +117,6 @@
 
 <div class="student-detail-page">
     <div class="container">
-        <!-- Header -->
         <div class="page-header-custom">
             <div class="row align-items-center">
                 <div class="col-md-8">
@@ -124,10 +144,6 @@
 </div>
 
 <script>
-    // ============================================
-    // STUDENT DETAIL - FIXED
-    // ============================================
-
     let studentId = null;
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -155,9 +171,9 @@
 
     function loadStudent(id) {
         Promise.all([
-            fetch(`/api/students/${id}/`),
-            fetch(`/api/academics/results/student_results/?student_id=${id}`),
-            fetch(`/api/finance/invoices/?student=${id}`)
+            fetch(`/api/students/${id}/`, { credentials: 'include' }),
+            fetch(`/api/academics/results/student_results/?student_id=${id}`, { credentials: 'include' }),
+            fetch(`/api/finance/invoices/?student=${id}`, { credentials: 'include' })
         ])
         .then(([studentRes, resultsRes, invoicesRes]) => {
             if (studentRes.status === 403) {
@@ -169,7 +185,7 @@
         })
         .then(([student, results, invoices]) => {
             renderStudent(student, results, invoices);
-            document.getElementById('student-id-display').textContent = 
+            document.getElementById('student-id-display').textContent =
                 `${student.first_name} ${student.last_name} - ${student.registration_number}`;
         })
         .catch(error => {
@@ -193,19 +209,25 @@
 
         const resultsData = Array.isArray(results) ? results : (results.results || []);
         const invoicesData = Array.isArray(invoices) ? invoices : (invoices.results || []);
-        
-        const totalInvoices = invoicesData.length > 0 ? 
+
+        const totalInvoices = invoicesData.length > 0 ?
             invoicesData.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0) : 0;
-        const totalPaid = invoicesData.length > 0 ? 
+        const totalPaid = invoicesData.length > 0 ?
             invoicesData.reduce((s, inv) => s + parseFloat(inv.amount_paid || 0), 0) : 0;
         const outstanding = totalInvoices - totalPaid;
+
+        // Prefer absolute URL from serializer, fall back to relative, then default
+        const pictureSrc = student.profile_picture_url
+            || student.profile_picture
+            || '/static/images/default-avatar.png';
 
         container.innerHTML = `
             <!-- Profile -->
             <div class="detail-section">
                 <div class="row align-items-center">
                     <div class="col-md-2 text-center">
-                        <img src="${student.profile_picture || '/static/images/default-avatar.png'}" alt="Profile" class="profile-avatar">
+                        <img src="${pictureSrc}" alt="Profile" class="profile-avatar"
+                             onerror="this.onerror=null; this.src='/static/images/default-avatar.png';">
                     </div>
                     <div class="col-md-7">
                         <h4 style="color:var(--primary-color);margin:0;">${student.first_name} ${student.last_name}</h4>

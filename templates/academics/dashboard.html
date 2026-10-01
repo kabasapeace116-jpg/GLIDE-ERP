@@ -76,9 +76,7 @@
         border-color: var(--secondary-color);
     }
     .academics-card .icon {
-        font-size: 40px;
-        margin-bottom: 12px;
-        display: block;
+        font-size: 40px; margin-bottom: 12px; display: block;
     }
     .academics-card .icon.blue { color: var(--primary-color); }
     .academics-card .icon.green { color: #28a745; }
@@ -90,11 +88,8 @@
     .academics-card h5 { color: var(--primary-color); font-weight: 600; margin: 0 0 5px; }
     .academics-card p { font-size: 13px; color: var(--text-color); margin: 0; }
     .academics-card .badge {
-        margin-top: 10px;
-        padding: 4px 15px;
-        border-radius: 50px;
-        font-size: 11px;
-        font-weight: 600;
+        margin-top: 10px; padding: 4px 15px; border-radius: 50px;
+        font-size: 11px; font-weight: 600;
     }
     .academics-card .badge.blue { background: rgba(34,58,102,0.1); color: var(--primary-color); }
     .academics-card .badge.green { background: rgba(40,167,69,0.1); color: #28a745; }
@@ -129,9 +124,7 @@
     .section-card .section-header .view-all:hover { color: var(--primary-color); }
 
     .table-responsive { overflow-x: auto; }
-    .table {
-        width: 100%; border-collapse: collapse; font-size: 13px;
-    }
+    .table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .table thead th {
         background: var(--light-bg); padding: 8px 10px; text-align: left;
         font-size: 11px; font-weight: 600; color: var(--text-color);
@@ -144,14 +137,6 @@
     }
     .table tbody tr:hover { background: var(--light-bg); }
     .table tbody tr:last-child td { border-bottom: none; }
-
-    .badge-status {
-        padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 600;
-    }
-    .badge-status.active { background: #e8f5e9; color: #1b5e20; }
-    .badge-status.inactive { background: #ffebee; color: #b71c1c; }
-    .badge-status.published { background: #e3f2fd; color: #0d47a1; }
-    .badge-status.draft { background: #eceff1; color: #37474f; }
 
     @media (max-width: 768px) {
         .page-header-custom { padding: 20px; text-align: center; }
@@ -167,7 +152,6 @@
 
 <div class="academics-page">
     <div class="container">
-        <!-- Header -->
         <div class="page-header-custom">
             <div class="row align-items-center">
                 <div class="col-md-8">
@@ -182,7 +166,6 @@
             </div>
         </div>
 
-        <!-- Stats -->
         <div class="stats-grid" id="stats-grid">
             <div class="stat-card" onclick="location.href='/academics/courses/'">
                 <div class="stat-icon blue"><i class="icofont-book"></i></div>
@@ -214,7 +197,6 @@
                 <h4 class="stat-number" id="total-attendance">0</h4>
                 <p class="stat-label">Attendance Records</p>
             </div>
-            <!-- NEW: Certificates stat -->
             <div class="stat-card" onclick="location.href='/academics/certificates/'">
                 <div class="stat-icon gold"><i class="icofont-certificate-alt-1"></i></div>
                 <h4 class="stat-number" id="total-certificates">0</h4>
@@ -222,7 +204,6 @@
             </div>
         </div>
 
-        <!-- Academics Modules -->
         <div class="academics-grid">
             <div class="academics-card" onclick="location.href='/academics/courses/'">
                 <span class="icon blue"><i class="icofont-book"></i></span>
@@ -260,7 +241,6 @@
                 <p>Record and track attendance</p>
                 <span class="badge teal">Record</span>
             </div>
-            <!-- NEW: Certificates card -->
             <div class="academics-card" onclick="location.href='/academics/certificates/'">
                 <span class="icon gold"><i class="icofont-certificate-alt-1"></i></span>
                 <h5>Certificates</h5>
@@ -269,7 +249,6 @@
             </div>
         </div>
 
-        <!-- Recent Activity -->
         <div class="section-card">
             <div class="section-header">
                 <h5><i class="icofont-clock"></i> Recent Activity</h5>
@@ -286,54 +265,47 @@
 </div>
 
 <script>
-    let token = localStorage.getItem('access_token');
+    // Session auth is handled server-side by Django.
+    // All fetches use credentials: 'include' to send the session cookie.
 
     document.addEventListener('DOMContentLoaded', function() {
-        if (!token) { window.location.href = '/login/'; return; }
         loadStats();
         loadRecentActivity();
         setInterval(loadStats, 60000);
     });
 
     function loadStats() {
-        // Courses
-        fetch('/api/courses/', { headers: { 'Authorization': 'Bearer ' + token } })
+        fetch('/api/courses/', { credentials: 'include' })
         .then(r => r.json())
         .then(data => { document.getElementById('total-courses').textContent = data.count || 0; })
         .catch(() => {});
 
-        // Classes
-        fetch('/api/classes/', { headers: { 'Authorization': 'Bearer ' + token } })
+        fetch('/api/classes/', { credentials: 'include' })
         .then(r => r.json())
         .then(data => { document.getElementById('total-classes').textContent = data.count || 0; })
         .catch(() => {});
 
-        // Assessments
-        fetch('/api/academics/assessments/', { headers: { 'Authorization': 'Bearer ' + token } })
+        fetch('/api/academics/assessments/', { credentials: 'include' })
         .then(r => r.json())
         .then(data => { document.getElementById('total-assessments').textContent = data.count || 0; })
         .catch(() => {});
 
-        // Results
-        fetch('/api/academics/results/', { headers: { 'Authorization': 'Bearer ' + token } })
+        fetch('/api/academics/results/', { credentials: 'include' })
         .then(r => r.json())
         .then(data => { document.getElementById('total-results').textContent = data.count || 0; })
         .catch(() => {});
 
-        // Timetables
-        fetch('/api/academics/timetables/', { headers: { 'Authorization': 'Bearer ' + token } })
+        fetch('/api/academics/timetables/', { credentials: 'include' })
         .then(r => r.json())
         .then(data => { document.getElementById('total-timetables').textContent = data.count || 0; })
         .catch(() => {});
 
-        // Attendance
-        fetch('/api/academics/attendance/', { headers: { 'Authorization': 'Bearer ' + token } })
+        fetch('/api/academics/attendance/', { credentials: 'include' })
         .then(r => r.json())
         .then(data => { document.getElementById('total-attendance').textContent = data.count || 0; })
         .catch(() => {});
 
-        // NEW: Certificates
-        fetch('/api/academics/certificates/', { headers: { 'Authorization': 'Bearer ' + token } })
+        fetch('/api/academics/certificates/', { credentials: 'include' })
         .then(r => r.json())
         .then(data => { document.getElementById('total-certificates').textContent = data.count || 0; })
         .catch(() => {});
@@ -341,7 +313,6 @@
 
     function loadRecentActivity() {
         const container = document.getElementById('recent-activity');
-
         container.innerHTML = `
             <div class="table-responsive">
                 <table class="table">

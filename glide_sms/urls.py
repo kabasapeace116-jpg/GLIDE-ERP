@@ -8,7 +8,6 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-# Certificate views (HTML pages)
 from academics import views_web as academics_web
 
 
@@ -23,10 +22,8 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    # Admin
     path('admin/', admin.site.urls),
 
-    # Public Pages
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
     path('login/', TemplateView.as_view(template_name='login.html'), name='login'),
     path('logout/', LogoutView.as_view(next_page='/login/'), name='logout'),
@@ -38,21 +35,18 @@ urlpatterns = [
     path('privacy/', TemplateView.as_view(template_name='privacy.html'), name='privacy'),
     path('faq/', TemplateView.as_view(template_name='faq.html'), name='faq'),
 
-    # Dashboard Pages
     path('dashboard/student/', TemplateView.as_view(template_name='dashboard/student_dashboard.html'), name='student_dashboard'),
     path('dashboard/admin/', TemplateView.as_view(template_name='dashboard/admin_dashboard.html'), name='admin_dashboard'),
     path('dashboard/finance/', TemplateView.as_view(template_name='dashboard/finance_dashboard.html'), name='finance_dashboard'),
     path('dashboard/staff/', TemplateView.as_view(template_name='dashboard/staff_dashboard.html'), name='staff_dashboard'),
     path('dashboard/hr/', TemplateView.as_view(template_name='dashboard/hr_dashboard.html'), name='hr_dashboard'),
 
-    # Admissions Pages
     path('admissions/', TemplateView.as_view(template_name='admissions/landing.html'), name='admissions_landing'),
     path('admissions/applications/', TemplateView.as_view(template_name='admissions/applications.html'), name='applications'),
     path('admissions/applications/<int:pk>/', TemplateView.as_view(template_name='admissions/application_detail.html'), name='application_detail'),
     path('admissions/register/', TemplateView.as_view(template_name='admissions/register_student.html'), name='register_student'),
     path('admissions/apply/', TemplateView.as_view(template_name='admissions/apply.html'), name='apply'),
 
-    # Academics Pages
     path('academics/dashboard/', TemplateView.as_view(template_name='academics/dashboard.html'), name='academics_dashboard'),
     path('academics/courses/', TemplateView.as_view(template_name='academics/courses.html'), name='courses'),
     path('academics/courses/create/', TemplateView.as_view(template_name='academics/course_create.html'), name='course_create'),
@@ -78,12 +72,9 @@ urlpatterns = [
     path('academics/certificates/check-eligibility/',
          academics_web.certificate_check_eligibility_view,
          name='certificate_check_eligibility'),
-
-    # Must come BEFORE <int:pk>/ so "update-content" isn't parsed as a pk
     path('academics/certificates/<int:pk>/update-content/',
          academics_web.certificate_update_content,
          name='certificate_update_content'),
-
     path('academics/certificates/<int:pk>/',
          academics_web.certificate_detail,
          name='certificate_detail'),
@@ -94,7 +85,6 @@ urlpatterns = [
          academics_web.certificate_verify,
          name='certificate_verify'),
 
-    # Finance Pages
     path('finance/', RedirectView.as_view(url='/dashboard/finance/', permanent=True), name='finance_redirect'),
     path('finance/fees/', TemplateView.as_view(template_name='finance/fees.html'), name='fees'),
     path('finance/fees/add/', TemplateView.as_view(template_name='finance/fee_add.html'), name='fee_add'),
@@ -107,7 +97,6 @@ urlpatterns = [
     path('finance/clearance/', TemplateView.as_view(template_name='finance/clearance.html'), name='clearance'),
     path('finance/clearance/<int:pk>/', TemplateView.as_view(template_name='finance/clearance_detail.html'), name='finance_clearance_detail'),
 
-    # Reports Pages
     path('reports/', TemplateView.as_view(template_name='reports/reports.html'), name='reports'),
     path('reports/student-statistics/', TemplateView.as_view(template_name='reports/student_statistics.html'), name='student_statistics'),
     path('reports/academic-performance/', TemplateView.as_view(template_name='reports/academic_performance.html'), name='academic_performance'),
@@ -116,7 +105,6 @@ urlpatterns = [
     path('reports/course-enrollment/', TemplateView.as_view(template_name='reports/course_enrollment.html'), name='course_enrollment'),
     path('reports/generate-pdf/', TemplateView.as_view(template_name='reports/generate_pdf.html'), name='generate_pdf'),
 
-    # HR Pages
     path('hr/', TemplateView.as_view(template_name='hr/dashboard.html'), name='hr_dashboard'),
     path('hr/dashboard/', TemplateView.as_view(template_name='hr/dashboard.html'), name='hr_dashboard_redirect'),
     path('hr/employees/', TemplateView.as_view(template_name='hr/employees.html'), name='hr_employees'),
@@ -127,18 +115,13 @@ urlpatterns = [
     path('hr/attendance/', TemplateView.as_view(template_name='hr/attendance.html'), name='hr_attendance'),
     path('hr/reports/', TemplateView.as_view(template_name='hr/hr_reports.html'), name='hr_reports'),
 
-    # Student Pages
     path('students/', TemplateView.as_view(template_name='students/all_students.html'), name='all_students'),
     path('students/<int:pk>/', TemplateView.as_view(template_name='students/student_detail.html'), name='student_detail'),
     path('students/<int:pk>/edit/', TemplateView.as_view(template_name='students/student_edit.html'), name='student_edit'),
 
-    # User Management
     path('users/', TemplateView.as_view(template_name='users/user_management.html'), name='user_management'),
-
-    # Test Page
     path('test-edit/', TemplateView.as_view(template_name='students/student_edit.html'), name='test_edit'),
 
-    # API URLs
     path('api/', include('core.urls')),
     path('api/admissions/', include('admissions.urls')),
     path('api/academics/', include('academics.urls')),
@@ -146,14 +129,10 @@ urlpatterns = [
     path('api/hr/', include('hr.urls')),
     path('api/reports/', include('reports.urls')),
 
-    # API Documentation
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0)),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0)),
 ]
 
-# ============================================
-# MEDIA AND STATIC FILES SERVING
-# ============================================
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

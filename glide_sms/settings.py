@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-your-secret-key-here')
 
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = ['*']
 
@@ -14,35 +14,33 @@ ALLOWED_HOSTS = ['*']
 # AUTHENTICATION & SESSION SETTINGS
 # ============================================
 
-# Session settings - Critical for keeping users logged in
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_NAME = 'sessionid'  # Default, but be explicit
-SESSION_COOKIE_DOMAIN = None  # Let Django handle it
-SESSION_COOKIE_SECURE = True  # Required for HTTPS
+SESSION_COOKIE_NAME = 'sessionid'
+SESSION_COOKIE_DOMAIN = None
+SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'  # Important: prevents logout on redirects
-SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_AGE = 1209600
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_SAVE_EVERY_REQUEST = True  # Critical: refreshes session on each request
-SESSION_COOKIE_PATH = '/'  # Ensure cookie works for all paths
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_PATH = '/'
 
-# CSRF settings - Prevents CSRF failures
 CSRF_TRUSTED_ORIGINS = [
     'https://glide-erp.onrender.com',
     'http://glide-erp.onrender.com',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
 ]
-CSRF_COOKIE_SECURE = True
-CSRF_COOKIE_HTTPONLY = False  # Allows JavaScript to read CSRF token
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_COOKIE_PATH = '/'
 
-# Login redirect settings
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/login/'
 
-# Authentication backends
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
@@ -101,7 +99,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'glide_sms.wsgi.application'
 
-# Database - SQLite Only
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -121,12 +118,10 @@ TIME_ZONE = 'Africa/Kampala'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -152,7 +147,6 @@ REST_FRAMEWORK = {
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
-# CORS settings
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = [
@@ -175,10 +169,23 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-# Static files storage for production
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Security settings
+# ============================================
+# SECURITY SETTINGS
+# ============================================
+# HTTPS enforcement is enabled ONLY when DEBUG is False.
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
-SECURE_SSL_REDIRECT = True
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+else:
+    SECURE_SSL_REDIRECT = False
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False

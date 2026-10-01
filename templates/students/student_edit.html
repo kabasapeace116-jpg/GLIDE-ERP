@@ -23,22 +23,16 @@
     .page-header-custom .subtitle { color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 5px; }
     .page-header-custom .btn-white-outline {
         border: 2px solid rgba(255,255,255,0.3);
-        color: white;
-        background: transparent;
-        padding: 8px 22px;
-        border-radius: 50px;
-        font-weight: 600;
-        transition: all 0.3s ease;
+        color: white; background: transparent;
+        padding: 8px 22px; border-radius: 50px;
+        font-weight: 600; transition: all 0.3s ease;
     }
     .page-header-custom .btn-white-outline:hover {
-        background: white;
-        color: var(--primary-color);
+        background: white; color: var(--primary-color);
     }
 
     .form-container {
-        background: white;
-        border-radius: 15px;
-        padding: 30px;
+        background: white; border-radius: 15px; padding: 30px;
         box-shadow: 0 2px 15px rgba(0,0,0,0.04);
         border: 1px solid rgba(0,0,0,0.04);
     }
@@ -47,56 +41,34 @@
         padding: 20px 0;
         border-bottom: 1px solid #f0f0f0;
     }
-    .form-section:last-child {
-        border-bottom: none;
-    }
+    .form-section:last-child { border-bottom: none; }
     .form-section .section-title {
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--primary-color);
-        margin-bottom: 18px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
+        font-size: 16px; font-weight: 700;
+        color: var(--primary-color); margin-bottom: 18px;
+        display: flex; align-items: center; gap: 10px;
     }
     .form-section .section-title i {
-        color: var(--secondary-color);
-        font-size: 20px;
+        color: var(--secondary-color); font-size: 20px;
     }
 
-    .form-group {
-        margin-bottom: 18px;
-    }
+    .form-group { margin-bottom: 18px; }
     .form-group label {
-        font-weight: 600;
-        color: var(--text-dark);
-        font-size: 14px;
-        margin-bottom: 4px;
+        font-weight: 600; color: var(--text-dark);
+        font-size: 14px; margin-bottom: 4px;
     }
-    .form-group label .required {
-        color: #c62828;
-        margin-left: 2px;
-    }
+    .form-group label .required { color: #c62828; margin-left: 2px; }
 
     .form-control {
-        border-radius: 8px;
-        border: 1px solid #e0e0e0;
-        padding: 10px 15px;
-        height: 42px;
-        font-size: 14px;
-        transition: all 0.3s ease;
-        background: #f8f9fc;
+        border-radius: 8px; border: 1px solid #e0e0e0;
+        padding: 10px 15px; height: 42px; font-size: 14px;
+        transition: all 0.3s ease; background: #f8f9fc;
     }
     .form-control:focus {
         border-color: var(--secondary-color);
         box-shadow: 0 0 0 3px rgba(225, 36, 84, 0.08);
         background: white;
     }
-    textarea.form-control {
-        height: auto;
-        min-height: 80px;
-        resize: vertical;
-    }
+    textarea.form-control { height: auto; min-height: 80px; resize: vertical; }
     select.form-control {
         appearance: none;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236F8BA4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
@@ -105,24 +77,16 @@
     }
 
     .image-preview {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 3px solid var(--primary-color);
-        margin-top: 10px;
-        background: #f8f9fc;
+        width: 120px; height: 120px; border-radius: 50%;
+        object-fit: cover; border: 3px solid var(--primary-color);
+        margin-top: 10px; background: #f8f9fc;
     }
 
     .btn-submit {
-        padding: 14px 50px;
-        font-weight: 700;
-        border-radius: 10px;
-        font-size: 16px;
-        background: var(--secondary-color);
-        color: white;
-        border: none;
-        transition: all 0.3s ease;
+        padding: 14px 50px; font-weight: 700;
+        border-radius: 10px; font-size: 16px;
+        background: var(--secondary-color); color: white;
+        border: none; transition: all 0.3s ease;
     }
     .btn-submit:hover {
         background: var(--primary-color);
@@ -131,77 +95,46 @@
         color: white;
     }
     .btn-submit:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none;
+        opacity: 0.6; cursor: not-allowed; transform: none;
     }
 
     .btn-cancel {
-        padding: 14px 30px;
-        font-weight: 700;
-        border-radius: 10px;
-        font-size: 16px;
-        background: #6c757d;
-        color: white;
-        border: none;
-        transition: all 0.3s ease;
+        padding: 14px 30px; font-weight: 700;
+        border-radius: 10px; font-size: 16px;
+        background: #6c757d; color: white;
+        border: none; transition: all 0.3s ease;
     }
     .btn-cancel:hover {
-        background: #5a6268;
-        transform: translateY(-2px);
-        color: white;
+        background: #5a6268; transform: translateY(-2px); color: white;
     }
 
-    .alert {
-        border-radius: 10px;
-        padding: 15px 20px;
-    }
+    .alert { border-radius: 10px; padding: 15px 20px; }
 
-    .loading-spinner {
-        text-align: center;
-        padding: 40px 0;
-    }
+    .loading-spinner { text-align: center; padding: 40px 0; }
     .loading-spinner .spinner {
-        width: 40px;
-        height: 40px;
+        width: 40px; height: 40px;
         border: 4px solid #f0f0f0;
         border-top-color: var(--secondary-color);
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
         margin: 0 auto 15px;
     }
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (max-width: 768px) {
-        .page-header-custom {
-            padding: 20px;
-            text-align: center;
+        .page-header-custom { padding: 20px; text-align: center; }
+        .form-container { padding: 20px 15px; }
+        .form-section { padding: 15px 0; }
+        .btn-submit, .btn-cancel {
+            padding: 12px 20px; font-size: 14px;
+            width: 100%; margin-bottom: 10px;
         }
-        .form-container {
-            padding: 20px 15px;
-        }
-        .form-section {
-            padding: 15px 0;
-        }
-        .btn-submit,
-        .btn-cancel {
-            padding: 12px 20px;
-            font-size: 14px;
-            width: 100%;
-            margin-bottom: 10px;
-        }
-        .image-preview {
-            width: 80px;
-            height: 80px;
-        }
+        .image-preview { width: 80px; height: 80px; }
     }
 </style>
 
 <div class="student-edit-page">
     <div class="container">
-        <!-- Header -->
         <div class="page-header-custom">
             <div class="row align-items-center">
                 <div class="col-md-8">
@@ -216,7 +149,6 @@
             </div>
         </div>
 
-        <!-- Form -->
         <div class="form-container">
             <div id="form-alert" class="alert alert-danger d-none">
                 <i class="icofont-warning mr-2"></i> <span id="alert-message"></span>
@@ -225,14 +157,12 @@
                 <i class="icofont-check-circled mr-2"></i> <span id="success-message"></span>
             </div>
 
-            <!-- Loading State -->
             <div id="loading-state" class="loading-spinner">
                 <div class="spinner"></div>
                 <p>Loading student data...</p>
             </div>
 
-            <!-- Form (hidden until data loads) -->
-            <form id="student-form" novalidate style="display: none;">
+            <form id="student-form" novalidate style="display: none;" enctype="multipart/form-data">
                 <input type="hidden" id="student-id">
                 <input type="hidden" id="user-id" value="">
 
@@ -535,9 +465,6 @@
 </div>
 
 <script>
-    // ============================================
-    // GET CSRF TOKEN FROM COOKIE - FIXED
-    // ============================================
     function getCSRFToken() {
         let cookieValue = null;
         const cookies = document.cookie.split(';');
@@ -551,71 +478,38 @@
         return cookieValue;
     }
 
-    // ============================================
-    // GET SESSION ID FROM COOKIE - FOR DEBUGGING
-    // ============================================
-    function getSessionId() {
-        let cookieValue = null;
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, 10) === 'sessionid=') {
-                cookieValue = decodeURIComponent(cookie.substring(10));
-                break;
-            }
-        }
-        return cookieValue;
-    }
-
-    // ============================================
-    // MAIN FUNCTION
-    // ============================================
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     let studentId = null;
 
     document.addEventListener('DOMContentLoaded', function() {
         console.log('=== STUDENT EDIT PAGE LOADED ===');
-        console.log('User:', user);
-        console.log('Cookies:', document.cookie);
-        console.log('CSRF Token:', getCSRFToken());
-        console.log('Session ID:', getSessionId());
-        
+
         if (!user || !user.id) {
             console.log('No user found, redirecting to login');
             window.location.href = '/login/';
             return;
         }
 
-        // Get student ID from URL
         const path = window.location.pathname;
-        console.log('Full path:', path);
-        
         let id = null;
         const match = path.match(/\/students\/(\d+)\/edit\//);
         if (match) {
             id = match[1];
-            console.log('Found ID via regex:', id);
         }
-        
         if (!id) {
             const parts = path.split('/');
             id = parts[parts.length - 2];
-            console.log('Fallback ID:', id);
         }
-        
-        console.log('Extracted student ID:', id);
 
         if (id && !isNaN(parseInt(id))) {
             studentId = parseInt(id);
-            console.log('Student ID set to:', studentId);
             document.getElementById('student-id-display').textContent = `Editing Student #${studentId}`;
             document.getElementById('student-id').value = studentId;
             loadStudent(studentId);
         } else {
-            console.error('Invalid student ID:', id);
             document.getElementById('loading-state').innerHTML = `
                 <div class="alert alert-danger">
-                    <i class="icofont-warning mr-2"></i> 
+                    <i class="icofont-warning mr-2"></i>
                     <strong>Invalid student ID.</strong> Please go back and try again.
                     <br><br>
                     <a href="/students/" class="btn btn-main btn-sm">Back to Students</a>
@@ -642,19 +536,14 @@
 
         const form = document.getElementById('student-form');
         form.addEventListener('submit', function(e) {
-            console.log('=== FORM SUBMIT EVENT TRIGGERED ===');
             e.preventDefault();
-            console.log('Form submission prevented, calling handleSubmit...');
             handleSubmit(e);
         });
     });
 
     function loadStudent(id) {
-        console.log('Loading student with ID:', id);
-        
-        fetch(`/api/students/${id}/`)
+        fetch(`/api/students/${id}/`, { credentials: 'include' })
         .then(response => {
-            console.log('Response status:', response.status);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
@@ -670,7 +559,7 @@
             console.error('Error loading student:', error);
             document.getElementById('loading-state').innerHTML = `
                 <div class="alert alert-danger">
-                    <i class="icofont-warning mr-2"></i> 
+                    <i class="icofont-warning mr-2"></i>
                     <strong>Error loading student data:</strong> ${error.message}
                     <br><br>
                     <a href="/students/" class="btn btn-main btn-sm">Back to Students</a>
@@ -681,8 +570,6 @@
     }
 
     function populateForm(data) {
-        console.log('Populating form with:', data);
-        
         try {
             document.getElementById('user-id').value = data.user || '';
             document.getElementById('first-name').value = data.first_name || '';
@@ -695,7 +582,10 @@
             document.getElementById('marital-status').value = data.marital_status || 'single';
             document.getElementById('religion').value = data.religion || '';
 
-            if (data.profile_picture) {
+            // Prefer absolute profile_picture_url when available
+            if (data.profile_picture_url) {
+                document.getElementById('profile-preview').src = data.profile_picture_url;
+            } else if (data.profile_picture) {
                 document.getElementById('profile-preview').src = data.profile_picture;
             }
 
@@ -721,15 +611,13 @@
 
             document.getElementById('signature').value = data.first_name + ' ' + data.last_name;
             document.getElementById('declaration-check').checked = true;
-            
-            console.log('Form populated successfully');
         } catch (error) {
             console.error('Error populating form:', error);
         }
     }
 
     function loadCourses() {
-        fetch('/api/courses/')
+        fetch('/api/courses/', { credentials: 'include' })
         .then(response => response.json())
         .then(data => {
             const select = document.getElementById('course');
@@ -741,14 +629,13 @@
                     option.textContent = `${course.name} (${course.code})`;
                     select.appendChild(option);
                 });
-                console.log('Courses loaded:', data.results.length);
             }
         })
         .catch(error => console.error('Error loading courses:', error));
     }
 
     function loadClasses() {
-        fetch('/api/classes/')
+        fetch('/api/classes/', { credentials: 'include' })
         .then(response => response.json())
         .then(data => {
             const select = document.getElementById('class-select');
@@ -760,113 +647,93 @@
                     option.textContent = `${cls.name} (${cls.code})`;
                     select.appendChild(option);
                 });
-                console.log('Classes loaded:', data.results.length);
             }
         })
         .catch(error => console.error('Error loading classes:', error));
     }
 
     function handleSubmit(event) {
-        console.log('=== HANDLE SUBMIT CALLED ===');
-        console.log('Student ID:', studentId);
-        
-        if (event) {
-            event.preventDefault();
-            console.log('Event prevented');
-        }
+        if (event) event.preventDefault();
 
         const registrationNumber = document.getElementById('reg-number').value.trim();
-        const userId = document.getElementById('user-id') ? 
-            parseInt(document.getElementById('user-id').value) : 
+        const userId = document.getElementById('user-id') ?
+            parseInt(document.getElementById('user-id').value) :
             studentId;
 
-        const data = {
-            user: userId,
-            registration_number: registrationNumber || `GLIDE/2026/TEMP/${studentId}`,
-            first_name: document.getElementById('first-name').value.trim(),
-            last_name: document.getElementById('last-name').value.trim(),
-            other_name: document.getElementById('other-name').value.trim() || '',
-            date_of_birth: document.getElementById('dob').value,
-            gender: document.getElementById('gender').value,
-            nationality: document.getElementById('nationality').value || 'Ugandan',
-            national_id: document.getElementById('national-id').value || '',
-            marital_status: document.getElementById('marital-status').value || 'single',
-            religion: document.getElementById('religion').value || '',
-            phone: document.getElementById('phone').value.trim(),
-            alternate_phone: document.getElementById('alt-phone').value.trim() || '',
-            email: document.getElementById('email').value.trim(),
-            address: document.getElementById('address').value.trim(),
-            district: document.getElementById('district').value || '',
-            county: document.getElementById('county').value || '',
-            sub_county: document.getElementById('sub-county').value || '',
-            village: document.getElementById('village').value || '',
-            course: parseInt(document.getElementById('course').value) || null,
-            current_class: document.getElementById('class-select').value ? parseInt(document.getElementById('class-select').value) : null,
-            status: document.getElementById('status').value || 'active',
-            sponsor_type: document.getElementById('sponsor-type').value || '',
-            parent_name: document.getElementById('parent-name').value || '',
-            parent_phone: document.getElementById('parent-phone').value || '',
-            parent_address: document.getElementById('parent-address').value || '',
-            signature: document.getElementById('signature').value.trim(),
-            declaration_date: document.getElementById('declaration-date').value,
-            declaration_agreed: document.getElementById('declaration-check').checked || false
-        };
+        // Build FormData (handles file uploads natively)
+        const formData = new FormData();
 
-        console.log('Form data collected:', data);
+        formData.append('user', userId);
+        formData.append('registration_number', registrationNumber || `GLIDE/2026/TEMP/${studentId}`);
+        formData.append('first_name', document.getElementById('first-name').value.trim());
+        formData.append('last_name', document.getElementById('last-name').value.trim());
+        formData.append('other_name', document.getElementById('other-name').value.trim() || '');
+        formData.append('date_of_birth', document.getElementById('dob').value);
+        formData.append('gender', document.getElementById('gender').value);
+        formData.append('nationality', document.getElementById('nationality').value || 'Ugandan');
+        formData.append('national_id', document.getElementById('national-id').value || '');
+        formData.append('marital_status', document.getElementById('marital-status').value || 'single');
+        formData.append('religion', document.getElementById('religion').value || '');
+        formData.append('phone', document.getElementById('phone').value.trim());
+        formData.append('alternate_phone', document.getElementById('alt-phone').value.trim() || '');
+        formData.append('email', document.getElementById('email').value.trim());
+        formData.append('address', document.getElementById('address').value.trim());
+        formData.append('district', document.getElementById('district').value || '');
+        formData.append('county', document.getElementById('county').value || '');
+        formData.append('sub_county', document.getElementById('sub-county').value || '');
+        formData.append('village', document.getElementById('village').value || '');
 
-        const requiredFields = ['first_name', 'last_name', 'date_of_birth', 'gender', 'phone', 'email', 'address', 'course', 'signature'];
-        const missingFields = requiredFields.filter(field => !data[field]);
-        
-        if (missingFields.length > 0) {
-            console.log('Missing required fields:', missingFields);
-            showAlert(`Please fill in all required fields: ${missingFields.join(', ')}`, 'danger');
+        const courseVal = document.getElementById('course').value;
+        if (courseVal) formData.append('course', parseInt(courseVal));
+
+        const classVal = document.getElementById('class-select').value;
+        if (classVal) formData.append('current_class', parseInt(classVal));
+
+        formData.append('status', document.getElementById('status').value || 'active');
+        formData.append('sponsor_type', document.getElementById('sponsor-type').value || '');
+        formData.append('parent_name', document.getElementById('parent-name').value || '');
+        formData.append('parent_phone', document.getElementById('parent-phone').value || '');
+        formData.append('parent_address', document.getElementById('parent-address').value || '');
+
+        // Attach profile picture only if a new one was picked
+        const profileFile = document.getElementById('profile-picture').files[0];
+        if (profileFile) {
+            console.log('Attaching profile picture:', profileFile.name);
+            formData.append('profile_picture', profileFile);
+        }
+
+        // Validation
+        const required = ['first_name', 'last_name', 'date_of_birth', 'gender', 'phone', 'email', 'address'];
+        const missing = required.filter(f => !formData.get(f));
+        if (missing.length) {
+            showAlert(`Please fill in all required fields: ${missing.join(', ')}`, 'danger');
             return;
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(data.email)) {
+        if (!emailRegex.test(formData.get('email'))) {
             showAlert('Please enter a valid email address', 'danger');
             return;
         }
-
-        console.log('Validation passed, sending update request...');
 
         const btn = document.getElementById('submit-btn');
         btn.disabled = true;
         btn.innerHTML = '<i class="icofont-spinner icofont-spin"></i> Updating...';
 
-        // Get CSRF token
         const csrfToken = getCSRFToken();
-        console.log('CSRF Token found:', csrfToken ? 'Yes' : 'No');
-        
-        if (!csrfToken) {
-            console.warn('No CSRF token found! Trying to refresh...');
-            // Try to get it from the meta tag if available
-            const metaCsrf = document.querySelector('meta[name="csrf-token"]');
-            if (metaCsrf) {
-                console.log('Found CSRF token in meta tag');
-                // Use meta tag token instead
-                const token = metaCsrf.getAttribute('content');
-                console.log('Token from meta:', token);
-            }
-        }
-
-        console.log('Sending PUT request to:', `/api/students/${studentId}/`);
 
         fetch(`/api/students/${studentId}/`, {
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken || '',  // Send even if empty
-                'X-Requested-With': 'XMLHttpRequest'  // Helps identify AJAX request
+                'X-CSRFToken': csrfToken || '',
+                'X-Requested-With': 'XMLHttpRequest',
+                // Do NOT set Content-Type — browser sets multipart boundary
             },
-            credentials: 'include',  // CRITICAL: Include cookies
-            body: JSON.stringify(data)
+            credentials: 'include',
+            body: formData,
         })
         .then(response => {
-            console.log('Response status:', response.status);
             return response.text().then(text => {
-                console.log('Response body:', text);
                 try {
                     return { status: response.status, data: JSON.parse(text) };
                 } catch {
@@ -875,38 +742,29 @@
             });
         })
         .then(result => {
-            console.log('Parsed result:', result);
-            
             if (result.status === 200 || result.status === 201) {
                 showSuccess('Student updated successfully!');
                 btn.innerHTML = '<i class="icofont-check"></i> Updated!';
                 setTimeout(() => {
                     window.location.href = `/students/${studentId}/`;
-                }, 1500);
+                }, 1200);
             } else if (result.status === 403) {
                 showAlert('Session expired. Please refresh the page and try again.', 'danger');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="icofont-save"></i> Update Student';
             } else {
-                let errorMsg = 'Invalid data';
-                if (result.data) {
-                    if (typeof result.data === 'string') {
-                        errorMsg = result.data;
-                    } else if (result.data.detail) {
-                        errorMsg = result.data.detail;
-                    } else if (result.data.error) {
-                        errorMsg = result.data.error;
-                    } else if (result.data.message) {
-                        errorMsg = result.data.message;
-                    } else {
-                        const fieldErrors = Object.entries(result.data)
-                            .filter(([key, val]) => key !== 'non_field_errors')
-                            .map(([key, val]) => `${key}: ${val}`)
-                            .join('; ');
-                        if (fieldErrors) errorMsg = fieldErrors;
-                    }
+                let msg = 'Invalid data';
+                const d = result.data;
+                if (typeof d === 'string') msg = d;
+                else if (d.detail) msg = d.detail;
+                else if (d.error) msg = d.error;
+                else {
+                    const errs = Object.entries(d)
+                        .map(([k, v]) => `${k}: ${v}`)
+                        .join('; ');
+                    if (errs) msg = errs;
                 }
-                showAlert('Error: ' + errorMsg, 'danger');
+                showAlert('Error: ' + msg, 'danger');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="icofont-save"></i> Update Student';
             }

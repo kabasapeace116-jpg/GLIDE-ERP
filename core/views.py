@@ -3,10 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.parsers import MultiPartParser, FormParser
-# REMOVED ALL JWT IMPORTS
-# from rest_framework_simplejwt.tokens import RefreshToken
-# from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout, get_user_model
 from django.views.decorators.csrf import csrf_exempt
@@ -27,14 +24,13 @@ from .models import (
     User, Department, Course, CourseCategory, Class, Student, StudentApplication
 )
 from .serializers import (
-    UserSerializer, UserCreateSerializer, LoginSerializer, 
+    UserSerializer, UserCreateSerializer, LoginSerializer,
     DepartmentSerializer, CourseSerializer, CourseCategorySerializer,
     ClassSerializer, StudentSerializer, StudentApplicationSerializer,
     InvoiceSerializer, PaymentSerializer
 )
 from .permissions import IsAdmin, IsStaff, IsStudent, IsFinance
 
-# Import models from other apps
 from admissions.models import AcademicYear, Semester, AdmissionBatch, AdmittedStudent
 from academics.models import CourseUnit, Assessment, Result, StudentCourseProgress, AttendanceRecord
 from finance.models import FeeStructure, Invoice, Payment, FinancialClearance
@@ -42,26 +38,24 @@ from finance.models import FeeStructure, Invoice, Payment, FinancialClearance
 
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
-    
+
     @method_decorator(csrf_exempt)
     @action(detail=False, methods=['post'], url_path='login')
     def login(self, request):
         print("=" * 50)
         print("LOGIN ATTEMPT")
         print(f"Request data: {request.data}")
-        
+
         try:
             serializer = LoginSerializer(data=request.data)
             if serializer.is_valid():
                 user = serializer.validated_data['user']
                 print(f"User found: {user.username} (Type: {user.user_type})")
-                
-                # Login the user for session-based auth
+
                 auth_login(request, user)
                 request.session.save()
                 print(f"Session key: {request.session.session_key}")
-                
-                # Determine redirect URL based on user type
+
                 redirect_url = '/dashboard/student/'
                 if user.user_type in ['super_admin', 'admin', 'registrar']:
                     redirect_url = '/dashboard/admin/'
@@ -73,10 +67,10 @@ class AuthViewSet(viewsets.ViewSet):
                     redirect_url = '/dashboard/hr/'
                 elif user.user_type == 'student':
                     redirect_url = '/dashboard/student/'
-                
+
                 print(f"Redirect URL: {redirect_url}")
                 print("=" * 50)
-                
+
                 response = Response({
                     'success': True,
                     'session_key': request.session.session_key,
@@ -92,87 +86,83 @@ class AuthViewSet(viewsets.ViewSet):
                         'is_authenticated': True,
                     }
                 })
-                
+
                 response.set_cookie(
                     key='sessionid',
                     value=request.session.session_key,
                     secure=True,
                     httponly=True,
                     samesite='Lax',
-                    max_age=1209600,  # 2 weeks
+                    max_age=1209600,
                     path='/'
                 )
-                
+
                 return response
-            
+
             print(f"Login failed: {serializer.errors}")
             print("=" * 50)
             return Response({'success': False, 'detail': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
-            
+
         except Exception as e:
             print(f"ERROR during login: {str(e)}")
             import traceback
             traceback.print_exc()
             return Response({'success': False, 'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
     @action(detail=False, methods=['post'], url_path='logout')
     def logout(self, request):
         auth_logout(request)
         return Response({'success': True, 'message': 'Logged out successfully'})
-    
-@action(detail=False, methods=['get'], url_path='current_user')
-def current_user(self, request):
-    try:
-        if request.user.is_authenticated:
-            user = request.user
-            
-            # ✅ Check if user is a student and has a student profile
-            student_data = None
-            if user.user_type == 'student':
-                try:
-                    from core.models import Student
-                    student = Student.objects.get(user=user)
-                    student_data = {
-                        'id': student.id,
-                        'registration_number': student.registration_number,
-                        'first_name': student.first_name,
-                        'last_name': student.last_name,
-                        'course_name': student.course.name if student.course else None,
-                        'status': student.status,
-                    }
-                except Student.DoesNotExist:
-                    student_data = None
-            
-            return Response({
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'user_type': user.user_type,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'is_superuser': user.is_superuser,
-                'is_authenticated': True,
-                'is_active': user.is_active,
-                'student': student_data,  # Include student data if available
-            })
-        
-        return Response({'is_authenticated': False}, status=status.HTTP_401_UNAUTHORIZED)
-    except Exception as e:
-        print(f"Error in current_user: {e}")
-        return Response({'is_authenticated': False, 'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-    
+
+    @action(detail=False, methods=['get'], url_path='current_user')
+    def current_user(self, request):
+        try:
+            if request.user.is_authenticated:
+                user = request.user
+
+                student_data = None
+                if user.user_type == 'student':
+                    try:
+                        student = Student.objects.get(user=user)
+                        student_data = {
+                            'id': student.id,
+                            'registration_number': student.registration_number,
+                            'first_name': student.first_name,
+                            'last_name': student.last_name,
+                            'course_name': student.course.name if student.course else None,
+                            'status': student.status,
+                        }
+                    except Student.DoesNotExist:
+                        student_data = None
+
+                return Response({
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'user_type': user.user_type,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'is_superuser': user.is_superuser,
+                    'is_authenticated': True,
+                    'is_active': user.is_active,
+                    'student': student_data,
+                })
+
+            return Response({'is_authenticated': False}, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            print(f"Error in current_user: {e}")
+            return Response({'is_authenticated': False, 'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+
     @action(detail=False, methods=['post'], url_path='setup-admin')
     def setup_admin(self, request):
-        """Create admin user if it doesn't exist"""
         try:
-            User = get_user_model()
             if User.objects.filter(username='admin').exists():
                 return Response({
                     'success': False,
                     'message': 'Admin user already exists',
                     'username': 'admin'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             admin = User.objects.create_superuser(
                 username='admin',
                 email='admin@glide-erp.com',
@@ -181,31 +171,26 @@ def current_user(self, request):
                 first_name='Admin',
                 last_name='User'
             )
-            
+
             return Response({
                 'success': True,
                 'message': 'Admin user created successfully!',
                 'username': 'admin',
                 'password': 'admin123'
             }, status=status.HTTP_201_CREATED)
-            
+
         except Exception as e:
-            return Response({
-                'success': False,
-                'error': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
-    
+            return Response({'success': False, 'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=False, methods=['post'], url_path='create-admin')
     def create_admin(self, request):
-        """Endpoint to create admin user (for first-time setup)"""
         try:
-            User = get_user_model()
             if User.objects.filter(username='admin').exists():
                 return Response({
                     'success': False,
                     'message': 'Admin user already exists'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             admin = User.objects.create_superuser(
                 username='admin',
                 email='admin@glide-erp.com',
@@ -214,45 +199,43 @@ def current_user(self, request):
                 first_name='Admin',
                 last_name='User'
             )
-            
+
             return Response({
                 'success': True,
                 'message': 'Admin user created successfully!',
                 'username': 'admin',
                 'password': 'admin123'
             }, status=status.HTTP_201_CREATED)
-            
+
         except Exception as e:
-            return Response({
-                'success': False,
-                'error': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'success': False, 'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
-    
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
     def get_permissions(self):
         if self.action in ['create']:
             return [AllowAny()]
         if self.action in ['update', 'partial_update', 'destroy']:
             return [IsAdmin()]
         return super().get_permissions()
-    
+
     def get_serializer_class(self):
         if self.action == 'create':
             return UserCreateSerializer
         return UserSerializer
-    
+
     def get_queryset(self):
         queryset = User.objects.all()
-        
+
         search = self.request.query_params.get('search', '')
         user_type = self.request.query_params.get('user_type', '')
         is_active = self.request.query_params.get('is_active', '')
-        
+
         if search:
             queryset = queryset.filter(
                 Q(username__icontains=search) |
@@ -265,14 +248,14 @@ class UserViewSet(viewsets.ModelViewSet):
         if is_active != '':
             is_active_bool = is_active.lower() == 'true'
             queryset = queryset.filter(is_active=is_active_bool)
-        
+
         return queryset
-    
+
     def create(self, request, *args, **kwargs):
         print("=" * 50)
         print("CREATE USER CALLED")
         print(f"Request data: {request.data}")
-        
+
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -287,56 +270,47 @@ class UserViewSet(viewsets.ModelViewSet):
             print(f"Serializer errors: {serializer.errors}")
             print("=" * 50)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=False, methods=['get'])
     def current_user(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
 
-# ============================================
-# DEPARTMENT VIEWSET
-# ============================================
 class DepartmentViewSet(viewsets.ModelViewSet):
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
 
 
-# ============================================
-# COURSE CATEGORY VIEWSET
-# ============================================
 class CourseCategoryViewSet(viewsets.ModelViewSet):
     queryset = CourseCategory.objects.all()
     serializer_class = CourseCategorySerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsAdmin()]
         return super().get_permissions()
 
 
-# ============================================
-# COURSE VIEWSET
-# ============================================
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsAdmin()]
         return super().get_permissions()
-    
+
     def get_queryset(self):
         queryset = Course.objects.all()
-        
+
         search = self.request.query_params.get('search', '')
         category = self.request.query_params.get('category__category_type', '')
         duration = self.request.query_params.get('duration', '')
-        
+
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search) |
@@ -346,9 +320,9 @@ class CourseViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(category__category_type=category)
         if duration:
             queryset = queryset.filter(duration=duration)
-        
+
         return queryset
-    
+
     @action(detail=False, methods=['get'])
     def by_category(self, request):
         category = request.query_params.get('category')
@@ -357,26 +331,23 @@ class CourseViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-# ============================================
-# CLASS VIEWSET
-# ============================================
 class ClassViewSet(viewsets.ModelViewSet):
     queryset = Class.objects.all()
     serializer_class = ClassSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsAdmin()]
         return super().get_permissions()
-    
+
     def get_queryset(self):
         queryset = Class.objects.all()
-        
+
         search = self.request.query_params.get('search', '')
         course = self.request.query_params.get('course', '')
         is_active = self.request.query_params.get('is_active', '')
-        
+
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search) |
@@ -388,32 +359,41 @@ class ClassViewSet(viewsets.ModelViewSet):
         if is_active != '':
             is_active_bool = is_active.lower() == 'true'
             queryset = queryset.filter(is_active=is_active_bool)
-        
+
         return queryset
 
 
 # ============================================
-# STUDENT VIEWSET
+# STUDENT VIEWSET — WITH PROFILE PICTURE FIX
 # ============================================
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
     permission_classes = [IsAuthenticated]
-    
+
+    # Accept multipart (files), form-encoded, and JSON
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsAdmin()]
         return [IsAuthenticated()]
-    
+
+    def get_serializer_context(self):
+        """Pass the request into the serializer for absolute image URLs."""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def get_queryset(self):
         queryset = Student.objects.all()
-        
+
         search = self.request.query_params.get('search', '')
-        status = self.request.query_params.get('status', '')
+        status_param = self.request.query_params.get('status', '')
         course = self.request.query_params.get('course', '')
-        
-        print(f"🔍 Student filters - search: '{search}', status: '{status}', course: '{course}'")
-        
+
+        print(f"🔍 Student filters - search: '{search}', status: '{status_param}', course: '{course}'")
+
         if search:
             queryset = queryset.filter(
                 Q(first_name__icontains=search) |
@@ -422,53 +402,78 @@ class StudentViewSet(viewsets.ModelViewSet):
                 Q(email__icontains=search) |
                 Q(phone__icontains=search)
             )
-        if status:
-            queryset = queryset.filter(status=status)
+        if status_param:
+            queryset = queryset.filter(status=status_param)
         if course and course.isdigit():
             queryset = queryset.filter(course_id=int(course))
-        
+
         return queryset
-    
+
+    def update(self, request, *args, **kwargs):
+        """Custom update that logs file uploads for debugging."""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        print("=" * 60)
+        print(f"STUDENT UPDATE — ID {instance.id}")
+        print(f"Content-Type: {request.content_type}")
+        print(f"Has FILES: {bool(request.FILES)}")
+        if request.FILES:
+            print(f"FILES keys: {list(request.FILES.keys())}")
+        print(f"DATA keys: {list(request.data.keys())[:12]}...")
+
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        print(f"✅ Student {instance.id} updated")
+        if instance.profile_picture:
+            print(f"   Profile pic URL: {instance.profile_picture.url}")
+        else:
+            print(f"   Profile pic: none")
+        print("=" * 60)
+
+        return Response(serializer.data)
+
     @action(detail=False, methods=['get'])
     def my_profile(self, request):
         try:
             student = Student.objects.get(user=request.user)
-            serializer = StudentSerializer(student)
+            serializer = StudentSerializer(student, context={'request': request})
             return Response(serializer.data)
         except Student.DoesNotExist:
             return Response({'error': 'Student profile not found'}, status=status.HTTP_404_NOT_FOUND)
-    
+
     @action(detail=True, methods=['get'])
     def academic_progress(self, request, pk=None):
         student = self.get_object()
         return Response({'message': 'Academic progress data'})
 
 
-# ============================================
-# STUDENT APPLICATION VIEWSET
-# ============================================
 class StudentApplicationViewSet(viewsets.ModelViewSet):
     queryset = StudentApplication.objects.all()
     serializer_class = StudentApplicationSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
-    
+
     def get_permissions(self):
         if self.action in ['create', 'submit_application']:
             return [AllowAny()]
         if self.action in ['update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsAdmin()]
         return super().get_permissions()
-    
+
     def get_queryset(self):
         queryset = StudentApplication.objects.all()
-        
+
         search = self.request.query_params.get('search', '')
         status = self.request.query_params.get('status', '')
         category = self.request.query_params.get('category', '')
-        
+
         print(f"🔍 Application filters - search: '{search}', status: '{status}', category: '{category}'")
-        
+
         if search:
             queryset = queryset.filter(
                 Q(application_id__icontains=search) |
@@ -482,16 +487,16 @@ class StudentApplicationViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(status=status)
         if category:
             queryset = queryset.filter(course_type=category)
-        
+
         return queryset
-    
+
     @action(detail=True, methods=['post'])
     def review(self, request, pk=None):
         application = self.get_object()
         status_update = request.data.get('status')
         notes = request.data.get('notes', '')
         interview_date = request.data.get('interview_date')
-        
+
         if status_update:
             application.status = status_update
             application.review_notes = notes
@@ -503,14 +508,13 @@ class StudentApplicationViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(application)
             return Response(serializer.data)
         return Response({'error': 'Status is required'}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def submit_application(self, request):
-        """Public endpoint for submitting applications"""
         try:
             data = request.data
             files = request.FILES
-            
+
             application = StudentApplication.objects.create(
                 first_name=data.get('first_name', ''),
                 last_name=data.get('last_name', ''),
@@ -573,7 +577,7 @@ class StudentApplicationViewSet(viewsets.ModelViewSet):
                 declaration_agreed=data.get('declaration_check') == 'on',
                 status='pending'
             )
-            
+
             if 'payment_receipt' in files:
                 application.payment_receipt = files['payment_receipt']
             if 'uce_certificate' in files:
@@ -582,22 +586,22 @@ class StudentApplicationViewSet(viewsets.ModelViewSet):
                 application.uace_certificate = files['uace_certificate']
             if 'other_qual_certificate' in files:
                 application.other_qual_certificate = files['other_qual_certificate']
-            
+
             application.save()
-            
+
             return Response({
                 'success': True,
                 'message': 'Application submitted successfully!',
                 'application_id': application.application_id,
             }, status=status.HTTP_201_CREATED)
-            
+
         except Exception as e:
             print(f"Application submission error: {str(e)}")
             return Response({
                 'success': False,
                 'error': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def _get_subjects(self, data, prefix):
         subjects = {}
         for key, value in data.items():
@@ -608,9 +612,6 @@ class StudentApplicationViewSet(viewsets.ModelViewSet):
         return subjects
 
 
-# ============================================
-# INVOICE VIEWSET
-# ============================================
 class InvoiceViewSet(viewsets.ModelViewSet):
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
@@ -620,16 +621,16 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy', 'generate_invoice', 'mark_paid']:
             return [IsAuthenticated(), IsFinance()]
         return [IsAuthenticated()]
-    
+
     def get_queryset(self):
         queryset = Invoice.objects.all()
-        
+
         search = self.request.query_params.get('search', '')
         student = self.request.query_params.get('student', '')
         status = self.request.query_params.get('status', '')
         issue_date_gte = self.request.query_params.get('issue_date__gte', '')
         issue_date_lte = self.request.query_params.get('issue_date__lte', '')
-        
+
         if search:
             queryset = queryset.filter(
                 Q(invoice_number__icontains=search) |
@@ -645,50 +646,50 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(issue_date__gte=issue_date_gte)
         if issue_date_lte:
             queryset = queryset.filter(issue_date__lte=issue_date_lte)
-        
+
         return queryset
-    
+
     @action(detail=False, methods=['post'], url_path='generate_invoice')
     def generate_invoice(self, request):
         student_id = request.data.get('student_id')
         semester_id = request.data.get('semester_id')
-        
+
         if not student_id or not semester_id:
             return Response({
                 'success': False,
                 'error': 'Student ID and Semester ID are required'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             student = Student.objects.get(id=student_id)
             semester = Semester.objects.get(id=semester_id)
-            
+
             fee_structures = FeeStructure.objects.filter(
                 course=student.course,
                 academic_year=semester.academic_year.name,
                 is_active=True
             )
-            
+
             if not fee_structures.exists():
                 return Response({
                     'success': False,
                     'error': 'No fee structures found for this course'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             total_amount = fee_structures.aggregate(total=Sum('amount'))['total'] or 0
-            
+
             existing_invoice = Invoice.objects.filter(
                 student=student,
                 semester=semester
             ).first()
-            
+
             if existing_invoice:
                 return Response({
                     'success': False,
                     'error': 'Invoice already exists for this student and semester',
                     'invoice_number': existing_invoice.invoice_number
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             invoice = Invoice.objects.create(
                 student=student,
                 semester=semester,
@@ -696,14 +697,14 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                 total_amount=total_amount,
                 status='issued'
             )
-            
+
             serializer = InvoiceSerializer(invoice)
             return Response({
                 'success': True,
                 'message': 'Invoice generated successfully',
                 'invoice': serializer.data
             }, status=status.HTTP_201_CREATED)
-            
+
         except Student.DoesNotExist:
             return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
         except Semester.DoesNotExist:
@@ -713,13 +714,13 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             import traceback
             traceback.print_exc()
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=True, methods=['post'])
     def mark_paid(self, request, pk=None):
         invoice = self.get_object()
         amount = request.data.get('amount', 0)
         payment_method = request.data.get('payment_method', 'cash')
-        
+
         try:
             payment = Payment.objects.create(
                 invoice=invoice,
@@ -735,7 +736,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             else:
                 invoice.status = 'partially_paid'
             invoice.save()
-            
+
             return Response({
                 'success': True,
                 'message': 'Payment recorded successfully',
@@ -745,19 +746,16 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-# ============================================
-# HTML LOGIN/LOGOUT VIEWS (For Browser Form Submissions)
-# ============================================
 @require_http_methods(["GET", "POST"])
 def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
-        
+
         if user is not None:
             auth_login(request, user)
-            
+
             if user.user_type in ['super_admin', 'admin', 'registrar']:
                 return redirect('/dashboard/admin/')
             elif user.user_type == 'finance':
@@ -770,7 +768,7 @@ def login_view(request):
                 return redirect('/dashboard/student/')
         else:
             messages.error(request, 'Invalid username or password')
-    
+
     return render(request, 'login.html')
 
 
