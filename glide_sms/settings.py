@@ -169,8 +169,7 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 # ============================================
 # SECURITY SETTINGS
 # ============================================
