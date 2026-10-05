@@ -20,11 +20,15 @@ django.setup()
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.utils import timezone
 from core.models import (
     User, Department, Course, CourseCategory, Class, Student, StudentApplication
 )
 from admissions.models import AcademicYear, Semester, AdmissionBatch, AdmittedStudent
-from academics.models import CourseUnit, Assessment, Result, StudentCourseProgress, AttendanceRecord, Timetable
+from academics.models import (
+    CourseUnit, Assessment, Result, StudentCourseProgress, AttendanceRecord,
+    Timetable, Certificate
+)
 from finance.models import FeeStructure, Invoice, Payment, FinancialClearance
 from hr.models import Employee, LeaveRequest, Attendance as HRAttendance
 
@@ -73,6 +77,49 @@ def create_password():
     chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
     return ''.join(random.choice(chars) for _ in range(12))
 
+def build_certificate_snapshot(student, certificate_type, course_unit=None):
+    """Freeze student + course info at issue time."""
+    course_name = student.course.name if student.course else None
+
+    progress = StudentCourseProgress.objects.filter(student=student)
+    if course_unit:
+        progress = progress.filter(course_unit=course_unit)
+
+    results = Result.objects.filter(student=student, is_published=True)
+    if course_unit:
+        results = results.filter(course_unit=course_unit)
+
+    return {
+        "student": {
+            "registration_number": student.registration_number,
+            "full_name": getattr(student, "full_name", str(student)),
+            "course": course_name,
+        },
+        "certificate_type": certificate_type,
+        "course_unit": {
+            "code": course_unit.code,
+            "name": course_unit.name,
+        } if course_unit else None,
+        "progress": [
+            {
+                "course_unit": p.course_unit.code,
+                "score": float(p.score) if p.score is not None else None,
+                "grade": p.grade,
+            }
+            for p in progress
+        ],
+        "results": [
+            {
+                "course_unit": r.course_unit.code,
+                "score": float(r.score) if r.score is not None else None,
+                "grade": r.grade,
+            }
+            for r in results
+        ],
+        "issued_at": timezone.now().isoformat(),
+    }
+
+
 # ============================================
 # 1. WIPE ALL DATA
 # ============================================
@@ -84,6 +131,7 @@ print("\n🗑️ Wiping existing data...")
 
 with transaction.atomic():
     # Delete in correct order to avoid foreign key constraints
+    Certificate.objects.all().delete()
     AttendanceRecord.objects.all().delete()
     Result.objects.all().delete()
     StudentCourseProgress.objects.all().delete()
@@ -119,18 +167,18 @@ print("\n👤 Creating users...")
 users_data = [
     # Super Admin
     {'username': 'superadmin', 'email': 'superadmin@glideafrica.org', 'password': 'Super@2024', 'first_name': 'Super', 'last_name': 'Admin', 'user_type': 'super_admin', 'is_superuser': True, 'is_staff': True},
-    
+
     # Admin
     {'username': 'admin', 'email': 'admin@glideafrica.org', 'password': 'Admin@2024', 'first_name': 'System', 'last_name': 'Admin', 'user_type': 'admin', 'is_superuser': False, 'is_staff': True},
     {'username': 'registrar', 'email': 'registrar@glideafrica.org', 'password': 'Registrar@2024', 'first_name': 'Registration', 'last_name': 'Officer', 'user_type': 'registrar', 'is_superuser': False, 'is_staff': True},
-    
+
     # Staff & Lecturers
     {'username': 'staff', 'email': 'staff@glideafrica.org', 'password': 'Staff@2024', 'first_name': 'Staff', 'last_name': 'Member', 'user_type': 'staff', 'is_superuser': False, 'is_staff': True},
     {'username': 'lecturer', 'email': 'lecturer@glideafrica.org', 'password': 'Lecturer@2024', 'first_name': 'Senior', 'last_name': 'Lecturer', 'user_type': 'lecturer', 'is_superuser': False, 'is_staff': True},
-    
+
     # Finance
     {'username': 'finance', 'email': 'finance@glideafrica.org', 'password': 'Finance@2024', 'first_name': 'Finance', 'last_name': 'Officer', 'user_type': 'finance', 'is_superuser': False, 'is_staff': True},
-    
+
     # HR
     {'username': 'hr', 'email': 'hr@glideafrica.org', 'password': 'HR@2024', 'first_name': 'HR', 'last_name': 'Manager', 'user_type': 'hr', 'is_superuser': False, 'is_staff': True},
 ]
@@ -217,11 +265,11 @@ courses_data = [
     {'name': 'Diploma in Business Administration', 'code': 'DBA', 'category_type': 'diploma', 'department_code': 'BUS', 'duration': '2_years', 'tuition_fee': 2200000, 'application_fee': 50000},
     {'name': 'Diploma in Mechanical Engineering', 'code': 'DME', 'category_type': 'diploma', 'department_code': 'ENG', 'duration': '2_years', 'tuition_fee': 2800000, 'application_fee': 50000},
     {'name': 'Diploma in Electrical Engineering', 'code': 'DEE', 'category_type': 'diploma', 'department_code': 'ENG', 'duration': '2_years', 'tuition_fee': 2700000, 'application_fee': 50000},
-    
+
     # Certificate Programs
     {'name': 'Certificate in Information Technology', 'code': 'CIT', 'category_type': 'certificate', 'department_code': 'ICT', 'duration': '2_years', 'tuition_fee': 1500000, 'application_fee': 50000},
     {'name': 'Certificate in Business Administration', 'code': 'CBA', 'category_type': 'certificate', 'department_code': 'BUS', 'duration': '2_years', 'tuition_fee': 1300000, 'application_fee': 50000},
-    
+
     # Occupational Programs
     {'name': 'Motor Vehicle Repair and Maintenance', 'code': 'MVR', 'category_type': 'occupational', 'department_code': 'ENG', 'duration': '2_years', 'tuition_fee': 1200000, 'application_fee': 30000},
     {'name': 'Tailoring and Garment Design', 'code': 'TGD', 'category_type': 'occupational', 'department_code': 'BUS', 'duration': '2_years', 'tuition_fee': 1000000, 'application_fee': 30000},
@@ -390,6 +438,8 @@ status_options = ['active', 'active', 'active', 'active', 'active', 'graduated',
 course_list = list(courses.items())
 
 students_created = []
+certificates_created = 0
+
 for i in range(STUDENT_COUNT):
     try:
         first_name = random.choice(first_names)
@@ -400,7 +450,7 @@ for i in range(STUDENT_COUNT):
         dob = random_date(date(1995, 1, 1), date(2005, 12, 31))
         course_code, course = random.choice(course_list)
         class_obj = classes.get(course_code)
-        
+
         # Create user
         user = User.objects.create_user(
             username=username,
@@ -411,7 +461,7 @@ for i in range(STUDENT_COUNT):
             user_type='student',
             phone=random_phone()
         )
-        
+
         # Create student
         student = Student.objects.create(
             user=user,
@@ -432,15 +482,15 @@ for i in range(STUDENT_COUNT):
             parent_name=f"{random.choice(['Mr.', 'Mrs.'])} {random.choice(last_names)}",
             parent_phone=random_phone()
         )
-        
+
         # Update class enrollment
         if class_obj:
             class_obj.current_enrollment += 1
             class_obj.save()
-        
+
         students_created.append(student)
         print(f"  ✅ {i+1}. {student.registration_number} - {student.full_name} ({course.name})")
-        
+
         # ============================================
         # 11. CREATE APPLICATION
         # ============================================
@@ -458,7 +508,7 @@ for i in range(STUDENT_COUNT):
             declaration_signature=f"{first_name} {last_name}",
             declaration_date=random_date(date(2024, 6, 1), date(2024, 7, 31))
         )
-        
+
         # ============================================
         # 12. CREATE ADMISSION
         # ============================================
@@ -469,16 +519,19 @@ for i in range(STUDENT_COUNT):
             confirmed_enrollment=True,
             confirmed_enrollment_date=random_date(date(2024, 8, 1), date(2024, 8, 15))
         )
-        
+
         # ============================================
         # 13. CREATE ACADEMIC PROGRESS & RESULTS
         # ============================================
-        course_units = CourseUnit.objects.filter(course=course)
+        course_units = list(CourseUnit.objects.filter(course=course))
+        unit_scores = []   # track for later certificate decisions
+
         for unit in course_units:
             grade = random_grade()
             score = grade_to_score(grade)
             is_passed = grade != 'F'
-            
+            unit_scores.append((unit, grade, score, is_passed))
+
             StudentCourseProgress.objects.create(
                 student=student,
                 course_unit=unit,
@@ -489,7 +542,7 @@ for i in range(STUDENT_COUNT):
                 is_retake=False,
                 is_passed=is_passed
             )
-            
+
             assessment = Assessment.objects.create(
                 name=f"{unit.name} - Final Exam",
                 course_unit=unit,
@@ -503,7 +556,7 @@ for i in range(STUDENT_COUNT):
                 is_published=True,
                 is_closed=True
             )
-            
+
             Result.objects.create(
                 student=student,
                 course_unit=unit,
@@ -514,7 +567,7 @@ for i in range(STUDENT_COUNT):
                 is_published=True,
                 published_date=random_date(date(2024, 12, 1), date(2024, 12, 15))
             )
-        
+
         # ============================================
         # 14. CREATE ATTENDANCE
         # ============================================
@@ -522,7 +575,7 @@ for i in range(STUDENT_COUNT):
         end_date = date(2024, 11, 30)
         current_date = start_date
         attendance_statuses = ['present'] * 70 + ['absent'] * 10 + ['late'] * 15 + ['excused'] * 5
-        
+
         while current_date <= end_date:
             if current_date.weekday() < 5:
                 for unit in course_units[:3]:
@@ -536,13 +589,13 @@ for i in range(STUDENT_COUNT):
                         time_out=random.choice([None, '16:00', '16:30', '17:00'])
                     )
             current_date += timedelta(days=1)
-        
+
         # ============================================
         # 15. CREATE FINANCIAL RECORDS
         # ============================================
         fee_structures = FeeStructure.objects.filter(course=course, academic_year=ACADEMIC_YEAR)
         total_fee = sum(f.amount for f in fee_structures)
-        
+
         invoice = Invoice.objects.create(
             student=student,
             semester=semester1,
@@ -552,7 +605,7 @@ for i in range(STUDENT_COUNT):
             total_amount=total_fee,
             status='fully_paid' if random.random() > 0.2 else 'partially_paid'
         )
-        
+
         if random.random() < 0.7:
             payment_amount = total_fee
             payment_date = random_date(date(2024, 8, 15), date(2024, 9, 15))
@@ -569,7 +622,7 @@ for i in range(STUDENT_COUNT):
             invoice.balance = 0
             invoice.status = 'fully_paid'
             invoice.save()
-            
+
         elif random.random() < 0.9:
             payment_amount = total_fee * Decimal(random.uniform(0.3, 0.7))
             payment_date = random_date(date(2024, 8, 15), date(2024, 9, 30))
@@ -586,7 +639,7 @@ for i in range(STUDENT_COUNT):
             invoice.balance = total_fee - payment_amount
             invoice.status = 'partially_paid'
             invoice.save()
-        
+
         FinancialClearance.objects.create(
             student=student,
             semester=semester1,
@@ -594,12 +647,103 @@ for i in range(STUDENT_COUNT):
             clearance_date=random_date(date(2024, 9, 1), date(2024, 10, 15)) if random.random() < 0.8 else None,
             notes="Cleared - All fees paid" if random.random() < 0.8 else "Pending payment"
         )
-        
+
+        # ============================================
+        # 16. CREATE CERTIFICATES
+        # ============================================
+        issuer = users_created.get('registrar') or users_created.get('admin')
+        issue_date = random_date(date(2024, 12, 15), date(2025, 1, 31))
+
+        # --- Program completion (graduated students only) ---
+        if student.status == 'graduated' and all(p for _, _, _, p in unit_scores):
+            snapshot = build_certificate_snapshot(student, 'program_completion')
+            Certificate.objects.create(
+                student=student,
+                certificate_type='program_completion',
+                semester=semester1,
+                academic_year=academic_year,
+                title=f"Certificate of Program Completion — {course.name}",
+                description=(
+                    f"For successfully completing all requirements of the "
+                    f"{course.name} programme."
+                ),
+                issue_date=issue_date,
+                status='issued',
+                issued_by=issuer,
+                snapshot_data=snapshot,
+            )
+            certificates_created += 1
+
+        # --- Course completion (best passed unit) ---
+        passed_units = [(u, g, s) for u, g, s, p in unit_scores if p]
+        if passed_units and random.random() < 0.35:
+            best_unit, best_grade, best_score = max(passed_units, key=lambda x: x[2])
+            snapshot = build_certificate_snapshot(student, 'course_completion', best_unit)
+            Certificate.objects.create(
+                student=student,
+                certificate_type='course_completion',
+                course_unit=best_unit,
+                semester=semester1,
+                academic_year=academic_year,
+                title=f"Certificate of Completion - {best_unit.code}",
+                description=(
+                    f"For successfully completing {best_unit.code} — {best_unit.name} "
+                    f"with a grade of {best_grade}."
+                ),
+                issue_date=issue_date,
+                status='issued',
+                issued_by=issuer,
+                snapshot_data=snapshot,
+            )
+            certificates_created += 1
+
+        # --- Merit (average >= 75) ---
+        if unit_scores:
+            avg_score = sum(s for _, _, s, _ in unit_scores) / len(unit_scores)
+            if avg_score >= 75 and random.random() < 0.5:
+                snapshot = build_certificate_snapshot(student, 'merit')
+                Certificate.objects.create(
+                    student=student,
+                    certificate_type='merit',
+                    semester=semester1,
+                    academic_year=academic_year,
+                    title="Certificate of Merit",
+                    description=(
+                        f"For outstanding academic excellence with a cumulative "
+                        f"average of {avg_score:.1f}% in the {course.name} programme."
+                    ),
+                    issue_date=issue_date,
+                    status='issued',
+                    issued_by=issuer,
+                    snapshot_data=snapshot,
+                )
+                certificates_created += 1
+
+        # --- Academic transcript (most active students) ---
+        if student.status == 'active' and random.random() < 0.6:
+            snapshot = build_certificate_snapshot(student, 'transcript')
+            Certificate.objects.create(
+                student=student,
+                certificate_type='transcript',
+                semester=semester1,
+                academic_year=academic_year,
+                title="Official Academic Transcript",
+                description=(
+                    "Official record of academic achievement as maintained by "
+                    "the Office of the Registrar."
+                ),
+                issue_date=issue_date,
+                status='issued',
+                issued_by=issuer,
+                snapshot_data=snapshot,
+            )
+            certificates_created += 1
+
     except Exception as e:
         print(f"  ❌ Failed to create student: {e}")
 
 # ============================================
-# 16. CREATE EMPLOYEES
+# 17. CREATE EMPLOYEES
 # ============================================
 print("\n👤 Creating employees...")
 
@@ -617,7 +761,7 @@ for user in User.objects.filter(user_type__in=employee_roles):
     print(f"  ✅ Employee created for {user.username}")
 
 # ============================================
-# 17. CREATE TIMETABLE
+# 18. CREATE TIMETABLE
 # ============================================
 print("\n⏰ Creating timetables...")
 
@@ -644,7 +788,7 @@ for class_obj in classes.values():
             print(f"  ✅ Timetable entry for {unit.name}")
 
 # ============================================
-# 18. FINAL SUMMARY
+# 19. FINAL SUMMARY
 # ============================================
 print("\n" + "="*70)
 print("✅ SEED DATA COMPLETE!")
@@ -665,6 +809,7 @@ print(f"  • Payments: {Payment.objects.count()}")
 print(f"  • Financial Clearances: {FinancialClearance.objects.count()}")
 print(f"  • Employees: {Employee.objects.count()}")
 print(f"  • Timetable Entries: {Timetable.objects.count()}")
+print(f"  • Certificates: {Certificate.objects.count()}")
 
 print("\n🔑 Login Credentials:")
 print("-"*40)
